@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuilioAI Studio</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">🎨</span>
+                <span class="logo-text">DuilioAI</span>
+            </div>
+            
+            <nav class="nav">
+                <button class="nav-btn active" data-tab="chat">
+                    <span class="nav-icon">💬</span>
+                    <span>Chat</span>
+                </button>
+                <button class="nav-btn" data-tab="generate">
+                    <span class="nav-icon">🎨</span>
+                    <span>Generate</span>
+                </button>
+                <button class="nav-btn" data-tab="edit">
+                    <span class="nav-icon">✏️</span>
+                    <span>Edit</span>
+                </button>
+                <button class="nav-btn" data-tab="inpaint">
+                    <span class="nav-icon">🖌️</span>
+                    <span>Inpaint</span>
+                </button>
+                <button class="nav-btn" data-tab="code">
+                    <span class="nav-icon">💻</span>
+                    <span>Code</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="model-selector">
+                    <label>Model</label>
+                    <select id="model-select">
+                        <option value="llama3.2">Llama 3.2</option>
+                        <option value="qwen2.5-coder:7b">Qwen Coder</option>
+                        <option value="mistral">Mistral</option>
+                        <option value="llava">LLaVA (Vision)</option>
+                    </select>
+                </div>
+                <div class="status" id="status">
+                    <span class="status-dot"></span>
+                    <span>Ready</span>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Chat Tab -->
+            <section class="tab-content active" id="tab-chat">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message assistant">
+                            <div class="message-content">
+                                <p>👋 Hello! I'm your local AI assistant. Ask me anything - no restrictions, full privacy.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <textarea 
+                            id="chat-input" 
+                            placeholder="Type your message... (Shift+Enter for new line)"
+                            rows="1"
+                        ></textarea>
+                        <button class="send-btn" id="chat-send">
+                            <span>Send</span>
+                            <span class="send-icon">➤</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Generate Tab -->
+            <section class="tab-content" id="tab-generate">
+                <div class="generate-container">
+                    <div class="generate-form">
+                        <h2>Generate Image</h2>
+                        
+                        <div class="model-info-badge">
+                            <span class="model-icon">🧠</span>
+                            <div class="model-details">
+                                <span class="model-name">Stable Diffusion v1.5</span>
+                                <span class="model-type">Text-to-Image • float32 • MPS</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Prompt</label>
+                            <textarea id="gen-prompt" placeholder="Describe the image you want to create..." rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Negative Prompt</label>
+                            <input type="text" id="gen-negative" placeholder="What to avoid (blur, low quality, etc.)">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Width</label>
+                                <input type="number" id="gen-width" value="512" min="256" max="2048" step="64">
+                            </div>
+                            <div class="form-group">
+                                <label>Height</label>
+                                <input type="number" id="gen-height" value="512" min="256" max="2048" step="64">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Steps: <span id="steps-val">25</span></label>
+                                <input type="range" id="gen-steps" min="1" max="100" value="25">
+                            </div>
+                            <div class="form-group">
+                                <label>Guidance: <span id="guidance-val">7.5</span></label>
+                                <input type="range" id="gen-guidance" min="1" max="20" value="7.5" step="0.5">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Seed (optional)</label>
+                            <input type="number" id="gen-seed" placeholder="Random">
+                        </div>
+                        
+                        <button class="btn-primary" id="generate-btn">
+                            <span>Generate Image</span>
+                        </button>
+                    </div>
+                    
+                    <div class="generate-preview">
+                        <div class="preview-placeholder" id="gen-preview">
+                            <span>🖼️</span>
+                            <p>Generated image will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Edit Tab -->
+            <section class="tab-content" id="tab-edit">
+                <div class="edit-container">
+                    <div class="edit-panel">
+                        <h2>Editar Imagem</h2>
+                        
+                        <div class="model-info-badge">
+                            <span class="model-icon">🧠</span>
+                            <div class="model-details">
+                                <span class="model-name">Stable Diffusion v1.5</span>
+                                <span class="model-type">Image-to-Image • float32 • MPS</span>
+                            </div>
+                        </div>
+                        
+                        <div class="upload-area" id="upload-area">
+                            <input type="file" id="edit-file" accept="image/*" hidden>
+                            <span class="upload-icon">📁</span>
+                            <p>Arraste uma imagem ou clique para enviar</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>O que você quer alterar?</label>
+                            <textarea id="edit-prompt" placeholder="Ex: adicionar óculos escuros, mudar cor do cabelo para loiro, remover fundo..." rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                Intensidade da mudança: <span id="strength-val">0.7</span>
+                                <span class="hint">(?)</span>
+                            </label>
+                            <input type="range" id="edit-strength" min="0.1" max="1" value="0.7" step="0.05">
+                            <div class="strength-hints">
+                                <span>Sutil</span>
+                                <span>Moderado</span>
+                                <span>Intenso</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group toggle-group">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="edit-quick" checked>
+                                <span class="toggle-switch"></span>
+                                <span>⚡ Modo Rápido</span>
+                            </label>
+                            <span class="toggle-hint">Mais rápido (~30s), qualidade boa</span>
+                        </div>
+                        
+                        <button class="btn-primary" id="edit-btn">
+                            <span>✨ Aplicar Edição</span>
+                        </button>
+                    </div>
+                    
+                    <div class="edit-preview">
+                        <div class="preview-side">
+                            <h3>Original</h3>
+                            <div class="preview-box" id="edit-original">
+                                <span>📷</span>
+                            </div>
+                        </div>
+                        <div class="preview-side">
+                            <h3>Result</h3>
+                            <div class="preview-box" id="edit-result">
+                                <span>✨</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Inpaint Tab -->
+            <section class="tab-content" id="tab-inpaint">
+                <div class="inpaint-container">
+                    <div class="inpaint-panel">
+                        <h2>🖌️ Inpaint</h2>
+                        
+                        <div class="model-info-badge">
+                            <span class="model-icon">🧠</span>
+                            <div class="model-details">
+                                <span class="model-name">SD Inpainting (RunwayML)</span>
+                                <span class="model-type">Inpainting • float32 • MPS</span>
+                            </div>
+                        </div>
+                        
+                        <p class="inpaint-desc">Pinte sobre a área que deseja editar</p>
+                        
+                        <div class="inpaint-upload" id="inpaint-upload">
+                            <input type="file" id="inpaint-file" accept="image/*" hidden>
+                            <span class="upload-icon">📁</span>
+                            <p>Arraste uma imagem ou clique</p>
+                        </div>
+                        
+                        <div class="inpaint-tools" id="inpaint-tools" style="display: none;">
+                            <div class="tool-row">
+                                <button class="tool-btn active" id="tool-brush" title="Pincel - Marcar área para edição">
+                                    🖌️ Pincel
+                                </button>
+                                <button class="tool-btn" id="tool-eraser" title="Borracha - Remover marcação">
+                                    🧹 Borracha
+                                </button>
+                                <button class="tool-btn" id="tool-clear" title="Limpar tudo">
+                                    🗑️ Limpar
+                                </button>
+                            </div>
+                            <p class="tool-help">
+                                <strong>🖌️ Pincel:</strong> Pinte a área que deseja editar (roxo)<br>
+                                <strong>🧹 Borracha:</strong> Remova marcações erradas (cursor vermelho)
+                            </p>
+                            
+                            <div class="form-group">
+                                <label>Tamanho do pincel: <span id="brush-size-val">30</span>px</label>
+                                <input type="range" id="brush-size" min="5" max="100" value="30">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>O que fazer na área pintada?</label>
+                            <select id="inpaint-action">
+                                <option value="remove">❌ Remover (preencher com contexto)</option>
+                                <option value="replace">🔄 Substituir por...</option>
+                                <option value="add">➕ Adicionar...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="inpaint-prompt-group">
+                            <label>Descreva o que deseja</label>
+                            <textarea id="inpaint-prompt" placeholder="Ex: óculos escuros, tatuagem de dragão, camiseta vermelha..." rows="2"></textarea>
+                        </div>
+                        
+                        <div class="form-group toggle-group">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="inpaint-quick" checked>
+                                <span class="toggle-switch"></span>
+                                <span>⚡ Modo Rápido</span>
+                            </label>
+                        </div>
+                        
+                        <button class="btn-primary" id="inpaint-btn" disabled>
+                            <span>✨ Aplicar Inpaint</span>
+                        </button>
+                    </div>
+                    
+                    <div class="inpaint-canvas-area">
+                        <div class="canvas-container" id="canvas-container">
+                            <div class="tool-indicator brush" id="tool-indicator">🖌️ Pincel</div>
+                            <canvas id="inpaint-canvas"></canvas>
+                            <canvas id="mask-canvas"></canvas>
+                            <div class="canvas-placeholder" id="canvas-placeholder">
+                                <span>🖼️</span>
+                                <p>Carregue uma imagem para começar</p>
+                            </div>
+                        </div>
+                        
+                        <div class="inpaint-result" id="inpaint-result-container" style="display: none;">
+                            <h3>Resultado</h3>
+                            <div class="result-box" id="inpaint-result">
+                                <span>✨</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Code Tab -->
+            <section class="tab-content" id="tab-code">
+                <div class="code-container">
+                    <div class="code-input-section">
+                        <h2>Code Assistant</h2>
+                        
+                        <div class="form-group">
+                            <label>Language</label>
+                            <select id="code-lang">
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="typescript">TypeScript</option>
+                                <option value="rust">Rust</option>
+                                <option value="go">Go</option>
+                                <option value="java">Java</option>
+                                <option value="kotlin">Kotlin</option>
+                                <option value="swift">Swift</option>
+                                <option value="c++">C++</option>
+                                <option value="sql">SQL</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Request</label>
+                            <textarea id="code-prompt" placeholder="Describe what code you need..." rows="4"></textarea>
+                        </div>
+                        
+                        <button class="btn-primary" id="code-btn">
+                            <span>Generate Code</span>
+                        </button>
+                    </div>
+                    
+                    <div class="code-output-section">
+                        <div class="code-header">
+                            <span>Output</span>
+                            <button class="copy-btn" id="copy-code">📋 Copy</button>
+                        </div>
+                        <pre class="code-output" id="code-output"><code>// Generated code will appear here</code></pre>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-header">
+            <div class="loading-spinner"></div>
+            <p id="loading-text">Processing...</p>
+        </div>
+        <div class="loading-timer-container">
+            <span class="timer-label">⏱️ Tempo decorrido:</span>
+            <span class="timer-value" id="loading-timer">0s</span>
+        </div>
+        <button class="cancel-btn" id="cancel-operation" title="Cancelar operação">
+            ❌ Cancelar
+        </button>
+        <p class="loading-hint">💡 Primeira execução baixa o modelo (~4GB)</p>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
