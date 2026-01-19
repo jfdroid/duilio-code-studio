@@ -1,6 +1,8 @@
 """
-DuilioAI - Stable Diffusion Client
-===================================
+DuilioAI - Stable Diffusion Client v2.0
+========================================
+MAJOR FIX: Improved prompt handling, better defaults, smart detection.
+
 Optimized for Apple Silicon (MPS) with critical fixes for image generation.
 
 SOLID Principles Applied:
@@ -13,15 +15,16 @@ SOLID Principles Applied:
 
 import io
 import gc
+import re
 import base64
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, List, Union, Callable, Protocol
+from typing import Optional, List, Union, Callable, Protocol, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
 import torch
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 from loguru import logger
 
 
@@ -34,14 +37,27 @@ class DeviceType(Enum):
     CPU = "cpu"
 
 
+class OperationType(Enum):
+    """Types of image operations."""
+    GENERATE = "generate"        # txt2img - create from nothing
+    TRANSFORM = "transform"      # img2img - transform entire image
+    INPAINT = "inpaint"         # edit specific area with mask
+    REMOVE = "remove"           # remove object (use inpaint)
+
+
 @dataclass
 class ImageConfig:
     """Configuration for image generation."""
     max_size: int = 512
     min_size: int = 256
-    default_steps: int = 20
+    default_steps: int = 25
     quick_steps: int = 12
     guidance_scale: float = 7.5
+    
+    # Better defaults for different operations
+    edit_guidance: float = 8.0
+    edit_strength: float = 0.65
+    inpaint_guidance: float = 7.5
     
 
 @dataclass
@@ -50,7 +66,128 @@ class GenerationResult:
     images: List[Image.Image]
     seed: Optional[int] = None
     steps_used: int = 0
+    operation: OperationType = OperationType.GENERATE
     
+
+@dataclass
+class PromptAnalysis:
+    """Analysis of user prompt to detect intent."""
+    original: str
+    cleaned: str
+    intent: OperationType
+    suggestions: List[str]
+    warnings: List[str]
+    
+
+# === Prompt Analyzer (Single Responsibility) ===
+
+class PromptAnalyzer:
+    """Analyzes prompts to detect user intent and provide suggestions."""
+    
+    # Patterns that suggest removal/inpaint
+    REMOVAL_PATTERNS = [
+        r'\bremov[ea]\b', r'\bapag[ae]\b', r'\bexclu[ií]\b', r'\btir[ae]\b',
+        r'\bdelete\b', r'\berase\b', r'\bremove\b', r'\btake out\b',
+        r'\belimin[ae]\b', r'\bsem\b.+', r'\bwithout\b',
+    ]
+    
+    # Patterns for adding elements
+    ADDITION_PATTERNS = [
+        r'\badicion[ae]\b', r'\bcoloc[ae]\b', r'\binsir[ae]\b',
+        r'\badd\b', r'\bput\b', r'\bplace\b', r'\binsert\b',
+    ]
+    
+    # Good prompts for img2img (transformation)
+    TRANSFORM_KEYWORDS = [
+        'transform', 'convert', 'change style', 'make it', 'turn into',
+        'como se fosse', 'transforme em', 'converta', 'estilo',
+        'pintura', 'painting', 'cartoon', 'anime', 'realistic',
+        'cyberpunk', 'vintage', 'retro', 'futuristic',
+    ]
+    
+    def analyze(self, prompt: str) -> PromptAnalysis:
+        """Analyze prompt and return recommendations."""
+        prompt_lower = prompt.lower().strip()
+        warnings = []
+        suggestions = []
+        intent = OperationType.TRANSFORM
+        
+        # Check for removal intent
+        for pattern in self.REMOVAL_PATTERNS:
+            if re.search(pattern, prompt_lower):
+                intent = OperationType.REMOVE
+                warnings.append(
+                    "⚠️ Para REMOVER objetos, use a aba INPAINT, não EDIT. "
+                    "EDIT transforma a imagem inteira."
+                )
+                suggestions.append(
+                    "Use INPAINT: pinte a área do objeto e use prompt 'fundo natural' ou 'cenário limpo'"
+                )
+                break
+        
+        # Check for addition intent
+        for pattern in self.ADDITION_PATTERNS:
+            if re.search(pattern, prompt_lower):
+                intent = OperationType.INPAINT
+                suggestions.append(
+                    "Para ADICIONAR elementos específicos, use INPAINT. "
+                    "Pinte a área onde quer adicionar."
+                )
+                break
+        
+        # Check if it's a good transformation prompt
+        has_transform_keywords = any(kw in prompt_lower for kw in self.TRANSFORM_KEYWORDS)
+        
+        if intent == OperationType.TRANSFORM and not has_transform_keywords:
+            suggestions.append(
+                "💡 Dica: EDIT funciona melhor com prompts de estilo/transformação. "
+                "Ex: 'foto realista', 'pintura a óleo', 'estilo anime', 'cyberpunk'"
+            )
+        
+        # Clean prompt for better SD results
+        cleaned = self._clean_prompt(prompt)
+        
+        return PromptAnalysis(
+            original=prompt,
+            cleaned=cleaned,
+            intent=intent,
+            suggestions=suggestions,
+            warnings=warnings
+        )
+    
+    def _clean_prompt(self, prompt: str) -> str:
+        """Clean and enhance prompt for better results."""
+        # Remove common Portuguese phrases that confuse SD
+        cleaned = prompt
+        
+        # These don't help SD understand
+        useless_phrases = [
+            r'por favor\s*', r'please\s*', r'quero que\s*', r'i want\s*',
+            r'gostaria de\s*', r'eu quero\s*', r'poderia\s*', r'could you\s*',
+        ]
+        
+        for phrase in useless_phrases:
+            cleaned = re.sub(phrase, '', cleaned, flags=re.IGNORECASE)
+        
+        return cleaned.strip()
+    
+    def get_better_prompt(self, original: str, operation: OperationType) -> str:
+        """Suggest a better prompt for the operation."""
+        if operation == OperationType.TRANSFORM:
+            # Add quality terms
+            quality_terms = "high quality, detailed, professional photography"
+            return f"{original}, {quality_terms}"
+        
+        elif operation == OperationType.INPAINT:
+            # For inpainting, be more specific about the area
+            return f"{original}, seamless blend, natural lighting, high quality"
+        
+        elif operation == OperationType.REMOVE:
+            # For removal, focus on what should replace
+            return "clean background, natural, seamless, high quality, same lighting"
+        
+        return original
+
 
 # === Interfaces (Interface Segregation) ===
 
@@ -341,6 +478,7 @@ class ImageGenerator:
         self._factory = PipelineFactory(self._device)
         self._processor = DefaultImageProcessor()
         self._config = ImageConfig()
+        self._analyzer = PromptAnalyzer()
         
         logger.info(f"🎨 DuilioAI ImageGenerator initialized (Device: {self._device.device})")
         
@@ -370,13 +508,17 @@ class ImageGenerator:
             logger.error(f"❌ Failed to preload models: {e}")
             raise
     
+    def analyze_prompt(self, prompt: str) -> PromptAnalysis:
+        """Analyze a prompt to check if it's appropriate for the intended operation."""
+        return self._analyzer.analyze(prompt)
+    
     def generate(
         self,
         prompt: str,
-        negative_prompt: str = "blurry, low quality, distorted, ugly",
+        negative_prompt: str = "blurry, low quality, distorted, ugly, deformed",
         width: int = 512,
         height: int = 512,
-        steps: int = 20,
+        steps: int = 25,
         guidance_scale: float = 7.5,
         num_images: int = 1,
         seed: Optional[int] = None,
@@ -392,11 +534,14 @@ class ImageGenerator:
         pipe = self._factory.get_txt2img()
         generator = self._device.create_generator(seed)
         
+        # Enhance prompt
+        enhanced_prompt = f"{prompt}, high quality, detailed"
+        
         logger.info(f"🎨 Generating {width}x{height} image: '{prompt[:50]}...'")
         
         try:
             result = pipe(
-                prompt=prompt,
+                prompt=enhanced_prompt,
                 negative_prompt=negative_prompt,
                 width=width,
                 height=height,
@@ -417,14 +562,27 @@ class ImageGenerator:
         self,
         image: Union[str, Image.Image],
         prompt: str,
-        negative_prompt: str = "blurry, low quality, distorted",
-        strength: float = 0.7,
-        steps: int = 20,
-        guidance_scale: float = 7.5,
+        negative_prompt: str = "blurry, low quality, distorted, ugly, deformed, artifacts, noise",
+        strength: float = 0.65,
+        steps: int = 25,
+        guidance_scale: float = 8.0,
         seed: Optional[int] = None,
         max_size: int = 512,
-    ) -> List[Image.Image]:
-        """Edit entire image based on prompt."""
+    ) -> Tuple[List[Image.Image], PromptAnalysis]:
+        """
+        Edit entire image based on prompt.
+        
+        Returns tuple of (images, analysis) where analysis contains warnings/suggestions.
+        
+        IMPORTANT: This transforms the ENTIRE image. For specific area edits, use inpaint().
+        """
+        
+        # Analyze prompt for potential issues
+        analysis = self._analyzer.analyze(prompt)
+        
+        if analysis.warnings:
+            for warning in analysis.warnings:
+                logger.warning(warning)
         
         # Load and prepare image
         source = self._processor.load(image)
@@ -433,11 +591,16 @@ class ImageGenerator:
         pipe = self._factory.get_img2img()
         generator = self._device.create_generator(seed)
         
+        # Use cleaned/enhanced prompt
+        enhanced_prompt = self._analyzer.get_better_prompt(prompt, OperationType.TRANSFORM)
+        
         logger.info(f"✏️ Editing {source.size} image: '{prompt[:50]}...'")
+        logger.info(f"   Enhanced prompt: '{enhanced_prompt[:70]}...'")
+        logger.info(f"   Strength: {strength}, Steps: {steps}, Guidance: {guidance_scale}")
         
         try:
             result = pipe(
-                prompt=prompt,
+                prompt=enhanced_prompt,
                 image=source,
                 negative_prompt=negative_prompt,
                 strength=strength,
@@ -447,7 +610,7 @@ class ImageGenerator:
             )
             
             logger.info(f"✅ Edit complete")
-            return result.images
+            return result.images, analysis
             
         except Exception as e:
             logger.error(f"❌ Edit failed: {e}")
@@ -458,13 +621,22 @@ class ImageGenerator:
         image: Union[str, Image.Image],
         mask: Union[str, Image.Image],
         prompt: str,
-        negative_prompt: str = "blurry, low quality, distorted",
-        steps: int = 20,
+        negative_prompt: str = "blurry, low quality, distorted, ugly, deformed",
+        steps: int = 25,
         guidance_scale: float = 7.5,
         seed: Optional[int] = None,
         max_size: int = 512,
     ) -> List[Image.Image]:
-        """Edit specific area of image using mask."""
+        """
+        Edit specific area of image using mask.
+        
+        This is the correct method for:
+        - Removing objects (prompt: "clean background, natural")
+        - Adding elements (prompt: describe what to add)
+        - Changing specific parts (prompt: describe the change)
+        
+        Mask: white = area to edit, black = area to keep
+        """
         
         # Load and prepare images
         source = self._processor.load(image)
@@ -473,14 +645,22 @@ class ImageGenerator:
         source = self._processor.prepare(source, max_size)
         mask_img = mask_img.resize(source.size, Image.Resampling.LANCZOS)
         
+        # Enhance mask - ensure clean edges
+        # Apply slight blur to mask edges for better blending
+        mask_img = mask_img.filter(ImageFilter.GaussianBlur(radius=2))
+        
         pipe = self._factory.get_inpaint()
         generator = self._device.create_generator(seed)
         
+        # Enhance prompt for inpainting
+        enhanced_prompt = self._analyzer.get_better_prompt(prompt, OperationType.INPAINT)
+        
         logger.info(f"🖌️ Inpainting {source.size}: '{prompt[:50]}...'")
+        logger.info(f"   Enhanced: '{enhanced_prompt[:70]}...'")
         
         try:
             result = pipe(
-                prompt=prompt,
+                prompt=enhanced_prompt,
                 image=source,
                 mask_image=mask_img,
                 negative_prompt=negative_prompt,
@@ -501,7 +681,7 @@ class ImageGenerator:
         image: Union[str, Image.Image],
         prompt: str,
         strength: float = 0.5,
-    ) -> List[Image.Image]:
+    ) -> Tuple[List[Image.Image], PromptAnalysis]:
         """Quick edit with reduced quality for preview."""
         return self.edit(
             image=image,
@@ -547,7 +727,7 @@ def generate(prompt: str, **kwargs) -> List[Image.Image]:
     return get_generator().generate(prompt, **kwargs)
 
 
-def edit(image, prompt: str, **kwargs) -> List[Image.Image]:
+def edit(image, prompt: str, **kwargs) -> Tuple[List[Image.Image], PromptAnalysis]:
     """Edit image with prompt."""
     return get_generator().edit(image, prompt, **kwargs)
 

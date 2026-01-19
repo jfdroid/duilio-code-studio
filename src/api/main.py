@@ -1,7 +1,9 @@
 """
-DuilioAI - FastAPI Server
-=========================
+DuilioAI - FastAPI Server v2.0
+==============================
 Unified API for chat, code and image generation.
+
+MAJOR UPDATE: Added prompt analysis, better error handling, and user feedback.
 
 100% Local - No restrictions - Optimized for Apple Silicon
 """
@@ -30,7 +32,8 @@ try:
     from src.image_gen.sd_client import (
         ImageGenerator, 
         image_to_base64, 
-        base64_to_image
+        base64_to_image,
+        OperationType,
     )
     IMAGE_GEN_AVAILABLE = True
 except ImportError as e:
@@ -56,10 +59,10 @@ class ChatResponse(BaseModel):
 
 class GenerateImageRequest(BaseModel):
     prompt: str
-    negative_prompt: str = "blurry, low quality, distorted, ugly"
+    negative_prompt: str = "blurry, low quality, distorted, ugly, deformed"
     width: int = Field(default=512, ge=256, le=512)
     height: int = Field(default=512, ge=256, le=512)
-    steps: int = Field(default=20, ge=5, le=50)
+    steps: int = Field(default=25, ge=5, le=50)
     guidance_scale: float = Field(default=7.5, ge=1.0, le=20.0)
     num_images: int = Field(default=1, ge=1, le=2)
     seed: Optional[int] = None
@@ -68,9 +71,10 @@ class GenerateImageRequest(BaseModel):
 class EditImageRequest(BaseModel):
     image: str  # Base64
     prompt: str
-    negative_prompt: str = "blurry, low quality, distorted"
-    strength: float = Field(default=0.7, ge=0.1, le=1.0)
-    steps: int = Field(default=20, ge=5, le=50)
+    negative_prompt: str = "blurry, low quality, distorted, ugly, deformed, artifacts"
+    strength: float = Field(default=0.65, ge=0.1, le=1.0)
+    steps: int = Field(default=25, ge=5, le=50)
+    guidance_scale: float = Field(default=8.0, ge=1.0, le=20.0)
     seed: Optional[int] = None
     quick: bool = False
 
@@ -79,14 +83,31 @@ class InpaintRequest(BaseModel):
     image: str  # Base64
     mask: str   # Base64 (white = edit, black = keep)
     prompt: str
-    negative_prompt: str = "blurry, low quality, distorted"
-    steps: int = Field(default=20, ge=5, le=50)
+    negative_prompt: str = "blurry, low quality, distorted, ugly, deformed"
+    steps: int = Field(default=25, ge=5, le=50)
+    guidance_scale: float = Field(default=7.5, ge=1.0, le=20.0)
     seed: Optional[int] = None
+
+
+class AnalyzePromptRequest(BaseModel):
+    prompt: str
+    operation: str = "edit"  # edit, inpaint, generate
 
 
 class ImageResponse(BaseModel):
     images: List[str]  # Base64 encoded
     seed: Optional[int] = None
+    warnings: List[str] = []
+    suggestions: List[str] = []
+
+
+class AnalysisResponse(BaseModel):
+    original_prompt: str
+    cleaned_prompt: str
+    detected_intent: str
+    warnings: List[str]
+    suggestions: List[str]
+    is_appropriate: bool
 
 
 # === Global State ===
@@ -273,6 +294,40 @@ def _check_image_gen():
         )
 
 
+@app.post("/api/image/analyze", response_model=AnalysisResponse)
+async def analyze_prompt(request: AnalyzePromptRequest):
+    """
+    Analyze a prompt to check if it's appropriate for the intended operation.
+    
+    This helps users understand what works best for each operation:
+    - generate: Create images from scratch
+    - edit: Transform entire image (style, color, etc)
+    - inpaint: Edit specific areas (remove/add objects)
+    """
+    _check_image_gen()
+    
+    analysis = image_generator.analyze_prompt(request.prompt)
+    
+    # Check if appropriate for intended operation
+    intent_map = {
+        "edit": OperationType.TRANSFORM,
+        "inpaint": OperationType.INPAINT,
+        "generate": OperationType.GENERATE,
+    }
+    
+    intended = intent_map.get(request.operation, OperationType.TRANSFORM)
+    is_appropriate = analysis.intent == intended or analysis.intent == OperationType.TRANSFORM
+    
+    return AnalysisResponse(
+        original_prompt=analysis.original,
+        cleaned_prompt=analysis.cleaned,
+        detected_intent=analysis.intent.value,
+        warnings=analysis.warnings,
+        suggestions=analysis.suggestions,
+        is_appropriate=is_appropriate
+    )
+
+
 @app.post("/api/image/generate", response_model=ImageResponse)
 async def generate_image(request: GenerateImageRequest):
     """Generate image from text prompt."""
@@ -303,7 +358,17 @@ async def generate_image(request: GenerateImageRequest):
 
 @app.post("/api/image/edit", response_model=ImageResponse)
 async def edit_image(request: EditImageRequest):
-    """Edit existing image with prompt."""
+    """
+    Edit existing image with prompt.
+    
+    IMPORTANT: This transforms the ENTIRE image based on the prompt.
+    For removing/adding specific objects, use /api/image/inpaint instead.
+    
+    Best prompts for edit:
+    - Style changes: "oil painting", "anime style", "cyberpunk"
+    - Color changes: "sunset lighting", "black and white", "vibrant colors"
+    - Scene changes: "snowy landscape", "underwater scene"
+    """
     _check_image_gen()
     
     try:
@@ -312,25 +377,28 @@ async def edit_image(request: EditImageRequest):
         source_image = base64_to_image(request.image)
         
         if request.quick:
-            images = image_generator.quick_edit(
+            images, analysis = image_generator.quick_edit(
                 image=source_image,
                 prompt=request.prompt,
                 strength=request.strength
             )
         else:
-            images = image_generator.edit(
+            images, analysis = image_generator.edit(
                 image=source_image,
                 prompt=request.prompt,
                 negative_prompt=request.negative_prompt,
                 strength=request.strength,
                 steps=request.steps,
+                guidance_scale=request.guidance_scale,
                 seed=request.seed,
                 max_size=512
             )
         
         return ImageResponse(
             images=[image_to_base64(img) for img in images],
-            seed=request.seed
+            seed=request.seed,
+            warnings=analysis.warnings,
+            suggestions=analysis.suggestions
         )
     except Exception as e:
         logger.error(f"Edit error: {e}")
@@ -341,8 +409,15 @@ async def edit_image(request: EditImageRequest):
 async def inpaint_image(request: InpaintRequest):
     """
     Inpaint: edit specific area of image using mask.
-    - White in mask = area to edit
-    - Black in mask = area to keep
+    
+    This is the correct method for:
+    - REMOVING objects: prompt = "clean background, natural, seamless"
+    - ADDING elements: prompt = describe what to add
+    - CHANGING specific parts: prompt = describe the change
+    
+    Mask format:
+    - White pixels = area to edit
+    - Black pixels = area to keep unchanged
     """
     _check_image_gen()
     
@@ -358,6 +433,7 @@ async def inpaint_image(request: InpaintRequest):
             prompt=request.prompt,
             negative_prompt=request.negative_prompt,
             steps=request.steps,
+            guidance_scale=request.guidance_scale,
             seed=request.seed,
             max_size=512
         )

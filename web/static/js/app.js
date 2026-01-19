@@ -1,5 +1,7 @@
 /**
- * Local AI Studio - Frontend Application
+ * DuilioAI Studio - Frontend Application v2.0
+ * 
+ * MAJOR UPDATE: Smart prompt detection, better user feedback, improved UX
  */
 
 const API_BASE = '';
@@ -39,6 +41,10 @@ const elements = {
     editOriginal: document.getElementById('edit-original'),
     editResult: document.getElementById('edit-result'),
     editBtn: document.getElementById('edit-btn'),
+    editAlert: document.getElementById('edit-alert'),
+    editAlertText: document.getElementById('edit-alert-text'),
+    editSuggestions: document.getElementById('edit-suggestions'),
+    editSuggestionsList: document.getElementById('edit-suggestions-list'),
     
     // Code
     codeLang: document.getElementById('code-lang'),
@@ -54,6 +60,13 @@ let loadingStartTime = null;
 
 // === Abort Controller for cancellation ===
 let currentAbortController = null;
+
+// === Prompt Analysis Patterns ===
+const REMOVAL_PATTERNS = [
+    /\bremov[ea]\b/i, /\bapag[ae]\b/i, /\bexclu[ií]\b/i, /\btir[ae]\b/i,
+    /\bdelete\b/i, /\berase\b/i, /\bremove\b/i, /\btake out\b/i,
+    /\belimin[ae]\b/i, /\bsem\s+\w+/i, /\bwithout\b/i,
+];
 
 // === Utility Functions ===
 
@@ -85,7 +98,7 @@ function updateLoadingTimer() {
     }
 }
 
-function showLoading(text = 'Processing...') {
+function showLoading(text = 'Processando...') {
     elements.loadingText.textContent = text;
     elements.loading.classList.add('active');
     
@@ -141,6 +154,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cancelBtn) {
         cancelBtn.addEventListener('click', cancelOperation);
     }
+    
+    // Setup "Go to Inpaint" button
+    const goToInpaint = document.getElementById('go-to-inpaint');
+    if (goToInpaint) {
+        goToInpaint.addEventListener('click', () => {
+            // Switch to inpaint tab
+            document.querySelector('[data-tab="inpaint"]').click();
+            // Hide alert
+            if (elements.editAlert) {
+                elements.editAlert.style.display = 'none';
+            }
+        });
+    }
+    
+    // Setup example prompt buttons
+    document.querySelectorAll('.example-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const prompt = btn.dataset.prompt;
+            if (elements.editPrompt) {
+                elements.editPrompt.value = prompt;
+                // Clear any warnings since this is a good prompt
+                if (elements.editAlert) {
+                    elements.editAlert.style.display = 'none';
+                }
+            }
+        });
+    });
 });
 
 function setStatus(text, type = 'ready') {
@@ -200,6 +240,42 @@ function formatMessage(text) {
         .replace(/\n/g, '<br>');
 }
 
+/**
+ * Check if prompt suggests removal intent (should use inpaint instead of edit)
+ */
+function checkRemovalIntent(prompt) {
+    return REMOVAL_PATTERNS.some(pattern => pattern.test(prompt));
+}
+
+/**
+ * Show warning when user tries to use EDIT for removal
+ */
+function showEditWarning(message) {
+    if (elements.editAlert && elements.editAlertText) {
+        elements.editAlertText.textContent = message;
+        elements.editAlert.style.display = 'flex';
+    }
+}
+
+/**
+ * Hide edit warning
+ */
+function hideEditWarning() {
+    if (elements.editAlert) {
+        elements.editAlert.style.display = 'none';
+    }
+}
+
+/**
+ * Show suggestions after edit
+ */
+function showEditSuggestions(suggestions) {
+    if (elements.editSuggestions && elements.editSuggestionsList && suggestions.length > 0) {
+        elements.editSuggestionsList.innerHTML = suggestions.map(s => `<li>${s}</li>`).join('');
+        elements.editSuggestions.style.display = 'block';
+    }
+}
+
 // === Tab Navigation ===
 
 document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -241,7 +317,7 @@ async function sendChatMessage() {
     elements.chatInput.value = '';
     elements.chatInput.style.height = 'auto';
     
-    setStatus('Thinking...', 'busy');
+    setStatus('Pensando...', 'busy');
     
     try {
         const response = await apiRequest('/api/chat', {
@@ -253,10 +329,10 @@ async function sendChatMessage() {
         });
         
         addMessage(response.response, 'assistant');
-        setStatus('Ready');
+        setStatus('Pronto');
     } catch (error) {
-        addMessage(`Error: ${error.message}`, 'assistant');
-        setStatus('Error', 'error');
+        addMessage(`Erro: ${error.message}`, 'assistant');
+        setStatus('Erro', 'error');
     }
 }
 
@@ -290,22 +366,35 @@ elements.editStrength.addEventListener('input', (e) => {
     document.getElementById('strength-val').textContent = e.target.value;
 });
 
+// Check prompt on input for edit tab
+elements.editPrompt.addEventListener('input', (e) => {
+    const prompt = e.target.value;
+    if (checkRemovalIntent(prompt)) {
+        showEditWarning(
+            'Parece que você quer REMOVER algo. A aba EDIT transforma a imagem inteira. ' +
+            'Para remover objetos específicos, use a aba INPAINT.'
+        );
+    } else {
+        hideEditWarning();
+    }
+});
+
 elements.generateBtn.addEventListener('click', async () => {
     const prompt = elements.genPrompt.value.trim();
     if (!prompt) {
-        alert('Please enter a prompt');
+        alert('Por favor, descreva a imagem que quer gerar');
         return;
     }
     
-    showLoading('Generating image...');
-    setStatus('Generating...', 'busy');
+    showLoading('Gerando imagem do zero...');
+    setStatus('Gerando...', 'busy');
     
     try {
         const response = await apiRequest('/api/image/generate', {
             method: 'POST',
             body: JSON.stringify({
                 prompt,
-                negative_prompt: elements.genNegative.value,
+                negative_prompt: elements.genNegative.value || 'blurry, low quality, distorted, ugly, deformed',
                 width: parseInt(elements.genWidth.value),
                 height: parseInt(elements.genHeight.value),
                 steps: parseInt(elements.genSteps.value),
@@ -316,10 +405,10 @@ elements.generateBtn.addEventListener('click', async () => {
         
         // Display image
         elements.genPreview.innerHTML = `<img src="data:image/png;base64,${response.images[0]}" alt="Generated">`;
-        setStatus('Ready');
+        setStatus('Pronto');
     } catch (error) {
-        alert(`Generation failed: ${error.message}`);
-        setStatus('Error', 'error');
+        alert(`Falha na geração: ${error.message}`);
+        setStatus('Erro', 'error');
     } finally {
         hideLoading();
     }
@@ -365,7 +454,7 @@ function handleImageUpload(file) {
         elements.editOriginal.innerHTML = `<img src="${e.target.result}" alt="Original">`;
         elements.uploadArea.innerHTML = `
             <span class="upload-icon">✅</span>
-            <p>Image loaded! Click to change</p>
+            <p>Imagem carregada! Clique para trocar</p>
         `;
     };
     reader.readAsDataURL(file);
@@ -379,15 +468,33 @@ elements.editBtn.addEventListener('click', async () => {
     
     const prompt = elements.editPrompt.value.trim();
     if (!prompt) {
-        alert('Descreva o que você quer alterar na imagem');
+        alert('Descreva a transformação que deseja aplicar');
         return;
     }
     
-    const isQuick = document.getElementById('edit-quick').checked;
-    const mode = isQuick ? 'rápido' : 'normal';
+    // Warn if prompt looks like removal
+    if (checkRemovalIntent(prompt)) {
+        const proceed = confirm(
+            '⚠️ Seu prompt parece pedir uma REMOÇÃO.\n\n' +
+            'A aba EDIT transforma a imagem INTEIRA, não remove objetos específicos.\n\n' +
+            'Para remover objetos, use a aba INPAINT.\n\n' +
+            'Deseja continuar mesmo assim com EDIT?'
+        );
+        if (!proceed) {
+            return;
+        }
+    }
     
-    showLoading(`Editando imagem (modo ${mode})...`);
-    setStatus('Editando...', 'busy');
+    const isQuick = document.getElementById('edit-quick').checked;
+    const mode = isQuick ? 'rápido' : 'completo';
+    
+    showLoading(`Transformando imagem (modo ${mode})...`);
+    setStatus('Transformando...', 'busy');
+    
+    // Hide any previous suggestions
+    if (elements.editSuggestions) {
+        elements.editSuggestions.style.display = 'none';
+    }
     
     try {
         const response = await apiRequest('/api/image/edit', {
@@ -396,11 +503,22 @@ elements.editBtn.addEventListener('click', async () => {
                 image: uploadedImage,
                 prompt,
                 strength: parseFloat(elements.editStrength.value),
+                steps: isQuick ? 15 : 25,
                 quick: isQuick,
             }),
         });
         
         elements.editResult.innerHTML = `<img src="data:image/png;base64,${response.images[0]}" alt="Resultado">`;
+        
+        // Show warnings and suggestions if any
+        if (response.warnings && response.warnings.length > 0) {
+            response.warnings.forEach(w => console.warn(w));
+        }
+        
+        if (response.suggestions && response.suggestions.length > 0) {
+            showEditSuggestions(response.suggestions);
+        }
+        
         setStatus('Pronto');
     } catch (error) {
         alert(`Erro na edição: ${error.message}`);
@@ -446,9 +564,9 @@ elements.codeBtn.addEventListener('click', async () => {
 elements.copyCode.addEventListener('click', () => {
     const code = elements.codeOutput.textContent;
     navigator.clipboard.writeText(code).then(() => {
-        elements.copyCode.textContent = '✓ Copied!';
+        elements.copyCode.textContent = '✓ Copiado!';
         setTimeout(() => {
-            elements.copyCode.textContent = '📋 Copy';
+            elements.copyCode.textContent = '📋 Copiar';
         }, 2000);
     });
 });
@@ -528,8 +646,9 @@ function initInpaint() {
         document.getElementById('brush-size-val').textContent = inpaint.brushSize;
     });
     
-    // Action change
-    document.getElementById('inpaint-action')?.addEventListener('change', (e) => {
+    // Action change - show/hide prompt based on action
+    const actionSelect = document.getElementById('inpaint-action');
+    actionSelect?.addEventListener('change', (e) => {
         const promptGroup = document.getElementById('inpaint-prompt-group');
         const promptInput = document.getElementById('inpaint-prompt');
         
@@ -538,7 +657,7 @@ function initInpaint() {
         } else {
             promptGroup.style.display = 'block';
             promptInput.placeholder = e.target.value === 'add' 
-                ? 'Ex: tatuagem de dragão, óculos escuros, brinco...'
+                ? 'Ex: tatuagem de dragão, óculos escuros, brinco de ouro...'
                 : 'Ex: camiseta vermelha, cabelo loiro, fundo de praia...';
         }
     });
@@ -641,6 +760,7 @@ function updateCursorCanvas(x, y) {
     if (inpaint.tool === 'brush') {
         ctx.strokeStyle = 'rgba(99, 102, 241, 0.8)';
         ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
+        ctx.setLineDash([]);
     } else {
         // Eraser - show red dashed circle
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
@@ -792,7 +912,7 @@ async function applyInpaint() {
     
     let prompt = '';
     if (action === 'remove') {
-        prompt = 'clean background, natural, seamless, high quality';
+        prompt = 'clean background, natural, seamless, high quality, same lighting, context aware fill';
     } else {
         prompt = promptInput.value.trim();
         if (!prompt) {
@@ -801,11 +921,27 @@ async function applyInpaint() {
         }
     }
     
+    // Check if mask has any content
+    const maskData = inpaint.maskCtx.getImageData(0, 0, inpaint.maskCanvas.width, inpaint.maskCanvas.height);
+    let hasMask = false;
+    for (let i = 3; i < maskData.data.length; i += 4) {
+        if (maskData.data[i] > 0) {
+            hasMask = true;
+            break;
+        }
+    }
+    
+    if (!hasMask) {
+        alert('⚠️ Você precisa pintar a área que deseja editar!\n\nUse o pincel para marcar a região da imagem.');
+        return;
+    }
+    
     // Get image as base64
     const imageBase64 = inpaint.canvas.toDataURL('image/png').split(',')[1];
     const maskBase64 = getMaskAsBase64();
     
-    showLoading('Aplicando inpaint...');
+    const actionText = action === 'remove' ? 'Removendo' : action === 'add' ? 'Adicionando' : 'Substituindo';
+    showLoading(`${actionText} na área selecionada...`);
     setStatus('Processando...', 'busy');
     
     try {
@@ -815,7 +951,7 @@ async function applyInpaint() {
                 image: imageBase64,
                 mask: maskBase64,
                 prompt: prompt,
-                steps: isQuick ? 10 : 15,
+                steps: isQuick ? 15 : 25,
             }),
         });
         

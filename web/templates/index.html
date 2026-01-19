@@ -64,7 +64,7 @@
                     <div class="chat-messages" id="chat-messages">
                         <div class="message assistant">
                             <div class="message-content">
-                                <p>👋 Hello! I'm your local AI assistant. Ask me anything - no restrictions, full privacy.</p>
+                                <p>👋 Olá! Sou seu assistente de IA local. Pergunte qualquer coisa - sem restrições, privacidade total.</p>
                             </div>
                         </div>
                     </div>
@@ -72,11 +72,11 @@
                     <div class="chat-input-container">
                         <textarea 
                             id="chat-input" 
-                            placeholder="Type your message... (Shift+Enter for new line)"
+                            placeholder="Digite sua mensagem... (Shift+Enter para nova linha)"
                             rows="1"
                         ></textarea>
                         <button class="send-btn" id="chat-send">
-                            <span>Send</span>
+                            <span>Enviar</span>
                             <span class="send-icon">➤</span>
                         </button>
                     </div>
@@ -87,7 +87,7 @@
             <section class="tab-content" id="tab-generate">
                 <div class="generate-container">
                     <div class="generate-form">
-                        <h2>Generate Image</h2>
+                        <h2>🎨 Gerar Imagem</h2>
                         
                         <div class="model-info-badge">
                             <span class="model-icon">🧠</span>
@@ -97,31 +97,36 @@
                             </div>
                         </div>
                         
+                        <div class="feature-tip">
+                            <strong>💡 GENERATE:</strong> Cria imagens do zero a partir de texto.<br>
+                            <em>Ex: "foto realista de um gato laranja usando óculos"</em>
+                        </div>
+                        
                         <div class="form-group">
                             <label>Prompt</label>
-                            <textarea id="gen-prompt" placeholder="Describe the image you want to create..." rows="3"></textarea>
+                            <textarea id="gen-prompt" placeholder="Descreva a imagem que quer criar..." rows="3"></textarea>
                         </div>
                         
                         <div class="form-group">
                             <label>Negative Prompt</label>
-                            <input type="text" id="gen-negative" placeholder="What to avoid (blur, low quality, etc.)">
+                            <input type="text" id="gen-negative" value="blurry, low quality, distorted, ugly, deformed" placeholder="O que evitar (blur, baixa qualidade, etc.)">
                         </div>
                         
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Width</label>
-                                <input type="number" id="gen-width" value="512" min="256" max="2048" step="64">
+                                <label>Largura</label>
+                                <input type="number" id="gen-width" value="512" min="256" max="512" step="64">
                             </div>
                             <div class="form-group">
-                                <label>Height</label>
-                                <input type="number" id="gen-height" value="512" min="256" max="2048" step="64">
+                                <label>Altura</label>
+                                <input type="number" id="gen-height" value="512" min="256" max="512" step="64">
                             </div>
                         </div>
                         
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Steps: <span id="steps-val">25</span></label>
-                                <input type="range" id="gen-steps" min="1" max="100" value="25">
+                                <input type="range" id="gen-steps" min="10" max="50" value="25">
                             </div>
                             <div class="form-group">
                                 <label>Guidance: <span id="guidance-val">7.5</span></label>
@@ -130,19 +135,19 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Seed (optional)</label>
-                            <input type="number" id="gen-seed" placeholder="Random">
+                            <label>Seed (opcional - para reproduzir)</label>
+                            <input type="number" id="gen-seed" placeholder="Aleatório">
                         </div>
                         
                         <button class="btn-primary" id="generate-btn">
-                            <span>Generate Image</span>
+                            <span>🎨 Gerar Imagem</span>
                         </button>
                     </div>
                     
                     <div class="generate-preview">
                         <div class="preview-placeholder" id="gen-preview">
                             <span>🖼️</span>
-                            <p>Generated image will appear here</p>
+                            <p>Imagem gerada aparecerá aqui</p>
                         </div>
                     </div>
                 </div>
@@ -152,13 +157,31 @@
             <section class="tab-content" id="tab-edit">
                 <div class="edit-container">
                     <div class="edit-panel">
-                        <h2>Editar Imagem</h2>
+                        <h2>✏️ Transformar Imagem</h2>
                         
                         <div class="model-info-badge">
                             <span class="model-icon">🧠</span>
                             <div class="model-details">
                                 <span class="model-name">Stable Diffusion v1.5</span>
                                 <span class="model-type">Image-to-Image • float32 • MPS</span>
+                            </div>
+                        </div>
+                        
+                        <!-- IMPORTANT: Usage guidance -->
+                        <div class="feature-tip">
+                            <strong>💡 EDIT transforma a imagem INTEIRA:</strong><br>
+                            ✅ Mudar estilo: "pintura a óleo", "anime", "cyberpunk"<br>
+                            ✅ Mudar cores: "tons quentes", "preto e branco"<br>
+                            ✅ Mudar cenário: "neve", "pôr do sol"<br>
+                            <span class="tip-warning">⚠️ Para REMOVER objetos, use a aba <strong>INPAINT</strong>!</span>
+                        </div>
+                        
+                        <!-- Alert box for warnings -->
+                        <div class="alert-box warning" id="edit-alert" style="display: none;">
+                            <span class="alert-icon">⚠️</span>
+                            <div class="alert-content">
+                                <p class="alert-text" id="edit-alert-text"></p>
+                                <button class="alert-action" id="go-to-inpaint">Ir para Inpaint →</button>
                             </div>
                         </div>
                         
@@ -169,34 +192,44 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>O que você quer alterar?</label>
-                            <textarea id="edit-prompt" placeholder="Ex: adicionar óculos escuros, mudar cor do cabelo para loiro, remover fundo..." rows="3"></textarea>
+                            <label>Descreva a transformação desejada</label>
+                            <textarea id="edit-prompt" placeholder="Ex: transforme em pintura a óleo, adicione efeito cyberpunk, mude para estilo anime, aplique filtro vintage..." rows="3"></textarea>
+                            <div class="prompt-examples">
+                                <span class="example-label">Exemplos:</span>
+                                <button class="example-btn" data-prompt="oil painting style, artistic, detailed brush strokes">🎨 Pintura a óleo</button>
+                                <button class="example-btn" data-prompt="anime style, vibrant colors, manga aesthetic">🎌 Anime</button>
+                                <button class="example-btn" data-prompt="cyberpunk neon city, futuristic, purple and blue lights">🌃 Cyberpunk</button>
+                                <button class="example-btn" data-prompt="vintage photo, sepia tones, old film grain">📷 Vintage</button>
+                            </div>
                         </div>
                         
                         <div class="form-group">
                             <label>
-                                Intensidade da mudança: <span id="strength-val">0.7</span>
-                                <span class="hint">(?)</span>
+                                Intensidade da mudança: <span id="strength-val">0.65</span>
+                                <span class="hint" title="Quanto maior, mais diferente do original">(?)</span>
                             </label>
-                            <input type="range" id="edit-strength" min="0.1" max="1" value="0.7" step="0.05">
+                            <input type="range" id="edit-strength" min="0.3" max="0.9" value="0.65" step="0.05">
                             <div class="strength-hints">
-                                <span>Sutil</span>
-                                <span>Moderado</span>
-                                <span>Intenso</span>
+                                <span>Sutil (0.3)</span>
+                                <span>Moderado (0.6)</span>
+                                <span>Intenso (0.9)</span>
                             </div>
+                            <p class="input-hint">
+                                💡 <strong>Dica:</strong> Para mudanças de estilo, use 0.5-0.7. Para transformações intensas, use 0.7-0.9.
+                            </p>
                         </div>
                         
                         <div class="form-group toggle-group">
                             <label class="toggle-label">
-                                <input type="checkbox" id="edit-quick" checked>
+                                <input type="checkbox" id="edit-quick">
                                 <span class="toggle-switch"></span>
                                 <span>⚡ Modo Rápido</span>
                             </label>
-                            <span class="toggle-hint">Mais rápido (~30s), qualidade boa</span>
+                            <span class="toggle-hint">Menos steps (~15s), boa qualidade</span>
                         </div>
                         
                         <button class="btn-primary" id="edit-btn">
-                            <span>✨ Aplicar Edição</span>
+                            <span>✨ Aplicar Transformação</span>
                         </button>
                     </div>
                     
@@ -208,9 +241,14 @@
                             </div>
                         </div>
                         <div class="preview-side">
-                            <h3>Result</h3>
+                            <h3>Resultado</h3>
                             <div class="preview-box" id="edit-result">
                                 <span>✨</span>
+                            </div>
+                            <!-- Suggestions display -->
+                            <div class="suggestions-box" id="edit-suggestions" style="display: none;">
+                                <p class="suggestions-title">💡 Sugestões:</p>
+                                <ul id="edit-suggestions-list"></ul>
                             </div>
                         </div>
                     </div>
@@ -221,7 +259,7 @@
             <section class="tab-content" id="tab-inpaint">
                 <div class="inpaint-container">
                     <div class="inpaint-panel">
-                        <h2>🖌️ Inpaint</h2>
+                        <h2>🖌️ Inpaint (Edição Precisa)</h2>
                         
                         <div class="model-info-badge">
                             <span class="model-icon">🧠</span>
@@ -231,7 +269,14 @@
                             </div>
                         </div>
                         
-                        <p class="inpaint-desc">Pinte sobre a área que deseja editar</p>
+                        <!-- IMPORTANT: What inpaint does -->
+                        <div class="feature-tip success">
+                            <strong>✅ INPAINT é para edições ESPECÍFICAS:</strong><br>
+                            🗑️ <strong>Remover:</strong> objetos, pessoas, elementos<br>
+                            ➕ <strong>Adicionar:</strong> óculos, tatuagens, acessórios<br>
+                            🔄 <strong>Substituir:</strong> roupas, cabelo, fundo<br>
+                            <em>Pinte a área exata que quer editar!</em>
+                        </div>
                         
                         <div class="inpaint-upload" id="inpaint-upload">
                             <input type="file" id="inpaint-file" accept="image/*" hidden>
@@ -244,16 +289,19 @@
                                 <button class="tool-btn active" id="tool-brush" title="Pincel - Marcar área para edição">
                                     🖌️ Pincel
                                 </button>
-                                <button class="tool-btn" id="tool-eraser" title="Borracha - Remover marcação">
+                                <button class="tool-btn eraser" id="tool-eraser" title="Borracha - Remover marcação">
                                     🧹 Borracha
                                 </button>
                                 <button class="tool-btn" id="tool-clear" title="Limpar tudo">
                                     🗑️ Limpar
                                 </button>
                             </div>
+                            <div class="tool-indicator brush" id="tool-indicator">
+                                🖌️ Pincel - Marcar área
+                            </div>
                             <p class="tool-help">
-                                <strong>🖌️ Pincel:</strong> Pinte a área que deseja editar (roxo)<br>
-                                <strong>🧹 Borracha:</strong> Remova marcações erradas (cursor vermelho)
+                                <strong>🖌️ Pincel:</strong> Pinte sobre o que quer editar<br>
+                                <strong>🧹 Borracha:</strong> Corrija erros na marcação
                             </p>
                             
                             <div class="form-group">
@@ -265,13 +313,13 @@
                         <div class="form-group">
                             <label>O que fazer na área pintada?</label>
                             <select id="inpaint-action">
-                                <option value="remove">❌ Remover (preencher com contexto)</option>
-                                <option value="replace">🔄 Substituir por...</option>
-                                <option value="add">➕ Adicionar...</option>
+                                <option value="remove">❌ Remover (preencher com contexto natural)</option>
+                                <option value="replace">🔄 Substituir por algo específico</option>
+                                <option value="add">➕ Adicionar elemento novo</option>
                             </select>
                         </div>
                         
-                        <div class="form-group" id="inpaint-prompt-group">
+                        <div class="form-group" id="inpaint-prompt-group" style="display: none;">
                             <label>Descreva o que deseja</label>
                             <textarea id="inpaint-prompt" placeholder="Ex: óculos escuros, tatuagem de dragão, camiseta vermelha..." rows="2"></textarea>
                         </div>
@@ -282,6 +330,7 @@
                                 <span class="toggle-switch"></span>
                                 <span>⚡ Modo Rápido</span>
                             </label>
+                            <span class="toggle-hint">~20 segundos</span>
                         </div>
                         
                         <button class="btn-primary" id="inpaint-btn" disabled>
@@ -291,7 +340,6 @@
                     
                     <div class="inpaint-canvas-area">
                         <div class="canvas-container" id="canvas-container">
-                            <div class="tool-indicator brush" id="tool-indicator">🖌️ Pincel</div>
                             <canvas id="inpaint-canvas"></canvas>
                             <canvas id="mask-canvas"></canvas>
                             <div class="canvas-placeholder" id="canvas-placeholder">
@@ -314,40 +362,40 @@
             <section class="tab-content" id="tab-code">
                 <div class="code-container">
                     <div class="code-input-section">
-                        <h2>Code Assistant</h2>
+                        <h2>💻 Assistente de Código</h2>
                         
                         <div class="form-group">
-                            <label>Language</label>
+                            <label>Linguagem</label>
                             <select id="code-lang">
                                 <option value="python">Python</option>
                                 <option value="javascript">JavaScript</option>
                                 <option value="typescript">TypeScript</option>
+                                <option value="kotlin">Kotlin</option>
+                                <option value="java">Java</option>
+                                <option value="swift">Swift</option>
                                 <option value="rust">Rust</option>
                                 <option value="go">Go</option>
-                                <option value="java">Java</option>
-                                <option value="kotlin">Kotlin</option>
-                                <option value="swift">Swift</option>
                                 <option value="c++">C++</option>
                                 <option value="sql">SQL</option>
                             </select>
                         </div>
                         
                         <div class="form-group">
-                            <label>Request</label>
-                            <textarea id="code-prompt" placeholder="Describe what code you need..." rows="4"></textarea>
+                            <label>O que você precisa?</label>
+                            <textarea id="code-prompt" placeholder="Descreva o código que você precisa..." rows="4"></textarea>
                         </div>
                         
                         <button class="btn-primary" id="code-btn">
-                            <span>Generate Code</span>
+                            <span>⚡ Gerar Código</span>
                         </button>
                     </div>
                     
                     <div class="code-output-section">
                         <div class="code-header">
-                            <span>Output</span>
-                            <button class="copy-btn" id="copy-code">📋 Copy</button>
+                            <span>Resultado</span>
+                            <button class="copy-btn" id="copy-code">📋 Copiar</button>
                         </div>
-                        <pre class="code-output" id="code-output"><code>// Generated code will appear here</code></pre>
+                        <pre class="code-output" id="code-output"><code>// O código gerado aparecerá aqui</code></pre>
                     </div>
                 </div>
             </section>
@@ -358,7 +406,7 @@
     <div class="loading-overlay" id="loading">
         <div class="loading-header">
             <div class="loading-spinner"></div>
-            <p id="loading-text">Processing...</p>
+            <p id="loading-text">Processando...</p>
         </div>
         <div class="loading-timer-container">
             <span class="timer-label">⏱️ Tempo decorrido:</span>
