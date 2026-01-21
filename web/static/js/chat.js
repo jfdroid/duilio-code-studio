@@ -50,10 +50,14 @@ const Chat = {
         const container = document.getElementById('chatMessages');
         const time = Utils.formatTime();
         
+        const avatarContent = role === 'user' 
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+        
         const messageHtml = `
             <div class="message">
                 <div class="message-header">
-                    <div class="message-avatar ${role}">${role === 'user' ? '👤' : '🤖'}</div>
+                    <div class="message-avatar ${role}">${avatarContent}</div>
                     <span class="message-sender">${role === 'user' ? 'You' : 'DuilioCode'}</span>
                     <span class="message-time">${time}</span>
                 </div>
@@ -117,7 +121,11 @@ const Chat = {
         indicator.className = 'message';
         indicator.innerHTML = `
             <div class="message-header">
-                <div class="message-avatar assistant">🤖</div>
+                <div class="message-avatar assistant">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                    </svg>
+                </div>
                 <span class="message-sender">DuilioCode</span>
             </div>
             <div class="message-content">
@@ -148,7 +156,11 @@ const Chat = {
         container.innerHTML = `
             <div class="message">
                 <div class="message-header">
-                    <div class="message-avatar assistant">🤖</div>
+                    <div class="message-avatar assistant">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                        </svg>
+                    </div>
                     <span class="message-sender">DuilioCode</span>
                 </div>
                 <div class="message-content">
