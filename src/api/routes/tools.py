@@ -22,6 +22,7 @@ from services.refactoring_service import RefactoringService, get_refactoring_ser
 from services.documentation_generator import DocumentationGenerator, get_documentation_generator
 from services.security_scanner import SecurityScanner, get_security_scanner
 from services.agent_service import AgentService, create_agent
+from services.rag_service import RAGService, get_rag_service
 from services.workspace_service import WorkspaceService, get_workspace_service
 from services.ollama_service import OllamaService, get_ollama_service
 from services.file_service import FileService, get_file_service
@@ -478,3 +479,107 @@ async def cancel_agent_task(task_id: str) -> Dict[str, Any]:
     task.status = "cancelled"
     
     return {"message": "Task cancellation requested", "task_id": task_id}
+
+
+# === RAG (Semantic Search) Endpoints ===
+
+class RAGSearchRequest(BaseModel):
+    """Request for semantic search."""
+    query: str = Field(..., description="Search query")
+    top_k: int = Field(default=5, description="Number of results")
+    file_filter: Optional[str] = Field(default=None, description="File extension filter")
+
+
+@router.post("/rag/index")
+async def index_codebase(
+    force: bool = False,
+    workspace: WorkspaceService = Depends(get_workspace_service)
+) -> Dict[str, Any]:
+    """Index the codebase for semantic search."""
+    ws = workspace.get_current()
+    if not ws.path:
+        raise HTTPException(status_code=400, detail="No workspace open")
+    
+    rag = get_rag_service(ws.path)
+    stats = rag.index_codebase(ws.path, force=force)
+    
+    return {
+        "success": True,
+        "stats": stats
+    }
+
+
+@router.post("/rag/search")
+async def semantic_search(
+    request: RAGSearchRequest,
+    workspace: WorkspaceService = Depends(get_workspace_service)
+) -> Dict[str, Any]:
+    """Perform semantic search on the codebase."""
+    ws = workspace.get_current()
+    if not ws.path:
+        raise HTTPException(status_code=400, detail="No workspace open")
+    
+    rag = get_rag_service(ws.path)
+    
+    # Ensure indexed
+    if not rag._initialized:
+        rag.index_codebase(ws.path)
+    
+    results = rag.search(
+        query=request.query,
+        top_k=request.top_k,
+        file_filter=request.file_filter
+    )
+    
+    return {
+        "query": request.query,
+        "results": [
+            {
+                "file": r.document.metadata.get('file_path'),
+                "chunk_index": r.document.chunk_index,
+                "score": round(r.score, 3),
+                "content": r.document.content[:500],
+                "highlights": r.highlights
+            }
+            for r in results
+        ]
+    }
+
+
+@router.get("/rag/context")
+async def get_rag_context(
+    query: str,
+    max_tokens: int = 4000,
+    workspace: WorkspaceService = Depends(get_workspace_service)
+) -> Dict[str, Any]:
+    """Get AI-ready context for a query."""
+    ws = workspace.get_current()
+    if not ws.path:
+        raise HTTPException(status_code=400, detail="No workspace open")
+    
+    rag = get_rag_service(ws.path)
+    
+    # Ensure indexed
+    if not rag._initialized:
+        rag.index_codebase(ws.path)
+    
+    context = rag.get_context_for_query(query, max_tokens=max_tokens)
+    
+    return {
+        "query": query,
+        "context": context,
+        "context_length": len(context)
+    }
+
+
+@router.get("/rag/stats")
+async def get_rag_stats(
+    workspace: WorkspaceService = Depends(get_workspace_service)
+) -> Dict[str, Any]:
+    """Get RAG index statistics."""
+    ws = workspace.get_current()
+    if not ws.path:
+        raise HTTPException(status_code=400, detail="No workspace open")
+    
+    rag = get_rag_service(ws.path)
+    return rag.get_stats()
