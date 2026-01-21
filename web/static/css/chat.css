@@ -5,8 +5,8 @@
 
 /* Chat Panel */
 .chat-panel {
-    width: 380px;
-    min-width: 320px;
+    width: 480px;
+    min-width: 400px;
     border-left: 1px solid #30363d;
     display: flex;
     flex-direction: column;
@@ -16,7 +16,8 @@
 }
 
 .chat-panel.expanded {
-    width: 500px;
+    width: 650px;
+    min-width: 550px;
 }
 
 /* Chat History Sidebar - shown as dropdown/overlay */
