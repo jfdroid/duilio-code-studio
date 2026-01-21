@@ -411,8 +411,30 @@
                 </span>
                 <span class="status-item" id="modelStatus"></span>
             </div>
+            <div class="status-center">
+                <!-- Panel Toggle Buttons (like VS Code/Cursor) -->
+                <button class="status-panel-btn" onclick="toggleProblems()" data-tooltip="Problems">
+                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <span>0</span>
+                </button>
+                <button class="status-panel-btn" onclick="toggleOutput()" data-tooltip="Output">
+                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                    </svg>
+                    <span>Output</span>
+                </button>
+                <button class="status-panel-btn" id="terminalStatusBtn" onclick="toggleTerminal()" data-tooltip="Terminal (Ctrl+`)">
+                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                    </svg>
+                    <span>Terminal</span>
+                </button>
+            </div>
             <div class="status-right">
-                <span class="status-item">DuilioCode Studio v2.0</span>
+                <span class="status-item" id="cursorPosition">Ln 1, Col 1</span>
+                <span class="status-item">DuilioCode v2.0</span>
             </div>
         </div>
     </div>
@@ -546,6 +568,7 @@
     <script src="/static/js/monaco-diff.js"></script>
     <script src="/static/js/terminal.js"></script>
     <script src="/static/js/chat-renderers.js"></script>
+    <script src="/static/js/panels.js"></script>
     <script src="/static/js/autocomplete.js"></script>
     <script src="/static/js/contextmenu.js"></script>
     <script src="/static/js/keyboard.js"></script>

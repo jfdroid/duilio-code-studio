@@ -3,29 +3,15 @@
  * AI assistant chat interface styles
  */
 
-/* Chat Panel - 3 Size Levels */
+/* Chat Panel - Width controlled by Split.js */
 .chat-panel {
-    width: 420px;
-    min-width: 380px;
+    /* width controlled by Split.js, not fixed */
+    min-width: 300px;
     border-left: 1px solid #30363d;
     display: flex;
     flex-direction: column;
     background: #161b22;
-    flex-shrink: 0;
     overflow: hidden;
-    transition: width 0.2s ease;
-}
-
-/* Level 2: Expanded */
-.chat-panel.expanded {
-    width: 580px;
-    min-width: 520px;
-}
-
-/* Level 3: Maximized - Full reading experience */
-.chat-panel.maximized {
-    width: 800px;
-    min-width: 700px;
 }
 
 .chat-panel.maximized .message-content {

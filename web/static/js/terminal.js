@@ -380,9 +380,9 @@ const Terminal = {
         panel.style.display = 'flex';
         this.isVisible = true;
         
-        // Initialize split if not done
-        if (!this.split && typeof Split !== 'undefined') {
-            this.initSplit();
+        // Initialize vertical split via Panels module
+        if (typeof Panels !== 'undefined') {
+            Panels.initEditorTerminalSplit();
         }
         
         // Create first terminal if none exists
@@ -408,6 +408,11 @@ const Terminal = {
             panel.style.display = 'none';
         }
         this.isVisible = false;
+        
+        // Destroy the vertical split
+        if (typeof Panels !== 'undefined') {
+            Panels.destroyEditorTerminalSplit();
+        }
     },
     
     /**
@@ -419,34 +424,6 @@ const Terminal = {
         } else {
             this.show();
         }
-    },
-    
-    /**
-     * Initialize Split.js for editor/terminal
-     */
-    initSplit() {
-        const editorPanel = document.getElementById('editorPanel');
-        const terminalPanel = document.getElementById('terminalPanel');
-        
-        if (!editorPanel || !terminalPanel || typeof Split === 'undefined') return;
-        
-        this.split = Split(['#editorPanel', '#terminalPanel'], {
-            direction: 'vertical',
-            sizes: [70, 30],
-            minSize: [100, 100],
-            gutterSize: 6,
-            cursor: 'row-resize',
-            onDrag: () => {
-                // Resize Monaco
-                if (typeof MonacoEditor !== 'undefined' && MonacoEditor.isReady) {
-                    MonacoEditor.resize();
-                }
-                // Resize terminal
-                if (this.activeTerminal && this.activeTerminal.fitAddon) {
-                    this.activeTerminal.fitAddon.fit();
-                }
-            }
-        });
     },
     
     /**

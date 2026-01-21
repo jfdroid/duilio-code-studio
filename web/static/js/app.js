@@ -39,6 +39,13 @@ const App = {
                 ChatRenderers.init();
             }
             
+            // Initialize Split.js Panels (after a short delay for DOM)
+            setTimeout(() => {
+                if (typeof Panels !== 'undefined') {
+                    Panels.init();
+                }
+            }, 100);
+            
             // Load workspace
             await Workspace.init();
             
@@ -148,6 +155,17 @@ function openSearch() { ActivityBar.show('search'); }
 function focusChat() { document.getElementById('chatInput')?.focus(); }
 function toggleTerminal() { 
     if (typeof Terminal !== 'undefined') {
-        Terminal.toggle(); 
+        Terminal.toggle();
+        // Update button state
+        const btn = document.getElementById('terminalStatusBtn');
+        if (btn) btn.classList.toggle('active', Terminal.isVisible);
     }
+}
+
+function toggleProblems() {
+    Utils.showNotification('Problems panel coming soon', 'info');
+}
+
+function toggleOutput() {
+    Utils.showNotification('Output panel coming soon', 'info');
 }
