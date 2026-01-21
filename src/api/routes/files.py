@@ -35,6 +35,13 @@ class CreateDirectoryRequest(BaseModel):
     path: str
 
 
+class CreateFileRequest(BaseModel):
+    """Request to create a file."""
+    path: str
+    is_directory: bool = False
+    content: str = ""
+
+
 class DeleteRequest(BaseModel):
     """Request to delete a file/directory."""
     path: str
@@ -170,6 +177,52 @@ async def create_directory(
         return file_service.create_directory(request.path)
     except FileOperationError as e:
         raise HTTPException(status_code=500, detail=e.detail)
+
+
+@router.post("/create")
+async def create_file(
+    request: CreateFileRequest,
+    file_service: FileService = Depends(get_file_service)
+) -> Dict[str, Any]:
+    """
+    Create a new file or directory.
+    
+    Automatically creates parent directories if they don't exist.
+    """
+    import os
+    from pathlib import Path
+    
+    try:
+        # Expand path
+        path = os.path.expanduser(request.path)
+        
+        if request.is_directory:
+            # Create directory
+            return file_service.create_directory(path)
+        else:
+            # Create parent directories if needed
+            parent_dir = os.path.dirname(path)
+            if parent_dir and not os.path.exists(parent_dir):
+                os.makedirs(parent_dir, exist_ok=True)
+            
+            # Create file with content
+            result = file_service.write_file(
+                path=path,
+                content=request.content,
+                create_backup=False
+            )
+            
+            return {
+                "success": True,
+                "path": path,
+                "message": f"File created: {path}",
+                **result
+            }
+            
+    except FileOperationError as e:
+        raise HTTPException(status_code=500, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/delete")

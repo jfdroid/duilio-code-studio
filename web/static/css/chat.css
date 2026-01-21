@@ -3,15 +3,10 @@
  * AI assistant chat interface styles
  */
 
-/* Chat Panel - Width controlled by Split.js */
+/* Chat Panel - Base styles (width in tools.css) */
 .chat-panel {
-    /* width controlled by Split.js, not fixed */
-    min-width: 300px;
     border-left: 1px solid #30363d;
-    display: flex;
-    flex-direction: column;
     background: #161b22;
-    overflow: hidden;
 }
 
 .chat-panel.maximized .message-content {

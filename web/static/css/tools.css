@@ -3,106 +3,69 @@
  * Styles for Terminal, Split.js, Mermaid, KaTeX
  */
 
-/* ==================== Split.js ==================== */
+/* ==================== Panel Resizers ==================== */
 
-/* Required: Split.js needs flex children without fixed sizes */
-.split {
+/* Resizer bar between panels */
+.panel-resizer {
+    background: #21262d;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease;
+    z-index: 10;
+}
+
+.panel-resizer:hover,
+.panel-resizer.active {
+    background: #58a6ff;
+}
+
+.panel-resizer-vertical {
+    width: 4px;
+    cursor: col-resize;
+}
+
+.panel-resizer-horizontal {
+    height: 4px;
+    cursor: row-resize;
+}
+
+/* Main content layout */
+.main-content {
     display: flex;
     flex-direction: row;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
 }
 
-.split.split-horizontal {
-    flex-direction: row;
-}
-
-.split.split-vertical {
+/* Sidebar panels */
+.sidebar-panels {
+    width: 260px;
+    min-width: 180px;
+    max-width: 500px;
+    display: flex;
     flex-direction: column;
-}
-
-/* Gutter styles */
-.gutter {
-    background-color: #21262d;
-    background-repeat: no-repeat;
-    background-position: center;
-    transition: background-color 0.15s ease;
+    overflow: hidden;
     flex-shrink: 0;
 }
 
-.gutter:hover {
-    background-color: #58a6ff;
-}
-
-.gutter.gutter-horizontal {
-    cursor: col-resize;
-    width: 4px !important;
-}
-
-.gutter.gutter-vertical {
-    cursor: row-resize;
-    height: 4px !important;
-}
-
-/* Main content needs to be a flex row for horizontal split */
-.main-content {
-    display: flex;
-    flex-direction: row !important;
-    flex: 1;
-    overflow: hidden;
-    min-height: 0;
-}
-
-/* Sidebar panels - needs to work with Split.js */
-.sidebar-panels {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 0;
-    height: 100%;
-}
-
-/* Main area needs flex column */
+/* Main area */
 .main-area {
+    flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     min-width: 0;
-    height: 100%;
 }
 
-/* Content area for editor/terminal split */
-.content-area {
-    display: flex;
-    flex-direction: row;
-    flex: 1;
-    overflow: hidden;
-    min-height: 0;
-}
-
-/* Editor/Terminal Split Container */
-.editor-terminal-split {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    min-width: 0;
-    overflow: hidden;
-}
-
-/* Editor panel in split */
-.editor-panel {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-height: 0;
-}
-
-/* Chat panel needs proper sizing */
+/* Chat panel */
 .chat-panel {
+    width: 380px;
+    min-width: 300px;
+    max-width: 800px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    min-width: 0;
-    height: 100%;
+    flex-shrink: 0;
 }
 
 /* ==================== Terminal ==================== */
