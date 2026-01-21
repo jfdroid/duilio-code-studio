@@ -1,0 +1,124 @@
+/**
+ * DuilioCode Studio - Utility Functions
+ * Helper functions and utilities
+ */
+
+const Utils = {
+    /**
+     * Shorten path by replacing home directory with ~
+     */
+    shortenPath(path) {
+        const home = AppState.workspace.homeDirectory || '';
+        if (home && path.startsWith(home)) {
+            return '~' + path.slice(home.length);
+        }
+        return path;
+    },
+    
+    /**
+     * Get file icon based on extension
+     */
+    getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        return CONFIG.FILE_ICONS[ext] || '📄';
+    },
+    
+    /**
+     * Get file language from extension
+     */
+    getLanguage(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const map = {
+            'py': 'python', 'js': 'javascript', 'ts': 'typescript',
+            'jsx': 'jsx', 'tsx': 'tsx', 'kt': 'kotlin', 'java': 'java',
+            'go': 'go', 'rs': 'rust', 'cpp': 'cpp', 'c': 'c',
+            'html': 'html', 'css': 'css', 'scss': 'scss',
+            'json': 'json', 'yaml': 'yaml', 'yml': 'yaml',
+            'md': 'markdown', 'sql': 'sql', 'sh': 'bash'
+        };
+        return map[ext] || 'plaintext';
+    },
+    
+    /**
+     * Format file size
+     */
+    formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    },
+    
+    /**
+     * Format timestamp
+     */
+    formatTime(date = new Date()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    },
+    
+    /**
+     * Debounce function
+     */
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+    
+    /**
+     * Escape HTML
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+    
+    /**
+     * Generate unique ID
+     */
+    generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    },
+    
+    /**
+     * Show notification
+     */
+    showNotification(message, type = 'info', duration = 3000) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification--${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        `;
+        
+        if (type === 'success') {
+            notification.style.borderColor = 'var(--accent-green)';
+        } else if (type === 'error') {
+            notification.style.borderColor = 'var(--accent-red)';
+        }
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, duration);
+    }
+};

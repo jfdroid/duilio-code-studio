@@ -1,0 +1,363 @@
+/**
+ * DuilioCode Studio - Layout Styles
+ * Main application layout structure
+ */
+
+/* ================================================
+   APP CONTAINER
+   ================================================ */
+
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* ================================================
+   ACTIVITY BAR (Left Icon Sidebar)
+   ================================================ */
+
+.activity-bar {
+    width: var(--activity-bar-width);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-2) 0;
+    flex-shrink: 0;
+}
+
+.activity-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-lg);
+    color: var(--text-muted);
+    font-size: var(--font-size-xl);
+    cursor: pointer;
+    margin-bottom: var(--space-1);
+    transition: all var(--transition-base);
+    position: relative;
+}
+
+.activity-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.activity-btn.active {
+    color: var(--text-primary);
+    background: var(--bg-active);
+}
+
+.activity-btn.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--accent-blue);
+    border-radius: 0 2px 2px 0;
+}
+
+.activity-spacer {
+    flex: 1;
+}
+
+/* ================================================
+   EXPLORER PANEL
+   ================================================ */
+
+.explorer-panel {
+    width: var(--explorer-width);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.explorer-panel.hidden {
+    display: none;
+}
+
+.explorer-header {
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.explorer-title {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+}
+
+.explorer-actions {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.explorer-action {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.explorer-action:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Workspace Selector */
+.workspace-selector {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.workspace-path {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.workspace-path:hover {
+    border-color: var(--accent-blue);
+}
+
+.workspace-path-icon {
+    font-size: var(--font-size-lg);
+}
+
+.workspace-path-text {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-secondary);
+}
+
+/* ================================================
+   FILE TREE
+   ================================================ */
+
+.file-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-2) 0;
+}
+
+.tree-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    transition: background var(--transition-fast);
+    user-select: none;
+}
+
+.tree-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.tree-item.selected {
+    background: var(--bg-active);
+}
+
+.tree-item-icon {
+    width: 20px;
+    font-size: var(--font-size-md);
+    text-align: center;
+    margin-right: var(--space-2);
+    flex-shrink: 0;
+}
+
+.tree-item-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-item.folder > .tree-item-name {
+    color: var(--text-primary);
+}
+
+.tree-item.file > .tree-item-name {
+    color: var(--text-secondary);
+}
+
+.tree-item-actions {
+    display: none;
+    gap: 2px;
+}
+
+.tree-item:hover .tree-item-actions {
+    display: flex;
+}
+
+.tree-action {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+}
+
+.tree-action:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.tree-children {
+    padding-left: var(--space-4);
+}
+
+.tree-children.collapsed {
+    display: none;
+}
+
+/* ================================================
+   MAIN CONTENT AREA
+   ================================================ */
+
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* ================================================
+   TABS BAR
+   ================================================ */
+
+.tabs-bar {
+    display: flex;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+}
+
+.tab:hover {
+    background: var(--bg-tertiary);
+}
+
+.tab.active {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--accent-blue);
+}
+
+.tab-icon {
+    font-size: var(--font-size-md);
+}
+
+.tab-close {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.tab:hover .tab-close {
+    opacity: 1;
+}
+
+.tab-close:hover {
+    background: var(--bg-tertiary);
+}
+
+/* ================================================
+   CONTENT AREA
+   ================================================ */
+
+.content-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* ================================================
+   STATUS BAR
+   ================================================ */
+
+.status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-1) var(--space-4);
+    background: var(--accent-blue);
+    color: white;
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
+}
+
+.status-left,
+.status-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}

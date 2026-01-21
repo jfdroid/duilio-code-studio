@@ -1,0 +1,189 @@
+/**
+ * DuilioCode Studio - Editor Styles
+ * Code editor and file editing components
+ */
+
+/* ================================================
+   EDITOR PANEL
+   ================================================ */
+
+.editor-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.editor-path {
+    font-size: var(--font-size-sm);
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+
+.editor-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.editor-btn {
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: all var(--transition-fast);
+}
+
+.editor-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.editor-btn.primary {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: var(--bg-primary);
+}
+
+.editor-btn.primary:hover {
+    background: #46d158;
+}
+
+/* ================================================
+   CODE EDITOR
+   ================================================ */
+
+.editor-content {
+    flex: 1;
+    overflow: auto;
+}
+
+.code-editor {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-primary);
+    border: none;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-md);
+    line-height: 1.6;
+    padding: var(--space-4);
+    resize: none;
+    outline: none;
+    tab-size: 4;
+}
+
+.code-editor::placeholder {
+    color: var(--text-muted);
+}
+
+/* ================================================
+   WELCOME SCREEN
+   ================================================ */
+
+.welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: var(--space-10);
+}
+
+.welcome-logo {
+    margin-bottom: var(--space-6);
+}
+
+.welcome-logo img {
+    width: 140px;
+    height: 140px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    box-shadow: 0 8px 32px rgba(88, 166, 255, 0.3);
+    border: 3px solid var(--accent-blue);
+}
+
+.welcome-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    margin-bottom: var(--space-6);
+}
+
+.welcome-title {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    margin-bottom: var(--space-3);
+}
+
+.welcome-subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    max-width: 500px;
+    line-height: 1.6;
+    margin-bottom: var(--space-8);
+}
+
+/* ================================================
+   QUICK ACTIONS
+   ================================================ */
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+    max-width: 500px;
+}
+
+.quick-action {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.quick-action:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+}
+
+.quick-action-icon {
+    font-size: 24px;
+    margin-bottom: var(--space-2);
+}
+
+.quick-action-title {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    margin-bottom: var(--space-1);
+}
+
+.quick-action-desc {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}

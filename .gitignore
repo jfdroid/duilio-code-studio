@@ -110,3 +110,4 @@ data/
 # === Uploads ===
 uploads/
 static/uploads/
+.duilio_workspace.json

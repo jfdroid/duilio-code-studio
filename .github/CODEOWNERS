@@ -1,0 +1,24 @@
+# DuilioCode Studio - Code Owners
+# These users will be automatically requested for review when PRs affect these paths
+
+# Default owner for everything in the repository
+* @jfdroid
+
+# Backend (Python)
+/src/ @jfdroid
+
+# Frontend (Web)
+/web/ @jfdroid
+
+# Configuration
+/config/ @jfdroid
+*.json @jfdroid
+*.yaml @jfdroid
+*.yml @jfdroid
+
+# Documentation
+*.md @jfdroid
+/docs/ @jfdroid
+
+# CI/CD and GitHub
+/.github/ @jfdroid

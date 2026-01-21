@@ -1,0 +1,21 @@
+/**
+ * DuilioCode Studio - Main CSS Entry Point
+ * 
+ * This file imports all CSS modules in the correct order.
+ * Load this single file in HTML for all styles.
+ * 
+ * Architecture:
+ * - variables.css  : Design tokens and theme configuration
+ * - base.css       : Reset and foundational styles
+ * - layout.css     : Main application layout structure
+ * - components.css : Reusable UI components
+ * - editor.css     : Code editor and file editing
+ * - chat.css       : AI assistant chat interface
+ */
+
+@import url('variables.css');
+@import url('base.css');
+@import url('layout.css');
+@import url('components.css');
+@import url('editor.css');
+@import url('chat.css');

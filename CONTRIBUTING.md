@@ -89,6 +89,56 @@ duilio-code-studio/
 └── tests/             # Test files
 ```
 
+## Branch Strategy
+
+We use a simplified Git Flow strategy:
+
+### Branch Types
+
+| Branch | Purpose | Example |
+|--------|---------|---------|
+| `master` | Production-ready code | Always stable |
+| `feature/*` | New features | `feature/add-dark-mode` |
+| `bugfix/*` | Bug fixes | `bugfix/fix-file-save` |
+| `refactor/*` | Code refactoring | `refactor/clean-architecture` |
+| `docs/*` | Documentation only | `docs/update-readme` |
+| `hotfix/*` | Urgent production fixes | `hotfix/critical-security` |
+
+### Branch Naming Convention
+
+```
+type/short-description
+
+Examples:
+- feature/path-autocomplete
+- bugfix/workspace-modal-crash
+- refactor/split-css-modules
+- docs/contributing-guide
+```
+
+### Workflow
+
+1. **Create branch from `master`**
+   ```bash
+   git checkout master
+   git pull origin master
+   git checkout -b feature/my-feature
+   ```
+
+2. **Make changes and commit**
+   ```bash
+   git add .
+   git commit -m "feat: add my feature"
+   ```
+
+3. **Push and create PR**
+   ```bash
+   git push origin feature/my-feature
+   # Create PR on GitHub
+   ```
+
+4. **After approval, merge to master**
+
 ## Pull Request Process
 
 1. **Update the README.md** with details of changes if applicable
@@ -96,6 +146,7 @@ duilio-code-studio/
 3. **Add tests** for new functionality
 4. **Follow the commit message convention** (see below)
 5. **Request a review** from maintainers
+6. **PRs require approval** from a maintainer before merging
 
 ### Commit Messages
 
