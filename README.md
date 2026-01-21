@@ -1,14 +1,15 @@
 # 🚀 DuilioCode Studio
 
-Local and offline programming assistant, powered by **Qwen2.5-Coder**.
+Your **local and offline** AI coding assistant with full file system access. Like Cursor, but 100% private.
 
 ## ✨ Features
 
-- 💻 **100% Local** - Works without internet
-- 🔒 **Private** - Your code never leaves your computer
-- ⚡ **Fast** - Optimized for Apple Silicon
-- 🎨 **Modern Interface** - VS Code/Cursor-style UI
-- 📁 **File Editing** - Read and write files directly
+- 💻 **100% Local & Offline** - No internet required, your code never leaves your machine
+- 🔒 **Complete Privacy** - All processing happens locally
+- 📁 **Full File System Access** - Create, edit, delete files and folders
+- 🗂️ **Workspace Management** - Open projects like VS Code/Cursor
+- ⚡ **Fast** - Optimized for Apple Silicon and modern hardware
+- 🎨 **Modern IDE Interface** - Familiar VS Code-style layout
 
 ## 🏃 Quick Start
 
@@ -17,11 +18,79 @@ Local and offline programming assistant, powered by **Qwen2.5-Coder**.
 git clone https://github.com/jfdroid/duilio-code-studio.git
 cd duilio-code-studio
 
-# Start the server
+# Install Ollama (if not installed)
+brew install ollama
+
+# Pull a code model
+ollama pull qwen2.5-coder:7b
+
+# Start DuilioCode
 ./start.sh
 ```
 
-Access: **http://127.0.0.1:8080**
+Open: **http://127.0.0.1:8080**
+
+## 🖥️ Interface Overview
+
+DuilioCode Studio provides a familiar IDE experience:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 📁 Explorer │        Editor / Welcome        │   💬 Chat   │
+│             │                                │             │
+│ 📂 Project  │  // Your code here            │  Ask me to: │
+│ ├── src/    │                                │  - Create   │
+│ │   └── ... │                                │    files    │
+│ ├── tests/  │                                │  - Generate │
+│ └── ...     │                                │    projects │
+│             │                                │  - Review   │
+│             │                                │    code     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 📂 Opening a Workspace
+
+1. Click **"Open Folder"** or press `Ctrl+O`
+2. Enter a path:
+   - Use `~` for your home folder: `~/projects/myapp`
+   - Use absolute paths: `/home/user/projects`
+   - Use relative paths: `./my-project`
+3. Your project files appear in the Explorer
+
+## 🤖 What DuilioCode Can Do
+
+### File Operations
+- ✅ **Create** new files and folders
+- ✅ **Edit** existing code with syntax highlighting
+- ✅ **Delete** files and folders
+- ✅ **Rename** and move files
+
+### AI Assistance
+- ✅ Generate entire project structures
+- ✅ Write functions, classes, and modules
+- ✅ Code review and suggestions
+- ✅ Debug and fix errors
+- ✅ Explain complex code
+- ✅ Refactor and optimize
+- ✅ Create tests and documentation
+
+### Example Prompts
+```
+"Create a Python Flask REST API with user authentication"
+"Generate a React component with TypeScript and tests"
+"Write a bash script to backup my database daily"
+"Explain this code and suggest improvements"
+"Create a Dockerfile for this Node.js application"
+```
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+O` | Open folder |
+| `Ctrl+S` | Save file |
+| `Ctrl+B` | Toggle explorer |
+| `Ctrl+Enter` | Send message |
 
 ## 📦 Available Models
 
@@ -31,53 +100,12 @@ Access: **http://127.0.0.1:8080**
 | qwen2.5-coder:14b | 9GB | ⭐⭐⭐⭐ | ⚡⚡⚡ |
 | qwen2.5-coder:32b | 19GB | ⭐⭐⭐⭐⭐ | ⚡⚡ |
 
-### Install Model
-
 ```bash
-# Recommended (best cost-benefit)
+# Install recommended model
 ollama pull qwen2.5-coder:14b
 
-# Fast (for simple tasks)
+# Or fast model for quick tasks
 ollama pull qwen2.5-coder:7b
-
-# Advanced (maximum quality)
-ollama pull qwen2.5-coder:32b
-```
-
-## 🎯 What it does well
-
-- ✅ Generate code in multiple languages
-- ✅ Explain programming concepts
-- ✅ Code review and suggestions
-- ✅ Debug and error fixing
-- ✅ Code refactoring
-- ✅ Automatic documentation
-- ✅ Unit tests
-- ✅ Architecture and design patterns
-
-## ⚠️ Limitations (vs Claude 4.5 Opus)
-
-| Aspect | DuilioCode Local | Claude 4.5 Opus |
-|--------|------------------|-----------------|
-| Complex reasoning | Medium | Excellent |
-| Long context | ~8K tokens | ~200K tokens |
-| Current knowledge | Up to training date | More recent |
-| Speed | Hardware dependent | Fast |
-| Cost | 💚 FREE | 💰 Per token |
-| Privacy | 💚 100% Local | ☁️ Cloud-based |
-
-## 📁 Structure
-
-```
-duilio-code-studio/
-├── src/
-│   └── api/
-│       └── main.py      # FastAPI API
-├── web/
-│   └── templates/
-│       └── index.html   # Interface
-├── start.sh             # Startup script
-└── requirements.txt     # Dependencies
 ```
 
 ## 🔧 API Endpoints
@@ -86,41 +114,56 @@ duilio-code-studio/
 |----------|--------|-------------|
 | `/` | GET | Web interface |
 | `/health` | GET | Server status |
-| `/api/code` | POST | Generate code |
-| `/api/chat` | POST | Chat with history |
-| `/api/models` | GET | List models |
-| `/api/files` | GET | List files |
+| `/api/workspace` | GET/POST | Manage workspace |
+| `/api/files` | GET | List directory |
 | `/api/files/read` | GET | Read file |
 | `/api/files/write` | POST | Save file |
+| `/api/files/create` | POST | Create file/folder |
+| `/api/files/delete` | POST | Delete file/folder |
+| `/api/files/rename` | POST | Rename/move file |
+| `/api/code` | POST | AI code generation |
+| `/api/chat` | POST | Chat with history |
+| `/api/models` | GET | List models |
 
-## 💡 Usage Tips
-
-### Effective prompts:
+## 📁 Project Structure
 
 ```
-# Generate function
-"Create a Python function that validates CPF"
-
-# Explain code
-"Explain this code line by line: [paste code]"
-
-# Code review
-"Review this code and suggest improvements: [paste code]"
-
-# Architecture
-"How to implement Repository Pattern in Kotlin with Clean Architecture?"
+duilio-code-studio/
+├── src/
+│   └── api/
+│       └── main.py      # FastAPI server with file ops
+├── web/
+│   └── templates/
+│       └── index.html   # IDE interface
+├── config/
+│   └── settings.py      # Configuration
+├── start.sh             # Startup script
+└── requirements.txt     # Dependencies
 ```
 
-## 🆚 Comparison with Other Tools
+## 🆚 Comparison
 
-| Tool | Type | Cost | Offline |
-|------|------|------|---------|
-| **DuilioCode** | Local | Free | ✅ |
-| Cursor AI | Cloud IDE | Paid | ❌ |
-| GitHub Copilot | Extension | Paid | ❌ |
-| ChatGPT | Web | Paid | ❌ |
-| Claude | Web | Paid | ❌ |
+| Feature | DuilioCode | Cursor AI | GitHub Copilot |
+|---------|-----------|-----------|----------------|
+| **Offline** | ✅ Yes | ❌ No | ❌ No |
+| **Privacy** | ✅ 100% Local | ☁️ Cloud | ☁️ Cloud |
+| **File Editing** | ✅ Full access | ✅ Full access | ⚠️ Limited |
+| **Cost** | 💚 Free | 💰 Paid | 💰 Paid |
+| **Project Creation** | ✅ Yes | ✅ Yes | ⚠️ Limited |
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+- Open issues for bugs or features
+- Submit pull requests
+- Share your feedback
+
+## 📄 License
+
+MIT License - Use freely!
 
 ---
 
 **DuilioCode Studio** - Your offline Cursor! 🚀
+
+Made with ❤️ for developers who value privacy.
