@@ -17,6 +17,16 @@ const FileManager = {
                 language: data.language
             });
             
+            // Store original content for diff
+            AppState.editor.originalContent = data.content;
+            if (typeof DiffViewer !== 'undefined') {
+                DiffViewer.setOriginal(data.content);
+                DiffViewer.isActive = false; // Reset diff view
+                DiffViewer.hide();
+                const toggleBtn = document.getElementById('diffToggleBtn');
+                if (toggleBtn) toggleBtn.classList.remove('active');
+            }
+            
             // Add tab
             Tabs.add(path, data.language);
             

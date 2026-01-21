@@ -3,21 +3,43 @@
  * AI assistant chat interface styles
  */
 
-/* Chat Panel */
+/* Chat Panel - 3 Size Levels */
 .chat-panel {
-    width: 480px;
-    min-width: 400px;
+    width: 420px;
+    min-width: 380px;
     border-left: 1px solid #30363d;
     display: flex;
     flex-direction: column;
     background: #161b22;
     flex-shrink: 0;
     overflow: hidden;
+    transition: width 0.2s ease;
 }
 
+/* Level 2: Expanded */
 .chat-panel.expanded {
-    width: 650px;
-    min-width: 550px;
+    width: 580px;
+    min-width: 520px;
+}
+
+/* Level 3: Maximized - Full reading experience */
+.chat-panel.maximized {
+    width: 800px;
+    min-width: 700px;
+}
+
+.chat-panel.maximized .message-content {
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.chat-panel.maximized .message-content pre {
+    padding: var(--space-4);
+    font-size: 14px;
+}
+
+.chat-panel.maximized .message-content code {
+    font-size: 14px;
 }
 
 /* Chat History Sidebar - shown as dropdown/overlay */
@@ -287,6 +309,76 @@
 
 .apply-code-btn:hover {
     background: #46d158;
+}
+
+/* Clickable File Links in Chat */
+.file-link {
+    color: #58a6ff;
+    text-decoration: none;
+    background: rgba(88, 166, 255, 0.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.file-link:hover {
+    background: rgba(88, 166, 255, 0.2);
+    border-color: rgba(88, 166, 255, 0.3);
+    text-decoration: none;
+}
+
+.file-link:active {
+    background: rgba(88, 166, 255, 0.3);
+}
+
+/* Clickable Code Block Header */
+.code-block-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-bottom: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    margin-top: var(--space-2);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #8b949e;
+    transition: all 0.15s ease;
+}
+
+.code-block-header:hover {
+    background: #30363d;
+    color: #58a6ff;
+}
+
+.code-block-header:hover svg {
+    stroke: #58a6ff;
+}
+
+.code-block-header svg {
+    flex-shrink: 0;
+    stroke: #6e7681;
+    transition: stroke 0.15s ease;
+}
+
+.code-block-header span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Code block after header - adjust border radius */
+.code-block-header + pre {
+    margin-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 
 /* Chat Input */

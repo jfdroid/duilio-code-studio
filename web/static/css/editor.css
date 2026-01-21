@@ -88,6 +88,126 @@
     color: var(--text-muted);
 }
 
+/* Diff View Styles */
+.diff-container {
+    flex: 1;
+    overflow: auto;
+    background: var(--bg-primary);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-md);
+    line-height: 1.6;
+}
+
+.diff-line {
+    display: flex;
+    padding: 0 var(--space-4);
+    min-height: 1.6em;
+}
+
+.diff-line-number {
+    width: 50px;
+    text-align: right;
+    padding-right: 16px;
+    color: #484f58;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.diff-line-content {
+    flex: 1;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+/* Added line - Green */
+.diff-line.added {
+    background: rgba(46, 160, 67, 0.15);
+}
+
+.diff-line.added .diff-line-number {
+    background: rgba(46, 160, 67, 0.25);
+    color: #3fb950;
+}
+
+.diff-line.added .diff-line-content::before {
+    content: '+';
+    color: #3fb950;
+    margin-right: 8px;
+}
+
+/* Removed line - Red */
+.diff-line.removed {
+    background: rgba(248, 81, 73, 0.15);
+}
+
+.diff-line.removed .diff-line-number {
+    background: rgba(248, 81, 73, 0.25);
+    color: #f85149;
+}
+
+.diff-line.removed .diff-line-content::before {
+    content: '-';
+    color: #f85149;
+    margin-right: 8px;
+}
+
+/* Modified line indicator */
+.diff-line.modified {
+    background: rgba(187, 128, 9, 0.1);
+}
+
+.diff-line.modified .diff-line-number {
+    background: rgba(187, 128, 9, 0.2);
+    color: #d29922;
+}
+
+/* Unchanged line */
+.diff-line.unchanged .diff-line-content::before {
+    content: ' ';
+    margin-right: 8px;
+}
+
+/* Diff Toggle Button */
+.diff-toggle-btn {
+    padding: var(--space-2) var(--space-3);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: all var(--transition-fast);
+}
+
+.diff-toggle-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.diff-toggle-btn.active {
+    background: rgba(88, 166, 255, 0.15);
+    border-color: rgba(88, 166, 255, 0.3);
+    color: #58a6ff;
+}
+
+.diff-toggle-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Modified indicator in tab */
+.tab.modified::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #d29922;
+    border-radius: 50%;
+    margin-left: 6px;
+}
+
 /* Welcome Screen */
 .welcome-screen {
     display: flex;
