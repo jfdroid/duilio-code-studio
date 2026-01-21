@@ -49,6 +49,7 @@ from api.routes import (
     workspace_router,
     models_router,
 )
+from api.routes.tools import router as tools_router
 
 # Import services for lifecycle management
 from services.ollama_service import get_ollama_service
@@ -140,6 +141,7 @@ def create_app() -> FastAPI:
     app.include_router(files_router)
     app.include_router(workspace_router)
     app.include_router(models_router)
+    app.include_router(tools_router)  # Git, Execute, Scaffold, Refactor, Docs, Security, Agent
     
     # === Static Files ===
     web_dir = settings.WEB_DIR
