@@ -243,7 +243,12 @@ const Chat = {
         const code = pre.querySelector('code').textContent;
         
         if (AppState.editor.currentFile) {
-            document.getElementById('codeEditor').value = code;
+            // Use Monaco if available
+            if (typeof MonacoEditor !== 'undefined' && MonacoEditor.isReady) {
+                MonacoEditor.replaceAll(code);
+            } else {
+                document.getElementById('codeEditor').value = code;
+            }
             Utils.showNotification('Code applied to editor', 'success');
         } else {
             // Copy to clipboard

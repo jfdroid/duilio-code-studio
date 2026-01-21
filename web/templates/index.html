@@ -19,6 +19,9 @@
     <!-- Syntax Highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     
+    <!-- Monaco Editor -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/editor/editor.main.min.css">
+    
     <!-- Application Styles (modular for maintainability, parallel loading with HTTP/2) -->
     <link rel="stylesheet" href="/static/css/variables.css">
     <link rel="stylesheet" href="/static/css/base.css">
@@ -259,7 +262,10 @@
                             </div>
                         </div>
                         <div class="editor-content" id="editorContent">
-                            <textarea class="code-editor" id="codeEditor" spellcheck="false" placeholder="// Start coding..."></textarea>
+                            <!-- Monaco Editor Container -->
+                            <div id="monacoContainer" style="width: 100%; height: 100%;"></div>
+                            <!-- Fallback textarea (hidden when Monaco loads) -->
+                            <textarea class="code-editor" id="codeEditor" spellcheck="false" placeholder="// Start coding..." style="display: none;"></textarea>
                         </div>
                     </div>
                 </div>
@@ -459,6 +465,17 @@
     <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+    
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script>
+        // Configure Monaco AMD loader
+        require.config({ 
+            paths: { 
+                'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' 
+            }
+        });
+    </script>
 
     <!-- Application Scripts -->
     <script src="/static/js/config.js"></script>
@@ -471,6 +488,7 @@
     <script src="/static/js/chat.js"></script>
     <script src="/static/js/chat-history.js"></script>
     <script src="/static/js/diff.js"></script>
+    <script src="/static/js/monaco-editor.js"></script>
     <script src="/static/js/autocomplete.js"></script>
     <script src="/static/js/contextmenu.js"></script>
     <script src="/static/js/keyboard.js"></script>

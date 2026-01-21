@@ -16,6 +16,15 @@ const App = {
             // Initialize keyboard shortcuts
             Keyboard.init();
             
+            // Initialize Monaco Editor (async, non-blocking)
+            if (typeof MonacoEditor !== 'undefined') {
+                MonacoEditor.init().then(() => {
+                    console.log('[DuilioCode] Monaco Editor ready');
+                }).catch(err => {
+                    console.warn('[DuilioCode] Monaco failed to load, using fallback editor:', err);
+                });
+            }
+            
             // Load workspace
             await Workspace.init();
             
@@ -33,6 +42,11 @@ const App = {
             
             // Render initial tabs
             Tabs.render();
+            
+            // Initialize chat history
+            if (typeof ChatHistory !== 'undefined') {
+                ChatHistory.init();
+            }
             
             console.log('[DuilioCode] Ready');
             
@@ -61,6 +75,13 @@ const App = {
         if (modelSelect) {
             modelSelect.addEventListener('change', (e) => UI.setModel(e.target.value));
         }
+        
+        // Window resize - update Monaco layout
+        window.addEventListener('resize', () => {
+            if (typeof MonacoEditor !== 'undefined' && MonacoEditor.isReady) {
+                MonacoEditor.resize();
+            }
+        });
     }
 };
 
@@ -105,3 +126,9 @@ function contextDelete() { ContextMenu.delete(); }
 
 // UI
 function toggleExplorer() { UI.toggleExplorer(); }
+function toggleChatHistory() { 
+    const sidebar = document.getElementById('chatHistorySidebar');
+    if (sidebar) sidebar.classList.toggle('visible');
+}
+function openSearch() { ActivityBar.show('search'); }
+function focusChat() { document.getElementById('chatInput')?.focus(); }

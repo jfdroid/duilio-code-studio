@@ -15,9 +15,14 @@ const DiffViewer = {
     },
     
     /**
-     * Get current content from editor
+     * Get current content from editor (Monaco or fallback)
      */
     getCurrentContent() {
+        // Use Monaco if available
+        if (typeof MonacoEditor !== 'undefined' && MonacoEditor.isReady) {
+            return MonacoEditor.getContent();
+        }
+        // Fallback to textarea
         const editor = document.getElementById('codeEditor');
         return editor ? editor.value : '';
     },
@@ -45,18 +50,20 @@ const DiffViewer = {
      */
     show() {
         const editorContent = document.getElementById('editorContent');
-        const editor = document.getElementById('codeEditor');
+        const textarea = document.getElementById('codeEditor');
+        const monacoContainer = document.getElementById('monacoContainer');
         
         if (!editorContent || !this.originalContent) return;
         
         // Get current content
-        const currentContent = editor ? editor.value : '';
+        const currentContent = this.getCurrentContent();
         
         // Generate diff
         const diffHtml = this.generateDiff(this.originalContent, currentContent);
         
-        // Hide editor, show diff
-        if (editor) editor.style.display = 'none';
+        // Hide editors, show diff
+        if (textarea) textarea.style.display = 'none';
+        if (monacoContainer) monacoContainer.style.display = 'none';
         
         // Create or update diff container
         let diffContainer = document.getElementById('diffView');
@@ -75,10 +82,18 @@ const DiffViewer = {
      * Hide diff view
      */
     hide() {
-        const editor = document.getElementById('codeEditor');
+        const textarea = document.getElementById('codeEditor');
+        const monacoContainer = document.getElementById('monacoContainer');
         const diffView = document.getElementById('diffView');
         
-        if (editor) editor.style.display = 'block';
+        // Show the appropriate editor
+        if (typeof MonacoEditor !== 'undefined' && MonacoEditor.isReady) {
+            if (monacoContainer) monacoContainer.style.display = 'block';
+            MonacoEditor.resize(); // Ensure Monaco reflows
+        } else {
+            if (textarea) textarea.style.display = 'block';
+        }
+        
         if (diffView) diffView.style.display = 'none';
     },
     
