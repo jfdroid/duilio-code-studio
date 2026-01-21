@@ -22,6 +22,12 @@
     <!-- Monaco Editor -->
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/editor/editor.main.min.css">
     
+    <!-- xterm.js Terminal -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.3.0/xterm.min.css">
+    
+    <!-- KaTeX Math -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    
     <!-- Application Styles (modular for maintainability, parallel loading with HTTP/2) -->
     <link rel="stylesheet" href="/static/css/variables.css">
     <link rel="stylesheet" href="/static/css/base.css">
@@ -29,6 +35,7 @@
     <link rel="stylesheet" href="/static/css/components.css">
     <link rel="stylesheet" href="/static/css/editor.css">
     <link rel="stylesheet" href="/static/css/chat.css">
+    <link rel="stylesheet" href="/static/css/tools.css">
 </head>
 <body>
     <div class="app-container">
@@ -202,71 +209,103 @@
             <!-- Tabs -->
             <div class="tabs-bar" id="tabsBar"></div>
 
-            <!-- Content Area -->
-            <div class="content-area">
-                <!-- Editor Panel -->
-                <div class="editor-panel">
-                    <!-- Welcome Screen -->
-                    <div class="welcome-screen" id="welcomeScreen">
-                        <div class="welcome-logo monochrome">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                            </svg>
+            <!-- Content Area (Split.js enabled) -->
+            <div class="content-area" id="contentArea">
+                <!-- Editor + Terminal Vertical Split -->
+                <div class="editor-terminal-split" id="editorTerminalSplit">
+                    <!-- Editor Panel -->
+                    <div class="editor-panel" id="editorPanel">
+                        <!-- Welcome Screen -->
+                        <div class="welcome-screen" id="welcomeScreen">
+                            <div class="welcome-logo monochrome">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                </svg>
+                            </div>
+                            <div class="shortcuts-list">
+                                <div class="shortcut-item" onclick="openWorkspaceModal()">
+                                    <span class="shortcut-label">Open Folder</span>
+                                    <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>O</kbd></span>
+                                </div>
+                                <div class="shortcut-item" onclick="createNewFile()">
+                                    <span class="shortcut-label">New File</span>
+                                    <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>N</kbd></span>
+                                </div>
+                                <div class="shortcut-item" onclick="saveCurrentFile()">
+                                    <span class="shortcut-label">Save File</span>
+                                    <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>S</kbd></span>
+                                </div>
+                                <div class="shortcut-item" onclick="toggleExplorer()">
+                                    <span class="shortcut-label">Toggle Explorer</span>
+                                    <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>B</kbd></span>
+                                </div>
+                                <div class="shortcut-item" onclick="openSearch()">
+                                    <span class="shortcut-label">Search Files</span>
+                                    <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>P</kbd></span>
+                                </div>
+                                <div class="shortcut-item" onclick="focusChat()">
+                                    <span class="shortcut-label">Focus Chat</span>
+                                    <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>L</kbd></span>
+                                </div>
+                                <div class="shortcut-item" onclick="toggleChatSize()">
+                                    <span class="shortcut-label">Expand Chat</span>
+                                    <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>E</kbd></span>
+                                </div>
+                                <div class="shortcut-item" onclick="toggleTerminal()">
+                                    <span class="shortcut-label">Toggle Terminal</span>
+                                    <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>`</kbd></span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="shortcuts-list">
-                            <div class="shortcut-item" onclick="openWorkspaceModal()">
-                                <span class="shortcut-label">Open Folder</span>
-                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>O</kbd></span>
+
+                        <!-- File Editor -->
+                        <div id="fileEditorContainer" style="display: none; flex-direction: column; height: 100%;">
+                            <div class="editor-header">
+                                <span class="editor-path" id="editorPath"></span>
+                                <div class="editor-actions">
+                                    <span id="fileLanguage" style="font-size: 11px; color: var(--text-muted);"></span>
+                                    <button class="diff-toggle-btn" id="diffToggleBtn" onclick="MonacoDiff.toggle()" title="Show Diff (Side-by-Side)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/>
+                                        </svg>
+                                        <span>Diff</span>
+                                    </button>
+                                    <button class="editor-btn" onclick="revertFile()">Revert</button>
+                                    <button class="editor-btn primary" onclick="saveCurrentFile()">Save</button>
+                                </div>
                             </div>
-                            <div class="shortcut-item" onclick="createNewFile()">
-                                <span class="shortcut-label">New File</span>
-                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>N</kbd></span>
-                            </div>
-                            <div class="shortcut-item" onclick="saveCurrentFile()">
-                                <span class="shortcut-label">Save File</span>
-                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>S</kbd></span>
-                            </div>
-                            <div class="shortcut-item" onclick="toggleExplorer()">
-                                <span class="shortcut-label">Toggle Explorer</span>
-                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>B</kbd></span>
-                            </div>
-                            <div class="shortcut-item" onclick="openSearch()">
-                                <span class="shortcut-label">Search Files</span>
-                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>P</kbd></span>
-                            </div>
-                            <div class="shortcut-item" onclick="focusChat()">
-                                <span class="shortcut-label">Focus Chat</span>
-                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>L</kbd></span>
-                            </div>
-                            <div class="shortcut-item" onclick="toggleChatSize()">
-                                <span class="shortcut-label">Expand Chat</span>
-                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>E</kbd></span>
+                            <div class="editor-content" id="editorContent">
+                                <!-- Monaco Editor Container -->
+                                <div id="monacoContainer" style="width: 100%; height: 100%;"></div>
+                                <!-- Monaco Diff Editor Container (hidden by default) -->
+                                <div id="monacoDiffContainer" style="width: 100%; height: 100%; display: none;"></div>
+                                <!-- Fallback textarea (hidden when Monaco loads) -->
+                                <textarea class="code-editor" id="codeEditor" spellcheck="false" placeholder="// Start coding..." style="display: none;"></textarea>
                             </div>
                         </div>
                     </div>
-
-                    <!-- File Editor -->
-                    <div id="fileEditorContainer" style="display: none; flex-direction: column; height: 100%;">
-                        <div class="editor-header">
-                            <span class="editor-path" id="editorPath"></span>
-                            <div class="editor-actions">
-                                <span id="fileLanguage" style="font-size: 11px; color: var(--text-muted);"></span>
-                                <button class="diff-toggle-btn" id="diffToggleBtn" onclick="DiffViewer.toggle()" title="Show Changes (Diff)">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 3v18M3 12h18"/>
+                    
+                    <!-- Terminal Panel (hidden by default) -->
+                    <div class="terminal-panel" id="terminalPanel" style="display: none;">
+                        <div class="terminal-header">
+                            <div class="terminal-tabs">
+                                <button class="terminal-tab active" data-terminal="1">Terminal 1</button>
+                                <button class="terminal-tab-new" onclick="Terminal.createNew()" title="New Terminal">+</button>
+                            </div>
+                            <div class="terminal-actions">
+                                <button class="explorer-action" onclick="Terminal.clear()" data-tooltip="Clear">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14"/>
                                     </svg>
-                                    <span>Diff</span>
                                 </button>
-                                <button class="editor-btn" onclick="revertFile()">Revert</button>
-                                <button class="editor-btn primary" onclick="saveCurrentFile()">Save</button>
+                                <button class="explorer-action" onclick="toggleTerminal()" data-tooltip="Close Terminal">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                        <div class="editor-content" id="editorContent">
-                            <!-- Monaco Editor Container -->
-                            <div id="monacoContainer" style="width: 100%; height: 100%;"></div>
-                            <!-- Fallback textarea (hidden when Monaco loads) -->
-                            <textarea class="code-editor" id="codeEditor" spellcheck="false" placeholder="// Start coding..." style="display: none;"></textarea>
-                        </div>
+                        <div class="terminal-container" id="terminalContainer"></div>
                     </div>
                 </div>
 
@@ -476,6 +515,21 @@
             }
         });
     </script>
+    
+    <!-- Split.js - Resizable Panels -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.5/split.min.js"></script>
+    
+    <!-- xterm.js - Terminal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.3.0/xterm.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm-addon-fit/0.8.0/xterm-addon-fit.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xterm-addon-web-links/0.9.0/xterm-addon-web-links.min.js"></script>
+    
+    <!-- Mermaid.js - Diagrams -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    
+    <!-- KaTeX - Math -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 
     <!-- Application Scripts -->
     <script src="/static/js/config.js"></script>
@@ -489,6 +543,9 @@
     <script src="/static/js/chat-history.js"></script>
     <script src="/static/js/diff.js"></script>
     <script src="/static/js/monaco-editor.js"></script>
+    <script src="/static/js/monaco-diff.js"></script>
+    <script src="/static/js/terminal.js"></script>
+    <script src="/static/js/chat-renderers.js"></script>
     <script src="/static/js/autocomplete.js"></script>
     <script src="/static/js/contextmenu.js"></script>
     <script src="/static/js/keyboard.js"></script>

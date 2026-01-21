@@ -1,0 +1,257 @@
+/**
+ * DuilioCode Studio - Tools CSS
+ * Styles for Terminal, Split.js, Mermaid, KaTeX
+ */
+
+/* ==================== Split.js ==================== */
+
+.gutter {
+    background-color: #21262d;
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: background-color 0.15s ease;
+}
+
+.gutter:hover {
+    background-color: #30363d;
+}
+
+.gutter.gutter-horizontal {
+    cursor: col-resize;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='24'%3E%3Cpath fill='%236e7681' d='M1 0h1v24H1zM4 0h1v24H4z'/%3E%3C/svg%3E");
+}
+
+.gutter.gutter-vertical {
+    cursor: row-resize;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='6'%3E%3Cpath fill='%236e7681' d='M0 1h24v1H0zM0 4h24v1H0z'/%3E%3C/svg%3E");
+}
+
+/* Editor/Terminal Split Container */
+.editor-terminal-split {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ==================== Terminal ==================== */
+
+.terminal-panel {
+    display: flex;
+    flex-direction: column;
+    background: #0d1117;
+    border-top: 1px solid #30363d;
+    min-height: 150px;
+}
+
+.terminal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    height: 36px;
+    background: #161b22;
+    border-bottom: 1px solid #21262d;
+    flex-shrink: 0;
+}
+
+.terminal-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.terminal-tab {
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 4px 4px 0 0;
+    color: #8b949e;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+}
+
+.terminal-tab:hover {
+    background: #21262d;
+    color: #e6edf3;
+}
+
+.terminal-tab.active {
+    background: #0d1117;
+    color: #e6edf3;
+    border-bottom: 2px solid #58a6ff;
+}
+
+.terminal-tab-new {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #8b949e;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terminal-tab-new:hover {
+    background: #21262d;
+    color: #e6edf3;
+}
+
+.terminal-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.terminal-container {
+    flex: 1;
+    padding: 8px;
+    overflow: hidden;
+}
+
+/* xterm.js overrides */
+.terminal-container .xterm {
+    padding: 0;
+}
+
+.terminal-container .xterm-viewport {
+    overflow-y: auto !important;
+}
+
+.terminal-container .xterm-screen {
+    width: 100% !important;
+}
+
+/* ==================== Mermaid Diagrams ==================== */
+
+.mermaid-container {
+    margin: 12px 0;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.mermaid-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #21262d;
+    border-bottom: 1px solid #30363d;
+}
+
+.mermaid-label {
+    font-size: 12px;
+    color: #8b949e;
+    font-weight: 500;
+}
+
+.mermaid-copy {
+    padding: 4px;
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-copy:hover {
+    background: #30363d;
+    color: #e6edf3;
+}
+
+.mermaid {
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+}
+
+.mermaid svg {
+    max-width: 100%;
+    height: auto;
+}
+
+.mermaid-error {
+    padding: 16px;
+    color: #f85149;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* ==================== KaTeX Math ==================== */
+
+.katex-block {
+    margin: 16px 0;
+    padding: 16px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow-x: auto;
+    text-align: center;
+}
+
+.katex-block .katex {
+    font-size: 1.2em;
+}
+
+/* Inline KaTeX */
+.katex {
+    color: #e6edf3;
+}
+
+.katex .base {
+    margin: 0 2px;
+}
+
+/* KaTeX colors */
+.katex .mord.text {
+    color: #e6edf3;
+}
+
+.katex .mord.mathit {
+    color: #79c0ff;
+}
+
+.katex .mop {
+    color: #ff7b72;
+}
+
+.katex .mbin {
+    color: #ffa657;
+}
+
+/* ==================== Monaco Diff Overrides ==================== */
+
+#monacoDiffContainer {
+    background: #0d1117;
+}
+
+.monaco-diff-editor .diffOverview {
+    background: #161b22;
+}
+
+.monaco-diff-editor .diffViewport {
+    background: #0d1117;
+}
+
+/* Diff gutter colors */
+.monaco-diff-editor .line-insert,
+.monaco-diff-editor .char-insert {
+    background: rgba(46, 160, 67, 0.2) !important;
+}
+
+.monaco-diff-editor .line-delete,
+.monaco-diff-editor .char-delete {
+    background: rgba(248, 81, 73, 0.2) !important;
+}

@@ -156,6 +156,11 @@ const Chat = {
             hljs.highlightElement(block);
         });
         
+        // Render Mermaid diagrams
+        if (typeof ChatRenderers !== 'undefined') {
+            ChatRenderers.renderMermaidDiagrams(container);
+        }
+        
         AppState.addMessage({ role, content, time });
     },
     
@@ -163,6 +168,7 @@ const Chat = {
      * Format message content (markdown-like)
      * - Makes file paths clickable
      * - Adds clickable headers to code blocks
+     * - Renders Mermaid diagrams and KaTeX math
      */
     formatMessage(content) {
         let formatted = content;
@@ -178,6 +184,11 @@ const Chat = {
                 })
                 .replace(/`([^`]+)`/g, '<code>$1</code>')
                 .replace(/\n/g, '<br>');
+        }
+        
+        // Process Mermaid and KaTeX
+        if (typeof ChatRenderers !== 'undefined') {
+            formatted = ChatRenderers.processContent(formatted);
         }
         
         // Make file paths clickable
