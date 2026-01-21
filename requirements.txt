@@ -1,45 +1,19 @@
-# Local AI Studio - Dependencies
-# Python 3.10+ required
+# DuilioCode Studio - Dependências
+# Apenas para código, sem bibliotecas de imagem
 
-# === Web Framework ===
-fastapi==0.109.2
-uvicorn[standard]==0.27.1
-pydantic==2.6.1
-pydantic-settings==2.1.0
-python-multipart==0.0.9
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
 
-# === AI/ML Core ===
-torch>=2.1.0
-torchvision>=0.16.0
-transformers==4.37.2
-accelerate==0.27.2
-safetensors==0.4.2
+# HTTP Client
+httpx>=0.26.0
 
-# === Image Generation ===
-diffusers==0.26.3
-invisible-watermark>=0.2.0
-omegaconf>=2.3.0
+# Data Validation
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
 
-# === Image Processing ===
-Pillow>=10.2.0
-opencv-python-headless>=4.9.0.80
+# Utilities
+python-multipart>=0.0.6
 
-# === LLM (Ollama) ===
-ollama==0.1.6
-httpx==0.26.0
-aiohttp==3.9.3
-
-# === Utilities ===
-loguru==0.7.2
-rich==13.7.0
-typer==0.9.0
-tqdm==4.66.2
-orjson==3.9.13
-
-# === Web Interface ===
-jinja2==3.1.3
-aiofiles==23.2.1
-websockets==12.0
-
-# === Optional: CLIP for image understanding ===
-# git+https://github.com/openai/CLIP.git
+# Opcional: para syntax highlighting no backend
+pygments>=2.17.0

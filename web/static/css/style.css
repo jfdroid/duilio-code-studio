@@ -1116,6 +1116,12 @@ body {
     border-left-color: var(--success);
 }
 
+.feature-tip.warning-tip {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
+    border-color: rgba(245, 158, 11, 0.3);
+    border-left-color: var(--warning);
+}
+
 .tip-warning {
     display: block;
     margin-top: 8px;

@@ -1,123 +1,122 @@
-# 🎨 DuilioAI Studio
+# 🚀 DuilioCode Studio
 
-**100% Local AI** for image editing, chat and code generation - optimized for Apple Silicon.
+Assistente de programação local e offline, powered by **Qwen2.5-Coder**.
 
-## Features
+## ✨ Features
 
-- **🖼️ Image Generation** - Generate images from text (txt2img)
-- **✏️ Image Editing** - Edit entire images with prompts (img2img)
-- **🖌️ Inpainting** - Edit specific areas using mask
-- **💬 Chat** - Conversational AI with Ollama models
-- **💻 Code** - Code generation with Qwen2.5-Coder
+- 💻 **100% Local** - Funciona sem internet
+- 🔒 **Privado** - Seu código nunca sai do seu computador
+- ⚡ **Rápido** - Otimizado para Apple Silicon
+- 🎨 **Interface Moderna** - UI estilo VS Code/Cursor
+- 📁 **Edição de Arquivos** - Lê e escreve arquivos diretamente
 
-## Requirements
-
-- macOS with Apple Silicon (M1/M2/M3/M4) or NVIDIA GPU
-- Python 3.9+
-- [Ollama](https://ollama.ai) for chat/code
-- 8GB+ RAM recommended
-
-## Quick Start
+## 🏃 Quick Start
 
 ```bash
-# 1. Clone and enter directory
-cd duilio-ai-studio
+cd /Users/jeffersonsilva/Desen/duilio-code-studio
+./start.sh
+```
 
-# 2. Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
+Acesse: **http://127.0.0.1:8080**
 
-# 3. Install dependencies
-pip install -r requirements.txt
+## 📦 Modelos Disponíveis
 
-# 4. Install Ollama models
-ollama pull llama3.2
+| Modelo | Tamanho | Qualidade | Velocidade |
+|--------|---------|-----------|------------|
+| qwen2.5-coder:7b | 4.7GB | ⭐⭐⭐ | ⚡⚡⚡⚡ |
+| qwen2.5-coder:14b | 9GB | ⭐⭐⭐⭐ | ⚡⚡⚡ |
+| qwen2.5-coder:32b | 19GB | ⭐⭐⭐⭐⭐ | ⚡⚡ |
+
+### Instalar Modelo
+
+```bash
+# Recomendado (melhor custo-benefício)
+ollama pull qwen2.5-coder:14b
+
+# Rápido (para tarefas simples)
 ollama pull qwen2.5-coder:7b
 
-# 5. Start server
-python -m src.api.main
+# Avançado (máxima qualidade)
+ollama pull qwen2.5-coder:32b
 ```
 
-Then open http://localhost:8000
+## 🎯 O que ele faz bem
 
-## Technical Details
+- ✅ Gerar código em múltiplas linguagens
+- ✅ Explicar conceitos de programação
+- ✅ Code review e sugestões
+- ✅ Debug e correção de erros
+- ✅ Refatoração de código
+- ✅ Documentação automática
+- ✅ Testes unitários
+- ✅ Arquitetura e design patterns
 
-### Apple Silicon Optimization
+## ⚠️ Limitações (vs Claude 4.5 Opus)
 
-DuilioAI is specifically optimized for Apple Silicon:
+| Aspecto | DuilioCode Local | Claude 4.5 Opus |
+|---------|------------------|-----------------|
+| Raciocínio complexo | Médio | Excelente |
+| Contexto longo | ~8K tokens | ~200K tokens |
+| Conhecimento atual | Até data de treino | Mais recente |
+| Velocidade | Depende do hardware | Rápido |
+| Custo | 💚 GRÁTIS | 💰 Por token |
+| Privacidade | 💚 100% Local | ☁️ Na nuvem |
 
-- **MPS (Metal Performance Shaders)** - Uses GPU acceleration
-- **float32 for stability** - Avoids black image issues with float16
-- **Attention slicing** - Reduces memory usage
-- **VAE slicing** - Processes VAE in chunks
-- **CPU generator** - Proper seed handling for MPS
-
-### Architecture (SOLID)
+## 📁 Estrutura
 
 ```
-duilio-ai-studio/
-├── config/
-│   └── settings.py          # Configuration
+duilio-code-studio/
 ├── src/
-│   ├── api/
-│   │   └── main.py          # FastAPI server
-│   ├── chat/
-│   │   └── ollama_client.py # Chat with Ollama
-│   └── image_gen/
-│       └── sd_client.py     # Image generation (SOLID)
-└── web/
-    ├── templates/           # HTML
-    └── static/              # CSS/JS
+│   └── api/
+│       └── main.py      # API FastAPI
+├── web/
+│   └── templates/
+│       └── index.html   # Interface
+├── start.sh             # Script de início
+└── requirements.txt     # Dependências
 ```
 
-### Models Used
+## 🔧 API Endpoints
 
-| Feature | Model |
-|---------|-------|
-| Text-to-Image | stable-diffusion-v1-5 |
-| Image-to-Image | stable-diffusion-v1-5 |
-| Inpainting | runwayml/stable-diffusion-inpainting |
-| Chat | llama3.2 |
-| Code | qwen2.5-coder:7b |
+| Endpoint | Método | Descrição |
+|----------|--------|-----------|
+| `/` | GET | Interface web |
+| `/health` | GET | Status do servidor |
+| `/api/code` | POST | Gerar código |
+| `/api/chat` | POST | Chat com histórico |
+| `/api/models` | GET | Listar modelos |
+| `/api/files` | GET | Listar arquivos |
+| `/api/files/read` | GET | Ler arquivo |
+| `/api/files/write` | POST | Salvar arquivo |
 
-## API Endpoints
+## 💡 Dicas de Uso
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/chat` | POST | Chat with LLM |
-| `/api/code` | POST | Generate code |
-| `/api/image/generate` | POST | Generate image |
-| `/api/image/edit` | POST | Edit image |
-| `/api/image/inpaint` | POST | Inpaint image |
-| `/health` | GET | Health check |
-| `/docs` | GET | API documentation |
+### Prompts eficientes:
 
-## Troubleshooting
+```
+# Gerar função
+"Crie uma função em Python que valida CPF"
 
-### Black images on Apple Silicon
+# Explicar código
+"Explique este código linha por linha: [cole o código]"
 
-This is fixed in DuilioAI by:
-1. Using `float32` instead of `float16`
-2. Creating generator on CPU instead of MPS
-3. Disabling callbacks that cause issues
+# Code review
+"Revise este código e sugira melhorias: [cole o código]"
 
-### Out of memory
-
-- Reduce image size to 384x384
-- Use "Quick Mode" for previews
-- Restart server to clear cache
-
-### Models not loading
-
-```bash
-# Check Ollama is running
-ollama list
-
-# Pull required models
-ollama pull llama3.2
-ollama pull qwen2.5-coder:7b
+# Arquitetura
+"Como implementar Repository Pattern em Kotlin com Clean Architecture?"
 ```
 
-## License
+## 🆚 Comparativo com Outras Ferramentas
 
-MIT - Use freely for any purpose.
+| Ferramenta | Tipo | Custo | Offline |
+|------------|------|-------|---------|
+| **DuilioCode** | Local | Grátis | ✅ |
+| Cursor AI | IDE Cloud | Pago | ❌ |
+| GitHub Copilot | Extension | Pago | ❌ |
+| ChatGPT | Web | Pago | ❌ |
+| Claude | Web | Pago | ❌ |
+
+---
+
+**DuilioCode Studio** - Seu Cursor offline! 🚀

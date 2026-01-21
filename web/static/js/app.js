@@ -908,16 +908,42 @@ function getMaskAsBase64() {
 async function applyInpaint() {
     const action = document.getElementById('inpaint-action').value;
     const promptInput = document.getElementById('inpaint-prompt');
+    const contextInput = document.getElementById('inpaint-context');
     const isQuick = document.getElementById('inpaint-quick').checked;
     
     let prompt = '';
+    let context = contextInput ? contextInput.value.trim() : '';
+    
     if (action === 'remove') {
-        prompt = 'clean background, natural, seamless, high quality, same lighting, context aware fill';
+        // For removal, we NEED context to fill properly
+        // Without context, SD models just hallucinate random stuff
+        if (!context) {
+            // Ask user for context
+            context = window.prompt(
+                '⚠️ IMPORTANTE para melhor resultado!\n\n' +
+                'Descreva o que DEVERIA aparecer no lugar do objeto removido.\n\n' +
+                'Exemplo: "parede de tijolos brancos", "mesa de escritório", "fundo de floresta"\n\n' +
+                'Dica: Seja específico! O modelo precisa saber o que desenhar no lugar.',
+                'parede, fundo natural, continuação do ambiente'
+            );
+            
+            if (!context) {
+                // User cancelled, use generic but warn them
+                context = 'background, natural environment, seamless continuation';
+                console.warn('⚠️ Usando contexto genérico - resultado pode não ser ideal');
+            }
+        }
+        
+        prompt = `${context}, high quality, photorealistic, same lighting, seamless blend, no artifacts`;
     } else {
         prompt = promptInput.value.trim();
         if (!prompt) {
             alert('Descreva o que deseja fazer na área pintada');
             return;
+        }
+        // Add context if provided
+        if (context) {
+            prompt = `${prompt}, ${context}`;
         }
     }
     
