@@ -10,18 +10,26 @@ const Workspace = {
     async init() {
         try {
             const data = await API.getWorkspace();
+            
+            // Update state with safe defaults
             AppState.setWorkspace({
-                currentPath: data.path,
+                currentPath: data.path || null,
                 recentPaths: data.recent_paths || [],
-                homeDirectory: data.home_directory
+                homeDirectory: data.home_directory || ''
             });
             
-            if (data.path) {
+            if (data.path && data.exists) {
                 document.getElementById('workspacePathText').textContent = Utils.shortenPath(data.path);
                 await this.loadFileTree(data.path);
             }
         } catch (error) {
             console.error('Failed to load workspace:', error);
+            // Set default state on error
+            AppState.setWorkspace({
+                currentPath: null,
+                recentPaths: [],
+                homeDirectory: ''
+            });
         }
     },
     
@@ -55,16 +63,24 @@ const Workspace = {
         
         try {
             const data = await API.setWorkspace(path);
+            
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to open workspace');
+            }
+            
             AppState.setWorkspace({
                 currentPath: data.path,
-                recentPaths: data.recent_paths || []
+                recentPaths: data.recent_paths || [],
+                homeDirectory: data.home_directory || AppState.workspace.homeDirectory || ''
             });
             
             document.getElementById('workspacePathText').textContent = Utils.shortenPath(data.path);
             await this.loadFileTree(data.path);
             this.closeModal();
+            
+            Utils.showNotification(`Opened: ${Utils.shortenPath(data.path)}`, 'success');
         } catch (error) {
-            alert('Error: ' + error.message);
+            alert('Error: ' + (error.message || 'Failed to open folder'));
         }
     },
     
@@ -156,17 +172,28 @@ const Workspace = {
         const container = document.getElementById('recentFolders');
         const recent = AppState.workspace.recentPaths || [];
         
-        if (recent.length === 0) {
+        if (!recent || recent.length === 0) {
             container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No recent folders</p>';
             return;
         }
         
-        container.innerHTML = recent.map(path => `
-            <div class="workspace-path" onclick="Workspace.selectRecentFolder('${path}')" style="margin-bottom: 8px;">
-                <span class="workspace-path-icon">📂</span>
-                <span class="workspace-path-text">${Utils.shortenPath(path)}</span>
-            </div>
-        `).join('');
+        // Filter out any null/undefined paths and escape for HTML
+        const validPaths = recent.filter(p => p && typeof p === 'string');
+        
+        if (validPaths.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No recent folders</p>';
+            return;
+        }
+        
+        container.innerHTML = validPaths.map(path => {
+            const escapedPath = path.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            return `
+                <div class="workspace-path" onclick="Workspace.selectRecentFolder('${escapedPath}')" style="margin-bottom: 8px;">
+                    <span class="workspace-path-icon">📂</span>
+                    <span class="workspace-path-text">${Utils.shortenPath(path)}</span>
+                </div>
+            `;
+        }).join('');
     },
     
     /**

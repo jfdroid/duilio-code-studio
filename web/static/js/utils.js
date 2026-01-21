@@ -6,9 +6,16 @@
 const Utils = {
     /**
      * Shorten path by replacing home directory with ~
+     * @param {string} path - Path to shorten
+     * @returns {string} Shortened path or original if not in home
      */
     shortenPath(path) {
-        const home = AppState.workspace.homeDirectory || '';
+        // Guard against undefined/null path
+        if (!path || typeof path !== 'string') {
+            return path || '';
+        }
+        
+        const home = AppState?.workspace?.homeDirectory || '';
         if (home && path.startsWith(home)) {
             return '~' + path.slice(home.length);
         }
