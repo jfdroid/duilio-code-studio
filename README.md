@@ -13,7 +13,11 @@ Local and offline programming assistant, powered by **Qwen2.5-Coder**.
 ## 🏃 Quick Start
 
 ```bash
-cd /Users/jeffersonsilva/Desen/duilio-code-studio
+# Clone the repository
+git clone https://github.com/jfdroid/duilio-code-studio.git
+cd duilio-code-studio
+
+# Start the server
 ./start.sh
 ```
 
