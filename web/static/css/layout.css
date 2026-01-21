@@ -6,7 +6,16 @@
 /* App Container */
 .app-container {
     display: flex;
+    flex-direction: column;
     height: 100vh;
+    overflow: hidden;
+}
+
+/* Main Content (everything except status bar) */
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
 }
 
 /* Activity Bar */
@@ -322,41 +331,38 @@
     overflow: hidden;
 }
 
-/* Status Bar */
+/* Status Bar (Footer) */
 .status-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 16px;
-    background: #58a6ff;
-    color: white;
-    font-size: 12px;
+    padding: 0 12px;
+    background: #161b22;
+    border-top: 1px solid #30363d;
+    color: #8b949e;
+    font-size: 11px;
     flex-shrink: 0;
-    height: 24px;
-    min-height: 24px;
+    height: 22px;
+    min-height: 22px;
 }
 
 .status-left,
 .status-right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 }
 
 .status-item {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     white-space: nowrap;
+    padding: 0 4px;
 }
 
-.status-item + .status-item::before {
-    content: '';
-    display: inline-block;
-    width: 1px;
-    height: 12px;
-    background: rgba(255, 255, 255, 0.3);
-    margin-right: 10px;
+.status-item:hover {
+    color: #e6edf3;
 }
 
 .status-dot {
@@ -373,4 +379,5 @@
 
 .status-dot.checking {
     background: #d29922;
+    animation: pulse 1.5s infinite;
 }
