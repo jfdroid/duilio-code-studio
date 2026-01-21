@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -578,7 +578,7 @@
             color: var(--text-muted);
         }
 
-        /* Desabilitar autofill do navegador */
+        /* Disable browser autofill */
         .chat-textarea:-webkit-autofill,
         .chat-textarea:-webkit-autofill:hover,
         .chat-textarea:-webkit-autofill:focus {
@@ -586,12 +586,12 @@
             -webkit-text-fill-color: var(--text-primary) !important;
         }
 
-        /* Esconder COMPLETAMENTE sugestões de senha/autofill do macOS */
+        /* Completely hide macOS password/autofill suggestions */
         .input-wrapper {
             position: relative;
         }
 
-        /* Desabilitar todos os tipos de autofill buttons */
+        /* Disable all autofill button types */
         input::-webkit-credentials-auto-fill-button,
         input::-webkit-contacts-auto-fill-button,
         input::-webkit-textfield-decoration-container,
@@ -609,7 +609,7 @@
             height: 0 !important;
         }
 
-        /* Esconder popups de preenchimento */
+        /* Hide autocomplete popups */
         .pac-container,
         .autocomplete-items,
         [data-lastpass-root],
@@ -618,7 +618,7 @@
             display: none !important;
         }
 
-        /* Garantir que nada apareça sobre o input */
+        /* Ensure nothing appears over the input */
         .chat-textarea {
             -webkit-text-security: none;
         }
@@ -808,7 +808,7 @@
             color: white;
         }
 
-        /* Scrollbar no file tree */
+        /* File tree scrollbar */
         .modal-body::-webkit-scrollbar {
             width: 6px;
         }
@@ -832,27 +832,27 @@
             </div>
 
             <div class="conversations-header">
-                <span class="conversations-title">Conversas</span>
-                <button class="new-chat-btn" onclick="newChat()">+ Nova</button>
+                <span class="conversations-title">Conversations</span>
+                <button class="new-chat-btn" onclick="newChat()">+ New</button>
             </div>
 
             <div class="conversations-list" id="conversationsList">
                 <div class="conversation-item active">
                     <div class="conversation-icon">💬</div>
                     <div class="conversation-info">
-                        <div class="conversation-name">Nova conversa</div>
-                        <div class="conversation-time">Agora</div>
+                        <div class="conversation-name">New conversation</div>
+                        <div class="conversation-time">Now</div>
                     </div>
                 </div>
             </div>
 
             <div class="model-selector">
-                <label>Modelo <button onclick="refreshModels()" style="background: none; border: none; cursor: pointer; font-size: 12px;" title="Atualizar lista">🔄</button></label>
+                <label>Model <button onclick="refreshModels()" style="background: none; border: none; cursor: pointer; font-size: 12px;" title="Refresh list">🔄</button></label>
                 <select class="model-select" id="modelSelect" onchange="updateModelInfo()">
-                    <option value="">Carregando modelos...</option>
+                    <option value="">Loading models...</option>
                 </select>
                 <div class="model-info" id="modelInfo">
-                    ⏳ Verificando modelos instalados...
+                    ⏳ Checking installed models...
                 </div>
             </div>
         </aside>
@@ -864,15 +864,15 @@
                     <h1>DuilioCode Studio</h1>
                     <div class="status-badge">
                         <div class="status-dot" id="statusDot"></div>
-                        <span id="statusText">Conectado</span>
+                        <span id="statusText">Connected</span>
                     </div>
                 </div>
                 <div class="header-actions">
                     <button class="header-btn" onclick="openFileBrowser()">
-                        📁 Abrir Arquivo
+                        📁 Open File
                     </button>
                     <button class="header-btn" onclick="clearChat()">
-                        🗑️ Limpar
+                        🗑️ Clear
                     </button>
                 </div>
             </header>
@@ -880,30 +880,30 @@
             <div class="chat-area" id="chatArea">
                 <div class="welcome-screen" id="welcomeScreen">
                     <div class="welcome-icon">🚀</div>
-                    <h2 class="welcome-title">Bem-vindo ao DuilioCode</h2>
+                    <h2 class="welcome-title">Welcome to DuilioCode</h2>
                     <p class="welcome-subtitle">
-                        Seu assistente de programação local e offline. 
-                        Powered by <strong>Qwen2.5-Coder</strong> - o melhor modelo de código open source.
+                        Your local and offline programming assistant. 
+                        Powered by <strong>Qwen2.5-Coder</strong> - the best open source code model.
                     </p>
                     <div class="quick-actions">
-                        <div class="quick-action" onclick="quickPrompt('Explique como funciona async/await em JavaScript')">
+                        <div class="quick-action" onclick="quickPrompt('Explain how async/await works in JavaScript')">
                             <div class="quick-action-icon">📚</div>
-                            <div class="quick-action-title">Explicar Conceito</div>
-                            <div class="quick-action-desc">Entenda async/await em JS</div>
+                            <div class="quick-action-title">Explain Concept</div>
+                            <div class="quick-action-desc">Understand async/await in JS</div>
                         </div>
-                        <div class="quick-action" onclick="quickPrompt('Crie uma função em Python que lê um arquivo JSON e retorna um dicionário')">
+                        <div class="quick-action" onclick="quickPrompt('Create a Python function that reads a JSON file and returns a dictionary')">
                             <div class="quick-action-icon">⚡</div>
-                            <div class="quick-action-title">Gerar Código</div>
-                            <div class="quick-action-desc">Função para ler JSON</div>
+                            <div class="quick-action-title">Generate Code</div>
+                            <div class="quick-action-desc">Function to read JSON</div>
                         </div>
-                        <div class="quick-action" onclick="quickPrompt('Revise este código e sugira melhorias de performance')">
+                        <div class="quick-action" onclick="quickPrompt('Review this code and suggest performance improvements')">
                             <div class="quick-action-icon">🔍</div>
                             <div class="quick-action-title">Code Review</div>
-                            <div class="quick-action-desc">Análise de código</div>
+                            <div class="quick-action-desc">Code analysis</div>
                         </div>
-                        <div class="quick-action" onclick="quickPrompt('Como implementar um padrão Repository em Kotlin com Clean Architecture?')">
+                        <div class="quick-action" onclick="quickPrompt('How to implement Repository Pattern in Kotlin with Clean Architecture?')">
                             <div class="quick-action-icon">🏗️</div>
-                            <div class="quick-action-title">Arquitetura</div>
+                            <div class="quick-action-title">Architecture</div>
                             <div class="quick-action-desc">Repository Pattern</div>
                         </div>
                     </div>
@@ -920,7 +920,7 @@
                                 class="chat-textarea" 
                                 id="chatInput" 
                                 name="duilio_chat_input_field_xyz"
-                                placeholder="Pergunte sobre código, peça para gerar funções, revisar código..."
+                                placeholder="Ask about code, request function generation, code review..."
                                 rows="1"
                                 onkeydown="handleKeyDown(event)"
                                 oninput="autoResize(this)"
@@ -934,13 +934,13 @@
                                 aria-autocomplete="none"
                             ></textarea>
                             <div class="input-actions">
-                                <button type="button" class="input-btn" onclick="openFileBrowser()" title="Anexar arquivo">📎</button>
-                                <button type="button" class="input-btn send-btn" id="sendBtn" onclick="sendMessage()" title="Enviar (Ctrl+Enter)">➤</button>
+                                <button type="button" class="input-btn" onclick="openFileBrowser()" title="Attach file">📎</button>
+                                <button type="button" class="input-btn send-btn" id="sendBtn" onclick="sendMessage()" title="Send (Ctrl+Enter)">➤</button>
                             </div>
                         </div>
                     </form>
                     <div class="input-hint">
-                        <strong>Ctrl+Enter</strong> para enviar • <strong>Shift+Enter</strong> para nova linha
+                        <strong>Ctrl+Enter</strong> to send • <strong>Shift+Enter</strong> for new line
                     </div>
                 </div>
             </div>
@@ -951,7 +951,7 @@
     <div class="modal-overlay" id="fileBrowserModal">
         <div class="modal" style="max-width: 800px; height: 80vh;">
             <div class="modal-header">
-                <span class="modal-title">📁 Selecionar Arquivo</span>
+                <span class="modal-title">📁 Select File</span>
                 <button class="modal-close" onclick="closeFileBrowser()">×</button>
             </div>
             
@@ -961,7 +961,7 @@
                     <input 
                         type="text" 
                         id="filePathInput" 
-                        placeholder="Digite o caminho do arquivo ou diretório..."
+                        placeholder="Enter file or directory path..."
                         style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color); 
                                color: var(--text-primary); padding: 10px 12px; border-radius: 8px; 
                                font-family: 'JetBrains Mono', monospace; font-size: 13px;"
@@ -969,7 +969,7 @@
                     >
                     <button onclick="loadPath()" style="background: var(--accent-blue); color: white; 
                             border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                        Ir
+                        Go
                     </button>
                     <button onclick="goHome()" style="background: var(--bg-tertiary); color: var(--text-secondary); 
                             border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; cursor: pointer;">
@@ -987,7 +987,7 @@
             <div class="modal-body" style="flex: 1; overflow-y: auto;">
                 <div id="fileTree" style="padding: 8px;"></div>
                 <div id="fileLoading" style="display: none; text-align: center; padding: 40px; color: var(--text-muted);">
-                    ⏳ Carregando...
+                    ⏳ Loading...
                 </div>
                 <div id="fileError" style="display: none; text-align: center; padding: 40px; color: var(--accent-red);">
                 </div>
@@ -1000,7 +1000,7 @@
                     <div style="display: flex; gap: 8px;">
                         <button onclick="insertFileContent()" style="background: var(--accent-green); color: var(--bg-primary); 
                                 border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                            📎 Inserir no Chat
+                            📎 Insert in Chat
                         </button>
                         <button onclick="closePreview()" style="background: var(--bg-tertiary); color: var(--text-secondary); 
                                 border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
@@ -1030,10 +1030,10 @@
             checkServerStatus();
             setInterval(checkServerStatus, 30000);
             
-            // Carregar modelos disponíveis
+            // Load available models
             refreshModels();
             
-            // Prevenir autofill do macOS
+            // Prevent macOS autofill
             const chatInput = document.getElementById('chatInput');
             if (chatInput) {
                 chatInput.setAttribute('readonly', 'readonly');
@@ -1049,13 +1049,13 @@
             }
         });
         
-        // Lista de modelos recomendados para código
+        // Recommended code models list
         const RECOMMENDED_MODELS = [
-            { name: 'qwen2.5-coder:14b', display: 'Qwen2.5-Coder 14B', desc: 'Recomendado - Melhor custo-benefício', size: '9GB' },
-            { name: 'qwen2.5-coder:7b', display: 'Qwen2.5-Coder 7B', desc: 'Rápido - Bom para tarefas simples', size: '4.7GB' },
-            { name: 'qwen2.5-coder:32b', display: 'Qwen2.5-Coder 32B', desc: 'Avançado - Máxima qualidade', size: '19GB' },
-            { name: 'codellama:13b', display: 'CodeLlama 13B', desc: 'Meta AI - Bom para completar código', size: '7GB' },
-            { name: 'deepseek-coder:6.7b', display: 'DeepSeek Coder 6.7B', desc: 'Leve - Especializado em código', size: '4GB' },
+            { name: 'qwen2.5-coder:14b', display: 'Qwen2.5-Coder 14B', desc: 'Recommended - Best cost-benefit', size: '9GB' },
+            { name: 'qwen2.5-coder:7b', display: 'Qwen2.5-Coder 7B', desc: 'Fast - Good for simple tasks', size: '4.7GB' },
+            { name: 'qwen2.5-coder:32b', display: 'Qwen2.5-Coder 32B', desc: 'Advanced - Maximum quality', size: '19GB' },
+            { name: 'codellama:13b', display: 'CodeLlama 13B', desc: 'Meta AI - Good for code completion', size: '7GB' },
+            { name: 'deepseek-coder:6.7b', display: 'DeepSeek Coder 6.7B', desc: 'Lightweight - Specialized for code', size: '4GB' },
         ];
         
         let installedModels = [];
@@ -1064,16 +1064,16 @@
             const select = document.getElementById('modelSelect');
             const modelInfo = document.getElementById('modelInfo');
             
-            select.innerHTML = '<option value="">⏳ Carregando...</option>';
-            modelInfo.innerHTML = '⏳ Verificando modelos...';
+            select.innerHTML = '<option value="">⏳ Loading...</option>';
+            modelInfo.innerHTML = '⏳ Checking models...';
             
             try {
-                // Buscar modelos instalados do Ollama
+                // Fetch installed models from Ollama
                 const response = await fetch('http://localhost:11434/api/tags');
                 const data = await response.json();
                 installedModels = (data.models || []).map(m => m.name);
                 
-                // Construir select com status
+                // Build select with status
                 let options = '';
                 let hasInstalled = false;
                 
@@ -1088,10 +1088,10 @@
                     }
                 });
                 
-                // Adicionar separador e modelos não instalados
+                // Add separator and not installed models
                 if (hasInstalled) {
                     options += '<option disabled>────────────</option>';
-                    options += '<option disabled>❌ Não instalados:</option>';
+                    options += '<option disabled>❌ Not installed:</option>';
                 }
                 
                 RECOMMENDED_MODELS.forEach(model => {
@@ -1101,22 +1101,22 @@
                     }
                 });
                 
-                // Adicionar outros modelos instalados que não estão na lista
+                // Add other installed models not in the list
                 const otherModels = installedModels.filter(m => 
                     !RECOMMENDED_MODELS.some(rm => m.startsWith(rm.name.split(':')[0]))
                 );
                 
                 if (otherModels.length > 0) {
                     options += '<option disabled>────────────</option>';
-                    options += '<option disabled>📦 Outros instalados:</option>';
+                    options += '<option disabled>📦 Other installed:</option>';
                     otherModels.forEach(m => {
                         options += `<option value="${m}">✅ ${m}</option>`;
                     });
                 }
                 
-                select.innerHTML = options || '<option disabled>Nenhum modelo encontrado</option>';
+                select.innerHTML = options || '<option disabled>No models found</option>';
                 
-                // Selecionar primeiro modelo disponível
+                // Select first available model
                 const firstEnabled = select.querySelector('option:not([disabled])');
                 if (firstEnabled) {
                     select.value = firstEnabled.value;
@@ -1124,16 +1124,16 @@
                     updateModelInfo();
                 } else {
                     modelInfo.innerHTML = `
-                        <span style="color: var(--accent-red);">❌ Nenhum modelo instalado!</span><br>
-                        <small>Execute: <code>ollama pull qwen2.5-coder:7b</code></small>
+                        <span style="color: var(--accent-red);">❌ No models installed!</span><br>
+                        <small>Run: <code>ollama pull qwen2.5-coder:7b</code></small>
                     `;
                 }
                 
             } catch (error) {
-                select.innerHTML = '<option disabled>❌ Erro ao carregar</option>';
+                select.innerHTML = '<option disabled>❌ Error loading</option>';
                 modelInfo.innerHTML = `
-                    <span style="color: var(--accent-red);">❌ Ollama não conectado</span><br>
-                    <small>Execute: <code>ollama serve</code></small>
+                    <span style="color: var(--accent-red);">❌ Ollama not connected</span><br>
+                    <small>Run: <code>ollama serve</code></small>
                 `;
             }
         }
@@ -1144,7 +1144,7 @@
                 const response = await fetch(`${API_BASE}/health`);
                 const data = await response.json();
                 document.getElementById('statusDot').style.background = '#3fb950';
-                document.getElementById('statusText').textContent = 'Conectado';
+                document.getElementById('statusText').textContent = 'Connected';
             } catch (error) {
                 document.getElementById('statusDot').style.background = '#f85149';
                 document.getElementById('statusText').textContent = 'Offline';
@@ -1162,13 +1162,13 @@
             
             if (model) {
                 modelInfo.innerHTML = `
-                    <span style="color: var(--accent-green);">✅ Pronto para usar</span><br>
+                    <span style="color: var(--accent-green);">✅ Ready to use</span><br>
                     <small>${model.desc}</small>
                 `;
             } else {
                 modelInfo.innerHTML = `
                     <span style="color: var(--accent-green);">✅ ${currentModel}</span><br>
-                    <small>Modelo personalizado</small>
+                    <small>Custom model</small>
                 `;
             }
         }
@@ -1204,7 +1204,7 @@
 
         // Clear chat
         function clearChat() {
-            if (confirm('Limpar toda a conversa?')) {
+            if (confirm('Clear entire conversation?')) {
                 newChat();
             }
         }
@@ -1246,11 +1246,11 @@
                 if (data.response) {
                     addMessage('assistant', data.response);
                 } else if (data.error) {
-                    addMessage('assistant', `❌ Erro: ${data.error}`);
+                    addMessage('assistant', `❌ Error: ${data.error}`);
                 }
             } catch (error) {
                 removeLoadingMessage(loadingId);
-                addMessage('assistant', `❌ Erro de conexão: ${error.message}`);
+                addMessage('assistant', `❌ Connection error: ${error.message}`);
             }
 
             isLoading = false;
@@ -1264,9 +1264,9 @@
             const messageEl = document.createElement('div');
             messageEl.className = 'message';
 
-            const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             const avatar = role === 'user' ? '👤' : '🤖';
-            const name = role === 'user' ? 'Você' : 'DuilioCode';
+            const name = role === 'user' ? 'You' : 'DuilioCode';
 
             // Process markdown
             const htmlContent = marked.parse(content);
@@ -1290,7 +1290,7 @@
                 const pre = block.parentElement;
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'copy-code-btn';
-                copyBtn.textContent = 'Copiar';
+                copyBtn.textContent = 'Copy';
                 copyBtn.onclick = () => copyCode(block.textContent, copyBtn);
                 pre.appendChild(copyBtn);
             });
@@ -1333,13 +1333,13 @@
         // Copy code
         function copyCode(text, btn) {
             navigator.clipboard.writeText(text).then(() => {
-                btn.textContent = 'Copiado!';
-                setTimeout(() => btn.textContent = 'Copiar', 2000);
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
             });
         }
 
         // ============================================
-        // FILE BROWSER - Funcionalidade Completa
+        // FILE BROWSER - Full Functionality
         // ============================================
         
         let currentDirectory = '';
@@ -1366,7 +1366,7 @@
         function loadPath() {
             const path = document.getElementById('filePathInput').value.trim();
             if (path) {
-                // Verificar se é arquivo ou diretório
+                // Check if it's a file or directory
                 loadDirectory(path);
             }
         }
@@ -1388,7 +1388,7 @@
                 loading.style.display = 'none';
 
                 if (data.detail) {
-                    // Pode ser um arquivo, tentar ler
+                    // Could be a file, try to read
                     await loadFile(path);
                     return;
                 }
@@ -1398,23 +1398,23 @@
                 document.getElementById('currentPath').textContent = path;
                 updateBreadcrumb(path);
 
-                // Botão para voltar (parent directory)
+                // Back button (parent directory)
                 if (path !== '/') {
                     const parentPath = path.split('/').slice(0, -1).join('/') || '/';
                     fileTree.innerHTML += `
                         <div class="file-tree-item folder" onclick="loadDirectory('${parentPath}')" 
                              style="color: var(--accent-orange);">
-                            📁 ../ (voltar)
+                            📁 ../ (back)
                         </div>
                     `;
                 }
 
-                // Ordenar: pastas primeiro, depois arquivos
+                // Sort: folders first, then files
                 const items = Array.isArray(data) ? data : [];
                 const folders = items.filter(i => i.is_directory).sort((a,b) => a.name.localeCompare(b.name));
                 const files = items.filter(i => !i.is_directory).sort((a,b) => a.name.localeCompare(b.name));
 
-                // Renderizar pastas
+                // Render folders
                 folders.forEach(item => {
                     fileTree.innerHTML += `
                         <div class="file-tree-item folder" onclick="loadDirectory('${item.path}')">
@@ -1423,7 +1423,7 @@
                     `;
                 });
 
-                // Renderizar arquivos
+                // Render files
                 files.forEach(item => {
                     const icon = getFileIcon(item.name);
                     const size = formatSize(item.size);
@@ -1438,7 +1438,7 @@
                 if (items.length === 0) {
                     fileTree.innerHTML += `
                         <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-                            📂 Diretório vazio
+                            📂 Empty directory
                         </div>
                     `;
                 }
@@ -1446,7 +1446,7 @@
             } catch (err) {
                 loading.style.display = 'none';
                 error.style.display = 'block';
-                error.textContent = `❌ Erro: ${err.message}`;
+                error.textContent = `❌ Error: ${err.message}`;
             }
         }
 
@@ -1473,14 +1473,14 @@
                 selectedFile = path;
                 selectedFileContent = data.content;
 
-                // Mostrar preview
+                // Show preview
                 document.getElementById('previewFileName').textContent = path.split('/').pop();
                 
-                // Limitar preview a 100 linhas
+                // Limit preview to 100 lines
                 const lines = data.content.split('\n');
                 let previewText = lines.slice(0, 100).join('\n');
                 if (lines.length > 100) {
-                    previewText += `\n\n... (${lines.length - 100} linhas restantes)`;
+                    previewText += `\n\n... (${lines.length - 100} lines remaining)`;
                 }
                 
                 document.getElementById('previewContent').textContent = previewText;
@@ -1492,7 +1492,7 @@
             } catch (err) {
                 loading.style.display = 'none';
                 error.style.display = 'block';
-                error.textContent = `❌ Erro: ${err.message}`;
+                error.textContent = `❌ Error: ${err.message}`;
             }
         }
 
@@ -1508,8 +1508,8 @@
             const fileName = selectedFile.split('/').pop();
             const language = getLanguageFromFile(fileName);
             
-            // Inserir no chat com formatação
-            const content = `Analise este arquivo \`${fileName}\`:\n\n\`\`\`${language}\n${selectedFileContent}\n\`\`\``;
+            // Insert in chat with formatting
+            const content = `Analyze this file \`${fileName}\`:\n\n\`\`\`${language}\n${selectedFileContent}\n\`\`\``;
             
             document.getElementById('chatInput').value = content;
             autoResize(document.getElementById('chatInput'));

@@ -1,14 +1,14 @@
 # 🚀 DuilioCode Studio
 
-Assistente de programação local e offline, powered by **Qwen2.5-Coder**.
+Local and offline programming assistant, powered by **Qwen2.5-Coder**.
 
 ## ✨ Features
 
-- 💻 **100% Local** - Funciona sem internet
-- 🔒 **Privado** - Seu código nunca sai do seu computador
-- ⚡ **Rápido** - Otimizado para Apple Silicon
-- 🎨 **Interface Moderna** - UI estilo VS Code/Cursor
-- 📁 **Edição de Arquivos** - Lê e escreve arquivos diretamente
+- 💻 **100% Local** - Works without internet
+- 🔒 **Private** - Your code never leaves your computer
+- ⚡ **Fast** - Optimized for Apple Silicon
+- 🎨 **Modern Interface** - VS Code/Cursor-style UI
+- 📁 **File Editing** - Read and write files directly
 
 ## 🏃 Quick Start
 
@@ -17,106 +17,106 @@ cd /Users/jeffersonsilva/Desen/duilio-code-studio
 ./start.sh
 ```
 
-Acesse: **http://127.0.0.1:8080**
+Access: **http://127.0.0.1:8080**
 
-## 📦 Modelos Disponíveis
+## 📦 Available Models
 
-| Modelo | Tamanho | Qualidade | Velocidade |
-|--------|---------|-----------|------------|
+| Model | Size | Quality | Speed |
+|-------|------|---------|-------|
 | qwen2.5-coder:7b | 4.7GB | ⭐⭐⭐ | ⚡⚡⚡⚡ |
 | qwen2.5-coder:14b | 9GB | ⭐⭐⭐⭐ | ⚡⚡⚡ |
 | qwen2.5-coder:32b | 19GB | ⭐⭐⭐⭐⭐ | ⚡⚡ |
 
-### Instalar Modelo
+### Install Model
 
 ```bash
-# Recomendado (melhor custo-benefício)
+# Recommended (best cost-benefit)
 ollama pull qwen2.5-coder:14b
 
-# Rápido (para tarefas simples)
+# Fast (for simple tasks)
 ollama pull qwen2.5-coder:7b
 
-# Avançado (máxima qualidade)
+# Advanced (maximum quality)
 ollama pull qwen2.5-coder:32b
 ```
 
-## 🎯 O que ele faz bem
+## 🎯 What it does well
 
-- ✅ Gerar código em múltiplas linguagens
-- ✅ Explicar conceitos de programação
-- ✅ Code review e sugestões
-- ✅ Debug e correção de erros
-- ✅ Refatoração de código
-- ✅ Documentação automática
-- ✅ Testes unitários
-- ✅ Arquitetura e design patterns
+- ✅ Generate code in multiple languages
+- ✅ Explain programming concepts
+- ✅ Code review and suggestions
+- ✅ Debug and error fixing
+- ✅ Code refactoring
+- ✅ Automatic documentation
+- ✅ Unit tests
+- ✅ Architecture and design patterns
 
-## ⚠️ Limitações (vs Claude 4.5 Opus)
+## ⚠️ Limitations (vs Claude 4.5 Opus)
 
-| Aspecto | DuilioCode Local | Claude 4.5 Opus |
-|---------|------------------|-----------------|
-| Raciocínio complexo | Médio | Excelente |
-| Contexto longo | ~8K tokens | ~200K tokens |
-| Conhecimento atual | Até data de treino | Mais recente |
-| Velocidade | Depende do hardware | Rápido |
-| Custo | 💚 GRÁTIS | 💰 Por token |
-| Privacidade | 💚 100% Local | ☁️ Na nuvem |
+| Aspect | DuilioCode Local | Claude 4.5 Opus |
+|--------|------------------|-----------------|
+| Complex reasoning | Medium | Excellent |
+| Long context | ~8K tokens | ~200K tokens |
+| Current knowledge | Up to training date | More recent |
+| Speed | Hardware dependent | Fast |
+| Cost | 💚 FREE | 💰 Per token |
+| Privacy | 💚 100% Local | ☁️ Cloud-based |
 
-## 📁 Estrutura
+## 📁 Structure
 
 ```
 duilio-code-studio/
 ├── src/
 │   └── api/
-│       └── main.py      # API FastAPI
+│       └── main.py      # FastAPI API
 ├── web/
 │   └── templates/
 │       └── index.html   # Interface
-├── start.sh             # Script de início
-└── requirements.txt     # Dependências
+├── start.sh             # Startup script
+└── requirements.txt     # Dependencies
 ```
 
 ## 🔧 API Endpoints
 
-| Endpoint | Método | Descrição |
-|----------|--------|-----------|
-| `/` | GET | Interface web |
-| `/health` | GET | Status do servidor |
-| `/api/code` | POST | Gerar código |
-| `/api/chat` | POST | Chat com histórico |
-| `/api/models` | GET | Listar modelos |
-| `/api/files` | GET | Listar arquivos |
-| `/api/files/read` | GET | Ler arquivo |
-| `/api/files/write` | POST | Salvar arquivo |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Web interface |
+| `/health` | GET | Server status |
+| `/api/code` | POST | Generate code |
+| `/api/chat` | POST | Chat with history |
+| `/api/models` | GET | List models |
+| `/api/files` | GET | List files |
+| `/api/files/read` | GET | Read file |
+| `/api/files/write` | POST | Save file |
 
-## 💡 Dicas de Uso
+## 💡 Usage Tips
 
-### Prompts eficientes:
+### Effective prompts:
 
 ```
-# Gerar função
-"Crie uma função em Python que valida CPF"
+# Generate function
+"Create a Python function that validates CPF"
 
-# Explicar código
-"Explique este código linha por linha: [cole o código]"
+# Explain code
+"Explain this code line by line: [paste code]"
 
 # Code review
-"Revise este código e sugira melhorias: [cole o código]"
+"Review this code and suggest improvements: [paste code]"
 
-# Arquitetura
-"Como implementar Repository Pattern em Kotlin com Clean Architecture?"
+# Architecture
+"How to implement Repository Pattern in Kotlin with Clean Architecture?"
 ```
 
-## 🆚 Comparativo com Outras Ferramentas
+## 🆚 Comparison with Other Tools
 
-| Ferramenta | Tipo | Custo | Offline |
-|------------|------|-------|---------|
-| **DuilioCode** | Local | Grátis | ✅ |
-| Cursor AI | IDE Cloud | Pago | ❌ |
-| GitHub Copilot | Extension | Pago | ❌ |
-| ChatGPT | Web | Pago | ❌ |
-| Claude | Web | Pago | ❌ |
+| Tool | Type | Cost | Offline |
+|------|------|------|---------|
+| **DuilioCode** | Local | Free | ✅ |
+| Cursor AI | Cloud IDE | Paid | ❌ |
+| GitHub Copilot | Extension | Paid | ❌ |
+| ChatGPT | Web | Paid | ❌ |
+| Claude | Web | Paid | ❌ |
 
 ---
 
-**DuilioCode Studio** - Seu Cursor offline! 🚀
+**DuilioCode Studio** - Your offline Cursor! 🚀

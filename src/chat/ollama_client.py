@@ -18,14 +18,13 @@ from config.settings import settings
 
 
 class OllamaClient:
-    """Async client for Ollama API - Bilingual (PT-BR / EN)."""
+    """Async client for Ollama API."""
     
-    # System prompt - Português do Brasil (PT-BR)
-    DEFAULT_SYSTEM = """Você é um assistente de IA útil e prestativo.
-REGRA OBRIGATÓRIA: Responda SEMPRE em Português do Brasil (PT-BR).
-- Use vocabulário brasileiro (não português de Portugal)
-- Seja direto, preciso e útil
-- Independente do idioma da pergunta, responda em PT-BR"""
+    # Default system prompt
+    DEFAULT_SYSTEM = """You are a helpful AI assistant.
+- Be direct, precise and helpful
+- Provide clear and concise answers
+- Use code examples when appropriate"""
     
     def __init__(
         self,
@@ -105,14 +104,14 @@ REGRA OBRIGATÓRIA: Responda SEMPRE em Português do Brasil (PT-BR).
         keep_history: bool = True,
         stream: bool = False
     ):
-        """Chat with context history. Bilingual: responds in user's language."""
+        """Chat with context history."""
         # Build message
         msg = {"role": "user", "content": message}
         if images:
             msg["images"] = images  # Base64 encoded
         
         messages = []
-        # Use provided system prompt or default bilingual prompt
+        # Use provided system prompt or default
         effective_system = system or self.system_prompt
         if effective_system:
             messages.append({"role": "system", "content": effective_system})

@@ -1,5 +1,5 @@
 /**
- * DuilioAI Studio - Frontend Application v2.0
+ * DuilioCode Studio - Frontend Application v2.0
  * 
  * MAJOR UPDATE: Smart prompt detection, better user feedback, improved UX
  */
@@ -98,7 +98,7 @@ function updateLoadingTimer() {
     }
 }
 
-function showLoading(text = 'Processando...') {
+function showLoading(text = 'Processing...') {
     elements.loadingText.textContent = text;
     elements.loading.classList.add('active');
     
@@ -143,7 +143,7 @@ function cancelOperation() {
         console.log('🚫 Operation cancelled by user');
         
         const elapsed = loadingStartTime ? (Date.now() - loadingStartTime) / 1000 : 0;
-        setStatus(`Cancelado após ${formatTime(elapsed)}`, 'error');
+        setStatus(`Cancelled after ${formatTime(elapsed)}`, 'error');
     }
     hideLoading();
 }
@@ -219,7 +219,7 @@ async function apiRequest(endpoint, options = {}) {
         return response.json();
     } catch (error) {
         if (error.name === 'AbortError') {
-            throw new Error('Operação cancelada pelo usuário');
+            throw new Error('Operation cancelled by user');
         }
         throw error;
     }
@@ -317,7 +317,7 @@ async function sendChatMessage() {
     elements.chatInput.value = '';
     elements.chatInput.style.height = 'auto';
     
-    setStatus('Pensando...', 'busy');
+    setStatus('Thinking...', 'busy');
     
     try {
         const response = await apiRequest('/api/chat', {
@@ -329,10 +329,10 @@ async function sendChatMessage() {
         });
         
         addMessage(response.response, 'assistant');
-        setStatus('Pronto');
+        setStatus('Ready');
     } catch (error) {
-        addMessage(`Erro: ${error.message}`, 'assistant');
-        setStatus('Erro', 'error');
+        addMessage(`Error: ${error.message}`, 'assistant');
+        setStatus('Error', 'error');
     }
 }
 
@@ -371,8 +371,8 @@ elements.editPrompt.addEventListener('input', (e) => {
     const prompt = e.target.value;
     if (checkRemovalIntent(prompt)) {
         showEditWarning(
-            'Parece que você quer REMOVER algo. A aba EDIT transforma a imagem inteira. ' +
-            'Para remover objetos específicos, use a aba INPAINT.'
+            'It looks like you want to REMOVE something. The EDIT tab transforms the entire image. ' +
+            'To remove specific objects, use the INPAINT tab.'
         );
     } else {
         hideEditWarning();
@@ -382,12 +382,12 @@ elements.editPrompt.addEventListener('input', (e) => {
 elements.generateBtn.addEventListener('click', async () => {
     const prompt = elements.genPrompt.value.trim();
     if (!prompt) {
-        alert('Por favor, descreva a imagem que quer gerar');
+        alert('Please describe the image you want to generate');
         return;
     }
     
-    showLoading('Gerando imagem do zero...');
-    setStatus('Gerando...', 'busy');
+    showLoading('Generating image from scratch...');
+    setStatus('Generating...', 'busy');
     
     try {
         const response = await apiRequest('/api/image/generate', {
@@ -405,10 +405,10 @@ elements.generateBtn.addEventListener('click', async () => {
         
         // Display image
         elements.genPreview.innerHTML = `<img src="data:image/png;base64,${response.images[0]}" alt="Generated">`;
-        setStatus('Pronto');
+        setStatus('Ready');
     } catch (error) {
-        alert(`Falha na geração: ${error.message}`);
-        setStatus('Erro', 'error');
+        alert(`Generation failed: ${error.message}`);
+        setStatus('Error', 'error');
     } finally {
         hideLoading();
     }
@@ -454,7 +454,7 @@ function handleImageUpload(file) {
         elements.editOriginal.innerHTML = `<img src="${e.target.result}" alt="Original">`;
         elements.uploadArea.innerHTML = `
             <span class="upload-icon">✅</span>
-            <p>Imagem carregada! Clique para trocar</p>
+            <p>Image loaded! Click to change</p>
         `;
     };
     reader.readAsDataURL(file);
@@ -462,23 +462,23 @@ function handleImageUpload(file) {
 
 elements.editBtn.addEventListener('click', async () => {
     if (!uploadedImage) {
-        alert('Envie uma imagem primeiro');
+        alert('Upload an image first');
         return;
     }
     
     const prompt = elements.editPrompt.value.trim();
     if (!prompt) {
-        alert('Descreva a transformação que deseja aplicar');
+        alert('Describe the transformation you want to apply');
         return;
     }
     
     // Warn if prompt looks like removal
     if (checkRemovalIntent(prompt)) {
         const proceed = confirm(
-            '⚠️ Seu prompt parece pedir uma REMOÇÃO.\n\n' +
-            'A aba EDIT transforma a imagem INTEIRA, não remove objetos específicos.\n\n' +
-            'Para remover objetos, use a aba INPAINT.\n\n' +
-            'Deseja continuar mesmo assim com EDIT?'
+            '⚠️ Your prompt seems to request a REMOVAL.\n\n' +
+            'The EDIT tab transforms the ENTIRE image, it does not remove specific objects.\n\n' +
+            'To remove objects, use the INPAINT tab.\n\n' +
+            'Do you want to continue with EDIT anyway?'
         );
         if (!proceed) {
             return;
@@ -486,10 +486,10 @@ elements.editBtn.addEventListener('click', async () => {
     }
     
     const isQuick = document.getElementById('edit-quick').checked;
-    const mode = isQuick ? 'rápido' : 'completo';
+    const mode = isQuick ? 'quick' : 'full';
     
-    showLoading(`Transformando imagem (modo ${mode})...`);
-    setStatus('Transformando...', 'busy');
+    showLoading(`Transforming image (${mode} mode)...`);
+    setStatus('Transforming...', 'busy');
     
     // Hide any previous suggestions
     if (elements.editSuggestions) {
@@ -508,7 +508,7 @@ elements.editBtn.addEventListener('click', async () => {
             }),
         });
         
-        elements.editResult.innerHTML = `<img src="data:image/png;base64,${response.images[0]}" alt="Resultado">`;
+        elements.editResult.innerHTML = `<img src="data:image/png;base64,${response.images[0]}" alt="Result">`;
         
         // Show warnings and suggestions if any
         if (response.warnings && response.warnings.length > 0) {
@@ -519,10 +519,10 @@ elements.editBtn.addEventListener('click', async () => {
             showEditSuggestions(response.suggestions);
         }
         
-        setStatus('Pronto');
+        setStatus('Ready');
     } catch (error) {
-        alert(`Erro na edição: ${error.message}`);
-        setStatus('Erro', 'error');
+        alert(`Edit error: ${error.message}`);
+        setStatus('Error', 'error');
     } finally {
         hideLoading();
     }
@@ -533,16 +533,16 @@ elements.editBtn.addEventListener('click', async () => {
 elements.codeBtn.addEventListener('click', async () => {
     const prompt = elements.codePrompt.value.trim();
     if (!prompt) {
-        alert('Descreva o código que você precisa');
+        alert('Describe the code you need');
         return;
     }
     
-    showLoading('Gerando código...');
-    setStatus('Codificando...', 'busy');
+    showLoading('Generating code...');
+    setStatus('Coding...', 'busy');
     
     try {
         const language = elements.codeLang.value;
-        const fullPrompt = `Crie código ${language} para: ${prompt}. Forneça código limpo e bem comentado.`;
+        const fullPrompt = `Create ${language} code for: ${prompt}. Provide clean and well-commented code.`;
         
         const response = await apiRequest('/api/code', {
             method: 'POST',
@@ -552,10 +552,10 @@ elements.codeBtn.addEventListener('click', async () => {
         });
         
         elements.codeOutput.innerHTML = `<code>${escapeHtml(response.code)}</code>`;
-        setStatus('Pronto');
+        setStatus('Ready');
     } catch (error) {
-        elements.codeOutput.innerHTML = `<code>Erro: ${escapeHtml(error.message)}</code>`;
-        setStatus('Erro', 'error');
+        elements.codeOutput.innerHTML = `<code>Error: ${escapeHtml(error.message)}</code>`;
+        setStatus('Error', 'error');
     } finally {
         hideLoading();
     }
@@ -564,9 +564,9 @@ elements.codeBtn.addEventListener('click', async () => {
 elements.copyCode.addEventListener('click', () => {
     const code = elements.codeOutput.textContent;
     navigator.clipboard.writeText(code).then(() => {
-        elements.copyCode.textContent = '✓ Copiado!';
+        elements.copyCode.textContent = '✓ Copied!';
         setTimeout(() => {
-            elements.copyCode.textContent = '📋 Copiar';
+            elements.copyCode.textContent = '📋 Copy';
         }, 2000);
     });
 });
@@ -657,8 +657,8 @@ function initInpaint() {
         } else {
             promptGroup.style.display = 'block';
             promptInput.placeholder = e.target.value === 'add' 
-                ? 'Ex: tatuagem de dragão, óculos escuros, brinco de ouro...'
-                : 'Ex: camiseta vermelha, cabelo loiro, fundo de praia...';
+                ? 'Ex: dragon tattoo, sunglasses, gold earring...'
+                : 'Ex: red shirt, blonde hair, beach background...';
         }
     });
     
@@ -713,7 +713,7 @@ function loadInpaintImage(file) {
             document.getElementById('inpaint-btn').disabled = false;
             
             const uploadArea = document.getElementById('inpaint-upload');
-            uploadArea.innerHTML = '<span class="upload-icon">✅</span><p>Imagem carregada! Clique para trocar</p>';
+            uploadArea.innerHTML = '<span class="upload-icon">✅</span><p>Image loaded! Click to change</p>';
             uploadArea.classList.add('loaded');
             
             // Hide cursor initially
@@ -795,8 +795,8 @@ function setTool(tool) {
     if (indicator) {
         indicator.className = `tool-indicator ${tool}`;
         indicator.innerHTML = tool === 'brush' 
-            ? '🖌️ Pincel - Marcar área' 
-            : '🧹 Borracha - Desmarcar área';
+            ? '🖌️ Brush - Mark area' 
+            : '🧹 Eraser - Unmark area';
     }
 }
 
@@ -920,17 +920,17 @@ async function applyInpaint() {
         if (!context) {
             // Ask user for context
             context = window.prompt(
-                '⚠️ IMPORTANTE para melhor resultado!\n\n' +
-                'Descreva o que DEVERIA aparecer no lugar do objeto removido.\n\n' +
-                'Exemplo: "parede de tijolos brancos", "mesa de escritório", "fundo de floresta"\n\n' +
-                'Dica: Seja específico! O modelo precisa saber o que desenhar no lugar.',
-                'parede, fundo natural, continuação do ambiente'
+                '⚠️ IMPORTANT for better results!\n\n' +
+                'Describe what SHOULD appear in place of the removed object.\n\n' +
+                'Example: "white brick wall", "office desk", "forest background"\n\n' +
+                'Tip: Be specific! The model needs to know what to draw in its place.',
+                'background, natural environment, seamless continuation'
             );
             
             if (!context) {
                 // User cancelled, use generic but warn them
                 context = 'background, natural environment, seamless continuation';
-                console.warn('⚠️ Usando contexto genérico - resultado pode não ser ideal');
+                console.warn('⚠️ Using generic context - result may not be ideal');
             }
         }
         
@@ -938,7 +938,7 @@ async function applyInpaint() {
     } else {
         prompt = promptInput.value.trim();
         if (!prompt) {
-            alert('Descreva o que deseja fazer na área pintada');
+            alert('Describe what you want to do in the painted area');
             return;
         }
         // Add context if provided
@@ -958,7 +958,7 @@ async function applyInpaint() {
     }
     
     if (!hasMask) {
-        alert('⚠️ Você precisa pintar a área que deseja editar!\n\nUse o pincel para marcar a região da imagem.');
+        alert('⚠️ You need to paint the area you want to edit!\n\nUse the brush to mark the region of the image.');
         return;
     }
     
@@ -966,9 +966,9 @@ async function applyInpaint() {
     const imageBase64 = inpaint.canvas.toDataURL('image/png').split(',')[1];
     const maskBase64 = getMaskAsBase64();
     
-    const actionText = action === 'remove' ? 'Removendo' : action === 'add' ? 'Adicionando' : 'Substituindo';
-    showLoading(`${actionText} na área selecionada...`);
-    setStatus('Processando...', 'busy');
+    const actionText = action === 'remove' ? 'Removing' : action === 'add' ? 'Adding' : 'Replacing';
+    showLoading(`${actionText} in selected area...`);
+    setStatus('Processing...', 'busy');
     
     try {
         const response = await apiRequest('/api/image/inpaint', {
@@ -984,12 +984,12 @@ async function applyInpaint() {
         // Show result
         document.getElementById('inpaint-result-container').style.display = 'block';
         document.getElementById('inpaint-result').innerHTML = 
-            `<img src="data:image/png;base64,${response.images[0]}" alt="Resultado">`;
+            `<img src="data:image/png;base64,${response.images[0]}" alt="Result">`;
         
-        setStatus('Pronto');
+        setStatus('Ready');
     } catch (error) {
-        alert(`Erro no inpaint: ${error.message}`);
-        setStatus('Erro', 'error');
+        alert(`Inpaint error: ${error.message}`);
+        setStatus('Error', 'error');
     } finally {
         hideLoading();
     }

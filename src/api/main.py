@@ -1,6 +1,6 @@
 """
-DuilioCode Studio - API Principal
-Assistente de programação local com Ollama + Qwen2.5-Coder
+DuilioCode Studio - Main API
+Local programming assistant with Ollama + Qwen2.5-Coder
 """
 
 import os
@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 
 # ============================================================================
-# CONFIGURAÇÕES
+# SETTINGS
 # ============================================================================
 
 class Settings:
@@ -27,7 +27,7 @@ class Settings:
     MAX_TOKENS = 4096
     TEMPERATURE = 0.7
     
-    # Diretórios
+    # Directories
     BASE_DIR = Path(__file__).parent.parent.parent
     WEB_DIR = BASE_DIR / "web"
     TEMPLATES_DIR = WEB_DIR / "templates"
@@ -37,7 +37,7 @@ settings = Settings()
 
 
 # ============================================================================
-# MODELOS DE REQUEST/RESPONSE
+# REQUEST/RESPONSE MODELS
 # ============================================================================
 
 class CodeRequest(BaseModel):
@@ -56,7 +56,7 @@ class CodeResponse(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    role: str  # 'user' ou 'assistant'
+    role: str  # 'user' or 'assistant'
     content: str
 
 
@@ -86,13 +86,13 @@ class ModelInfo(BaseModel):
 
 
 # ============================================================================
-# CLIENTE OLLAMA
+# OLLAMA CLIENT
 # ============================================================================
 
 class OllamaClient:
     def __init__(self):
         self.host = settings.OLLAMA_HOST
-        self.timeout = 300.0  # 5 minutos para modelos grandes
+        self.timeout = 300.0  # 5 minutes for large models
     
     async def generate(
         self,
@@ -103,30 +103,29 @@ class OllamaClient:
         temperature: float = 0.7,
         max_tokens: int = 4096
     ) -> Dict[str, Any]:
-        """Gera uma resposta usando o modelo especificado."""
+        """Generate a response using the specified model."""
         
-        # Construir prompt com contexto
+        # Build prompt with context
         full_prompt = prompt
         if context:
-            full_prompt = f"Contexto da conversa:\n{context}\n\nNova pergunta: {prompt}"
+            full_prompt = f"Conversation context:\n{context}\n\nNew question: {prompt}"
         
-        # System prompt para código
+        # System prompt for code
         if not system_prompt:
-            system_prompt = """Você é DuilioCode, um assistente de programação expert.
+            system_prompt = """You are DuilioCode, an expert programming assistant.
 
-Suas características:
-- Responde em Português do Brasil
-- Fornece código limpo, bem documentado e seguindo boas práticas
-- Explica conceitos de forma clara e didática
-- Sugere melhorias de performance e segurança
-- Conhece múltiplas linguagens: Python, JavaScript, TypeScript, Kotlin, Java, Go, Rust, C++
-- Entende arquitetura de software: Clean Architecture, SOLID, Design Patterns
-- Fornece exemplos práticos sempre que possível
+Your characteristics:
+- Provide clean, well-documented code following best practices
+- Explain concepts clearly and didactically
+- Suggest performance and security improvements
+- Know multiple languages: Python, JavaScript, TypeScript, Kotlin, Java, Go, Rust, C++
+- Understand software architecture: Clean Architecture, SOLID, Design Patterns
+- Provide practical examples whenever possible
 
-Ao fornecer código:
-- Use blocos de código com a linguagem especificada (```python, ```javascript, etc)
-- Adicione comentários explicativos
-- Indique possíveis erros ou edge cases"""
+When providing code:
+- Use code blocks with the specified language (```python, ```javascript, etc)
+- Add explanatory comments
+- Indicate possible errors or edge cases"""
 
         payload = {
             "model": model,
@@ -157,10 +156,10 @@ Ao fornecer código:
             except httpx.HTTPStatusError as e:
                 raise HTTPException(status_code=e.response.status_code, detail=str(e))
             except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Erro ao conectar com Ollama: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Error connecting to Ollama: {str(e)}")
     
     async def list_models(self) -> List[Dict[str, Any]]:
-        """Lista modelos disponíveis no Ollama."""
+        """List available models in Ollama."""
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
                 response = await client.get(f"{self.host}/api/tags")
@@ -171,7 +170,7 @@ Ao fornecer código:
                 return []
     
     async def check_health(self) -> bool:
-        """Verifica se o Ollama está rodando."""
+        """Check if Ollama is running."""
         async with httpx.AsyncClient(timeout=5.0) as client:
             try:
                 response = await client.get(f"{self.host}/api/tags")
@@ -181,7 +180,7 @@ Ao fornecer código:
 
 
 # ============================================================================
-# GERENCIADOR DE ARQUIVOS
+# FILE MANAGER
 # ============================================================================
 
 class FileManager:
@@ -222,20 +221,20 @@ class FileManager:
     
     @classmethod
     def get_language(cls, path: str) -> str:
-        """Detecta a linguagem pelo extensão do arquivo."""
+        """Detect language by file extension."""
         ext = Path(path).suffix.lower()
         return cls.LANGUAGE_MAP.get(ext, 'text')
     
     @classmethod
     def read_file(cls, path: str) -> Dict[str, Any]:
-        """Lê um arquivo e retorna seu conteúdo."""
+        """Read a file and return its content."""
         file_path = Path(path).expanduser()
         
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail=f"Arquivo não encontrado: {path}")
+            raise HTTPException(status_code=404, detail=f"File not found: {path}")
         
         if not file_path.is_file():
-            raise HTTPException(status_code=400, detail=f"Caminho não é um arquivo: {path}")
+            raise HTTPException(status_code=400, detail=f"Path is not a file: {path}")
         
         try:
             content = file_path.read_text(encoding='utf-8')
@@ -246,23 +245,23 @@ class FileManager:
                 "size": len(content)
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erro ao ler arquivo: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
     
     @classmethod
     def write_file(cls, path: str, content: str) -> Dict[str, Any]:
-        """Escreve conteúdo em um arquivo."""
+        """Write content to a file."""
         file_path = Path(path).expanduser()
         
         try:
-            # Criar diretório se não existir
+            # Create directory if it doesn't exist
             file_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # Backup se arquivo existir
+            # Backup if file exists
             if file_path.exists():
                 backup_path = file_path.with_suffix(f"{file_path.suffix}.backup")
                 backup_path.write_text(file_path.read_text(encoding='utf-8'), encoding='utf-8')
             
-            # Escrever novo conteúdo
+            # Write new content
             file_path.write_text(content, encoding='utf-8')
             
             return {
@@ -273,23 +272,23 @@ class FileManager:
                 "saved": True
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erro ao salvar arquivo: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
     
     @classmethod
     def list_directory(cls, path: str = ".") -> List[Dict[str, Any]]:
-        """Lista arquivos e pastas em um diretório."""
+        """List files and folders in a directory."""
         dir_path = Path(path).expanduser()
         
         if not dir_path.exists():
-            raise HTTPException(status_code=404, detail=f"Diretório não encontrado: {path}")
+            raise HTTPException(status_code=404, detail=f"Directory not found: {path}")
         
         if not dir_path.is_dir():
-            raise HTTPException(status_code=400, detail=f"Caminho não é um diretório: {path}")
+            raise HTTPException(status_code=400, detail=f"Path is not a directory: {path}")
         
         items = []
         try:
             for item in sorted(dir_path.iterdir()):
-                # Ignorar arquivos ocultos e diretórios comuns
+                # Ignore hidden files and common directories
                 if item.name.startswith('.') or item.name in ['node_modules', '__pycache__', 'venv', '.git']:
                     continue
                 
@@ -303,44 +302,44 @@ class FileManager:
             
             return items
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erro ao listar diretório: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error listing directory: {str(e)}")
 
 
 # ============================================================================
-# APLICAÇÃO FASTAPI
+# FASTAPI APPLICATION
 # ============================================================================
 
 app = FastAPI(
     title="DuilioCode Studio",
-    description="Assistente de programação local com IA",
+    description="Local programming assistant with AI",
     version="1.0.0"
 )
 
-# Clientes
+# Clients
 ollama = OllamaClient()
 file_manager = FileManager()
 
 
 # ============================================================================
-# ROTAS - PÁGINAS
+# ROUTES - PAGES
 # ============================================================================
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    """Página principal."""
+    """Main page."""
     template_path = settings.TEMPLATES_DIR / "index.html"
     if template_path.exists():
         return HTMLResponse(content=template_path.read_text(encoding='utf-8'))
-    return HTMLResponse(content="<h1>DuilioCode Studio</h1><p>Template não encontrado</p>")
+    return HTMLResponse(content="<h1>DuilioCode Studio</h1><p>Template not found</p>")
 
 
 # ============================================================================
-# ROTAS - API
+# ROUTES - API
 # ============================================================================
 
 @app.get("/health")
 async def health_check():
-    """Verifica status do servidor."""
+    """Check server status."""
     ollama_healthy = await ollama.check_health()
     return {
         "status": "healthy" if ollama_healthy else "degraded",
@@ -351,15 +350,15 @@ async def health_check():
 
 @app.get("/api/models")
 async def list_models():
-    """Lista modelos disponíveis."""
+    """List available models."""
     models = await ollama.list_models()
     
-    # Filtrar e enriquecer informações
+    # Filter and enrich information
     code_models = []
     for model in models:
         name = model.get("name", "")
         
-        # Filtrar modelos de código
+        # Filter code models
         if any(kw in name.lower() for kw in ['coder', 'code', 'deepseek', 'starcoder']):
             size_bytes = model.get("size", 0)
             size_gb = round(size_bytes / (1024**3), 1)
@@ -371,11 +370,11 @@ async def list_models():
                 "recommended": "qwen2.5-coder:14b" in name
             })
     
-    # Adicionar modelos sugeridos se não estiverem instalados
+    # Add suggested models if not installed
     suggested = [
-        {"name": "qwen2.5-coder:14b", "size": "9GB", "description": "Recomendado - Melhor custo-benefício"},
-        {"name": "qwen2.5-coder:7b", "size": "4.7GB", "description": "Rápido - Bom para tarefas simples"},
-        {"name": "qwen2.5-coder:32b", "size": "19GB", "description": "Avançado - Máxima qualidade"},
+        {"name": "qwen2.5-coder:14b", "size": "9GB", "description": "Recommended - Best cost-benefit"},
+        {"name": "qwen2.5-coder:7b", "size": "4.7GB", "description": "Fast - Good for simple tasks"},
+        {"name": "qwen2.5-coder:32b", "size": "19GB", "description": "Advanced - Maximum quality"},
     ]
     
     return {
@@ -386,7 +385,7 @@ async def list_models():
 
 @app.post("/api/code", response_model=CodeResponse)
 async def generate_code(request: CodeRequest):
-    """Endpoint principal para geração de código."""
+    """Main endpoint for code generation."""
     model = request.model or settings.DEFAULT_MODEL
     
     result = await ollama.generate(
@@ -402,18 +401,18 @@ async def generate_code(request: CodeRequest):
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    """Chat com histórico de mensagens."""
+    """Chat with message history."""
     model = request.model or settings.DEFAULT_MODEL
     
-    # Construir contexto do chat
+    # Build chat context
     context_parts = []
-    for msg in request.messages[-10:]:  # Últimas 10 mensagens
-        role = "Usuário" if msg.role == "user" else "Assistente"
+    for msg in request.messages[-10:]:  # Last 10 messages
+        role = "User" if msg.role == "user" else "Assistant"
         context_parts.append(f"{role}: {msg.content}")
     
     context = "\n".join(context_parts)
     
-    # Última mensagem é a pergunta atual
+    # Last message is the current question
     prompt = request.messages[-1].content if request.messages else ""
     
     result = await ollama.generate(
@@ -426,26 +425,26 @@ async def chat(request: ChatRequest):
 
 
 # ============================================================================
-# ROTAS - ARQUIVOS
+# ROUTES - FILES
 # ============================================================================
 
 @app.get("/api/files")
 async def list_files(path: str = "."):
-    """Lista arquivos em um diretório."""
+    """List files in a directory."""
     return file_manager.list_directory(path)
 
 
 @app.get("/api/files/read")
 async def read_file(path: str):
-    """Lê conteúdo de um arquivo."""
+    """Read file content."""
     return file_manager.read_file(path)
 
 
 @app.post("/api/files/write")
 async def write_file(request: FileRequest):
-    """Salva conteúdo em um arquivo."""
+    """Save content to a file."""
     if not request.content:
-        raise HTTPException(status_code=400, detail="Conteúdo não fornecido")
+        raise HTTPException(status_code=400, detail="Content not provided")
     return file_manager.write_file(request.path, request.content)
 
 
@@ -453,7 +452,7 @@ async def write_file(request: FileRequest):
 # STATIC FILES
 # ============================================================================
 
-# Montar arquivos estáticos se existirem
+# Mount static files if they exist
 static_path = settings.WEB_DIR / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
