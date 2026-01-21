@@ -249,6 +249,68 @@ class WorkspaceService:
             "total_files": state.total_files,
             "recent_files": state.recent_files[:5]
         }
+    
+    def get_file_tree(self, path: str, max_depth: int = 3) -> Dict[str, Any]:
+        """
+        Get file tree structure for a directory.
+        
+        Args:
+            path: Directory path
+            max_depth: Maximum depth to traverse
+            
+        Returns:
+            Dict with tree structure
+        """
+        expanded = os.path.expanduser(path)
+        p = Path(expanded).resolve()
+        
+        if not p.exists():
+            raise WorkspaceError(f"Path does not exist: {path}", path)
+        
+        if not p.is_dir():
+            raise WorkspaceError(f"Path is not a directory: {path}", path)
+        
+        def build_tree(dir_path: Path, depth: int = 0) -> List[Dict[str, Any]]:
+            if depth >= max_depth:
+                return []
+            
+            items = []
+            skip_dirs = {'node_modules', '__pycache__', '.git', 'venv', '.venv', 'build', 'dist'}
+            
+            try:
+                for item in sorted(dir_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+                    if item.name.startswith('.'):
+                        continue
+                    if item.name in skip_dirs:
+                        continue
+                    
+                    entry = {
+                        "name": item.name,
+                        "path": str(item),
+                        "type": "directory" if item.is_dir() else "file"
+                    }
+                    
+                    if item.is_dir():
+                        entry["children"] = build_tree(item, depth + 1)
+                    else:
+                        entry["extension"] = item.suffix
+                        try:
+                            entry["size"] = item.stat().st_size
+                        except:
+                            entry["size"] = 0
+                    
+                    items.append(entry)
+            except PermissionError:
+                pass
+            
+            return items
+        
+        return {
+            "name": p.name,
+            "path": str(p),
+            "type": "directory",
+            "children": build_tree(p)
+        }
 
 
 # Singleton instance

@@ -80,12 +80,56 @@ const API = {
     
     // === Chat / AI ===
     
+    /**
+     * Generate AI response with intelligent codebase context
+     * @param {string} prompt - User prompt
+     * @param {string|null} model - Model to use (null for auto-selection)
+     * @param {string|null} context - Additional context
+     */
     async generate(prompt, model, context = null) {
-        return this.post('/api/generate', { prompt, model, context });
+        // Include workspace path for codebase analysis
+        const workspacePath = AppState?.workspace?.currentPath || null;
+        return this.post('/api/generate', { 
+            prompt, 
+            model, 
+            context,
+            workspace_path: workspacePath,
+            include_codebase: true
+        });
     },
     
+    /**
+     * Chat with AI including intelligent codebase context
+     */
     async chat(messages, model, stream = false) {
-        return this.post('/api/chat', { messages, model, stream });
+        const workspacePath = AppState?.workspace?.currentPath || null;
+        return this.post('/api/chat', { 
+            messages, 
+            model, 
+            stream,
+            workspace_path: workspacePath
+        });
+    },
+    
+    /**
+     * Analyze a codebase structure and content
+     */
+    async analyzeCodebase(path, maxFiles = 100) {
+        return this.post('/api/analyze-codebase', { path, max_files: maxFiles });
+    },
+    
+    /**
+     * Get AI-ready codebase context
+     */
+    async getCodebaseContext(path, refresh = false) {
+        return this.get(`/api/codebase-context?path=${encodeURIComponent(path)}&refresh=${refresh}`);
+    },
+    
+    /**
+     * Get model recommendation for a prompt
+     */
+    async recommendModel(prompt) {
+        return this.post(`/api/recommend-model?prompt=${encodeURIComponent(prompt)}`, {});
     },
     
     // === Models ===
