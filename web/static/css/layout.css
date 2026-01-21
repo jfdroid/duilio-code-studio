@@ -1,21 +1,15 @@
 /**
- * DuilioCode Studio - Layout Styles
- * Main application layout structure
+ * DuilioCode Studio - Layout
+ * Main application structure and panels
  */
 
-/* ================================================
-   APP CONTAINER
-   ================================================ */
-
+/* App Container */
 .app-container {
     display: flex;
     height: 100vh;
 }
 
-/* ================================================
-   ACTIVITY BAR (Left Icon Sidebar)
-   ================================================ */
-
+/* Activity Bar */
 .activity-bar {
     width: var(--activity-bar-width);
     background: var(--bg-secondary);
@@ -37,7 +31,6 @@
     border: none;
     border-radius: var(--radius-lg);
     color: var(--text-muted);
-    font-size: var(--font-size-xl);
     cursor: pointer;
     margin-bottom: var(--space-1);
     transition: all var(--transition-base);
@@ -69,10 +62,7 @@
     flex: 1;
 }
 
-/* ================================================
-   EXPLORER PANEL
-   ================================================ */
-
+/* Explorer Panel */
 .explorer-panel {
     width: var(--explorer-width);
     background: var(--bg-secondary);
@@ -118,7 +108,6 @@
     border: none;
     border-radius: var(--radius-sm);
     color: var(--text-muted);
-    font-size: var(--font-size-md);
     cursor: pointer;
     transition: all var(--transition-fast);
 }
@@ -151,7 +140,9 @@
 }
 
 .workspace-path-icon {
-    font-size: var(--font-size-lg);
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
 }
 
 .workspace-path-text {
@@ -164,10 +155,7 @@
     color: var(--text-secondary);
 }
 
-/* ================================================
-   FILE TREE
-   ================================================ */
-
+/* File Tree */
 .file-tree {
     flex: 1;
     overflow-y: auto;
@@ -194,10 +182,18 @@
 
 .tree-item-icon {
     width: 20px;
-    font-size: var(--font-size-md);
-    text-align: center;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-right: var(--space-2);
     flex-shrink: 0;
+    color: var(--accent-blue);
+}
+
+.tree-item-icon svg {
+    width: 16px;
+    height: 16px;
 }
 
 .tree-item-name {
@@ -251,10 +247,7 @@
     display: none;
 }
 
-/* ================================================
-   MAIN CONTENT AREA
-   ================================================ */
-
+/* Main Content Area */
 .main-area {
     flex: 1;
     display: flex;
@@ -263,10 +256,7 @@
     min-width: 0;
 }
 
-/* ================================================
-   TABS BAR
-   ================================================ */
-
+/* Tabs Bar */
 .tabs-bar {
     display: flex;
     background: var(--bg-secondary);
@@ -301,7 +291,8 @@
 }
 
 .tab-icon {
-    font-size: var(--font-size-md);
+    color: var(--accent-blue);
+    display: flex;
 }
 
 .tab-close {
@@ -324,20 +315,14 @@
     background: var(--bg-tertiary);
 }
 
-/* ================================================
-   CONTENT AREA
-   ================================================ */
-
+/* Content Area */
 .content-area {
     flex: 1;
     display: flex;
     overflow: hidden;
 }
 
-/* ================================================
-   STATUS BAR
-   ================================================ */
-
+/* Status Bar */
 .status-bar {
     display: flex;
     align-items: center;
@@ -360,4 +345,19 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+}
+
+.status-dot.offline {
+    background: var(--accent-red);
+}
+
+.status-dot.checking {
+    background: var(--accent-orange);
 }

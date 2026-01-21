@@ -1,12 +1,9 @@
 /**
- * DuilioCode Studio - UI Components
- * Reusable component styles
+ * DuilioCode Studio - Components
+ * Reusable UI components (buttons, forms, modals)
  */
 
-/* ================================================
-   BUTTONS
-   ================================================ */
-
+/* Buttons */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -38,21 +35,7 @@
     background: #46d158;
 }
 
-.btn--icon {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-}
-
-.btn--sm {
-    padding: var(--space-1) var(--space-2);
-    font-size: var(--font-size-xs);
-}
-
-/* ================================================
-   FORM ELEMENTS
-   ================================================ */
-
+/* Form Elements */
 .form-group {
     margin-bottom: var(--space-4);
 }
@@ -92,10 +75,7 @@
     margin-top: var(--space-2);
 }
 
-/* ================================================
-   MODAL
-   ================================================ */
-
+/* Modal */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -135,6 +115,9 @@
 .modal-title {
     font-size: var(--font-size-lg);
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
 }
 
 .modal-close {
@@ -166,10 +149,7 @@
     gap: var(--space-2);
 }
 
-/* ================================================
-   CONTEXT MENU
-   ================================================ */
-
+/* Context Menu */
 .context-menu {
     position: fixed;
     background: var(--bg-secondary);
@@ -211,10 +191,7 @@
     margin: var(--space-2) 0;
 }
 
-/* ================================================
-   PATH AUTOCOMPLETE
-   ================================================ */
-
+/* Path Autocomplete */
 .path-input-container {
     position: relative;
 }
@@ -259,7 +236,14 @@
 }
 
 .path-suggestion-icon {
-    font-size: var(--font-size-lg);
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+}
+
+.path-suggestion-icon svg {
+    width: 16px;
+    height: 16px;
 }
 
 .path-suggestion-text {
@@ -277,6 +261,7 @@
     display: flex;
     gap: var(--space-2);
     margin-top: var(--space-2);
+    flex-wrap: wrap;
 }
 
 .path-quick-btn {
@@ -296,10 +281,7 @@
     color: var(--text-primary);
 }
 
-/* ================================================
-   TYPING INDICATOR
-   ================================================ */
-
+/* Typing Indicator */
 .typing-indicator {
     display: flex;
     gap: var(--space-1);

@@ -19,8 +19,13 @@
     <!-- Syntax Highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     
-    <!-- Application Styles -->
-    <link rel="stylesheet" href="/static/css/main.css">
+    <!-- Application Styles (modular for maintainability, parallel loading with HTTP/2) -->
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/editor.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
 </head>
 <body>
     <div class="app-container">
