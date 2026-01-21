@@ -33,69 +33,163 @@
         <div class="main-content">
             <!-- Activity Bar -->
             <div class="activity-bar">
-                <button class="activity-btn active" data-panel="explorer" onclick="toggleExplorer()" data-tooltip="Explorer (Ctrl+B)">
+                <button class="activity-btn active" data-panel="explorer" onclick="ActivityBar.show('explorer')" data-tooltip="Explorer (Ctrl+B)">
                     <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                     </svg>
                 </button>
-                <button class="activity-btn" data-tooltip="Search (Coming soon)" disabled>
+                <button class="activity-btn" data-panel="search" onclick="ActivityBar.show('search')" data-tooltip="Search (Ctrl+Shift+F)">
                     <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                     </svg>
                 </button>
-                <button class="activity-btn" data-tooltip="Source Control (Coming soon)" disabled>
+                <button class="activity-btn" data-panel="git" onclick="ActivityBar.show('git')" data-tooltip="Source Control (Ctrl+Shift+G)">
                     <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/>
                     </svg>
                 </button>
                 <div class="activity-spacer"></div>
-                <button class="activity-btn" data-tooltip="Settings (Coming soon)" disabled>
+                <button class="activity-btn" data-panel="settings" onclick="ActivityBar.show('settings')" data-tooltip="Settings (Ctrl+,)">
                     <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                     </svg>
                 </button>
             </div>
 
-        <!-- Explorer Panel -->
-        <div class="explorer-panel" id="explorerPanel">
-            <div class="explorer-header">
-                <span class="explorer-title">Explorer</span>
-                <div class="explorer-actions">
-                    <button class="explorer-action" onclick="createNewFile()" data-tooltip="New File (Ctrl+N)">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
-                        </svg>
-                    </button>
-                    <button class="explorer-action" onclick="createNewFolder()" data-tooltip="New Folder">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
-                        </svg>
-                    </button>
-                    <button class="explorer-action" onclick="Workspace.refresh()" data-tooltip="Refresh">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                    </button>
+        <!-- Sidebar Panels Container -->
+        <div class="sidebar-panels">
+            <!-- Explorer Panel -->
+            <div class="sidebar-panel" id="explorerPanel">
+                <div class="explorer-header">
+                    <span class="explorer-title">Explorer</span>
+                    <div class="explorer-actions">
+                        <button class="explorer-action" onclick="createNewFile()" data-tooltip="New File (Ctrl+N)">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+                            </svg>
+                        </button>
+                        <button class="explorer-action" onclick="createNewFolder()" data-tooltip="New Folder">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+                            </svg>
+                        </button>
+                        <button class="explorer-action" onclick="Workspace.refresh()" data-tooltip="Refresh">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="workspace-selector">
+                    <div class="workspace-path" onclick="openWorkspaceModal()">
+                        <span class="workspace-path-icon">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </span>
+                        <span class="workspace-path-text" id="workspacePathText">Open Folder...</span>
+                    </div>
+                </div>
+                <div class="file-tree" id="fileTree">
+                    <div style="padding: 20px; color: var(--text-muted); font-size: 12px; text-align: center;">
+                        No folder opened<br><br>
+                        <button class="btn btn--primary" onclick="openWorkspaceModal()">Open Folder</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Workspace Selector -->
-            <div class="workspace-selector">
-                <div class="workspace-path" onclick="openWorkspaceModal()">
-                    <span class="workspace-path-icon">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                        </svg>
-                    </span>
-                    <span class="workspace-path-text" id="workspacePathText">Open Folder...</span>
+            <!-- Search Panel -->
+            <div class="sidebar-panel hidden" id="searchPanel">
+                <div class="explorer-header">
+                    <span class="explorer-title">Search</span>
+                </div>
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search files..." onkeyup="Search.onInput(event)">
+                        <button class="search-btn" onclick="Search.run()">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="search-options">
+                        <label class="search-option">
+                            <input type="checkbox" id="searchCaseSensitive"> Case sensitive
+                        </label>
+                        <label class="search-option">
+                            <input type="checkbox" id="searchWholeWord"> Whole word
+                        </label>
+                    </div>
+                    <div class="search-results" id="searchResults">
+                        <div class="search-hint">Enter a search term and press Enter</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- File Tree -->
-            <div class="file-tree" id="fileTree">
-                <div style="padding: 20px; color: var(--text-muted); font-size: 12px; text-align: center;">
-                    No folder opened<br><br>
-                    <button class="btn btn--primary" onclick="openWorkspaceModal()">Open Folder</button>
+            <!-- Git Panel -->
+            <div class="sidebar-panel hidden" id="gitPanel">
+                <div class="explorer-header">
+                    <span class="explorer-title">Source Control</span>
+                    <div class="explorer-actions">
+                        <button class="explorer-action" onclick="Git.refresh()" data-tooltip="Refresh">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="git-container">
+                    <div class="git-status" id="gitStatus">
+                        <div class="git-hint">Open a folder with a Git repository to see changes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Panel -->
+            <div class="sidebar-panel hidden" id="settingsPanel">
+                <div class="explorer-header">
+                    <span class="explorer-title">Settings</span>
+                </div>
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h4 class="settings-section-title">Editor</h4>
+                        <div class="settings-item">
+                            <label>Font Size</label>
+                            <select id="settingFontSize" onchange="Settings.update('fontSize', this.value)">
+                                <option value="12">12px</option>
+                                <option value="14" selected>14px</option>
+                                <option value="16">16px</option>
+                                <option value="18">18px</option>
+                            </select>
+                        </div>
+                        <div class="settings-item">
+                            <label>Tab Size</label>
+                            <select id="settingTabSize" onchange="Settings.update('tabSize', this.value)">
+                                <option value="2">2 spaces</option>
+                                <option value="4" selected>4 spaces</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h4 class="settings-section-title">AI Model</h4>
+                        <div class="settings-item">
+                            <label>Default Model</label>
+                            <select id="settingDefaultModel"></select>
+                        </div>
+                        <div class="settings-item">
+                            <label>Temperature</label>
+                            <input type="range" min="0" max="100" value="70" id="settingTemperature" oninput="Settings.update('temperature', this.value)">
+                            <span id="temperatureValue">0.7</span>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h4 class="settings-section-title">About</h4>
+                        <div class="settings-about">
+                            <p><strong>DuilioCode Studio</strong> v2.0.0</p>
+                            <p>Local AI coding assistant</p>
+                            <p class="settings-link"><a href="https://github.com/jfdroid/duilio-code-studio" target="_blank">GitHub Repository</a></p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -111,55 +205,39 @@
                 <div class="editor-panel">
                     <!-- Welcome Screen -->
                     <div class="welcome-screen" id="welcomeScreen">
-                        <div class="welcome-logo">
-                            <img src="/static/images/logo.png" alt="DuilioCode" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="welcome-fallback-icon" style="display:none;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                                </svg>
-                            </div>
+                        <div class="welcome-logo monochrome">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
                         </div>
-                        <h2 class="welcome-title">Welcome to DuilioCode Studio</h2>
-                        <p class="welcome-subtitle">
-                            Your local AI coding assistant powered by <strong>Qwen2.5-Coder</strong>.<br>
-                            100% offline. 100% private. Create, edit, and build software with AI.
-                        </p>
-                        <div class="quick-actions">
-                            <div class="quick-action" onclick="openWorkspaceModal()">
-                                <div class="quick-action-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                                    </svg>
-                                </div>
-                                <div class="quick-action-title">Open Folder</div>
-                                <div class="quick-action-desc">Start working in a project</div>
+                        <div class="shortcuts-list">
+                            <div class="shortcut-item" onclick="openWorkspaceModal()">
+                                <span class="shortcut-label">Open Folder</span>
+                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>O</kbd></span>
                             </div>
-                            <div class="quick-action" onclick="createNewFile()">
-                                <div class="quick-action-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
-                                    </svg>
-                                </div>
-                                <div class="quick-action-title">New File</div>
-                                <div class="quick-action-desc">Create a new file</div>
+                            <div class="shortcut-item" onclick="createNewFile()">
+                                <span class="shortcut-label">New File</span>
+                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>N</kbd></span>
                             </div>
-                            <div class="quick-action" onclick="quickPrompt('Create a Python Flask REST API with CRUD operations')">
-                                <div class="quick-action-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                                    </svg>
-                                </div>
-                                <div class="quick-action-title">Generate Project</div>
-                                <div class="quick-action-desc">AI creates code for you</div>
+                            <div class="shortcut-item" onclick="saveCurrentFile()">
+                                <span class="shortcut-label">Save File</span>
+                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>S</kbd></span>
                             </div>
-                            <div class="quick-action" onclick="quickPrompt('Explain Clean Architecture with examples')">
-                                <div class="quick-action-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                                    </svg>
-                                </div>
-                                <div class="quick-action-title">Learn Concepts</div>
-                                <div class="quick-action-desc">Ask about programming</div>
+                            <div class="shortcut-item" onclick="toggleExplorer()">
+                                <span class="shortcut-label">Toggle Explorer</span>
+                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>B</kbd></span>
+                            </div>
+                            <div class="shortcut-item" onclick="openSearch()">
+                                <span class="shortcut-label">Search Files</span>
+                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>P</kbd></span>
+                            </div>
+                            <div class="shortcut-item" onclick="focusChat()">
+                                <span class="shortcut-label">Focus Chat</span>
+                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>L</kbd></span>
+                            </div>
+                            <div class="shortcut-item" onclick="toggleChatSize()">
+                                <span class="shortcut-label">Expand Chat</span>
+                                <span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>E</kbd></span>
                             </div>
                         </div>
                     </div>
@@ -182,69 +260,90 @@
 
                 <!-- Chat Panel -->
                 <div class="chat-panel" id="chatPanel">
-                    <div class="chat-header">
-                        <div class="chat-title">
-                            <span class="chat-title-icon">
-                                <img src="/static/images/logo-small.png" alt="AI" onerror="this.parentElement.innerHTML='<svg class=\'icon\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><circle cx=\'12\' cy=\'12\' r=\'10\'/><path d=\'M12 16v-4\'/><path d=\'M12 8h.01\'/></svg>'">
-                            </span>
-                            <span>DuilioCode AI</span>
-                        </div>
-                        <div class="chat-header-actions">
-                            <button class="explorer-action" onclick="clearChat()" data-tooltip="New Chat">
+                    <!-- Chat History Sidebar -->
+                    <div class="chat-history-sidebar" id="chatHistorySidebar">
+                        <div class="chat-history-header">
+                            <span>Chats</span>
+                            <button class="explorer-action" onclick="ChatHistory.create()" data-tooltip="New Chat">
                                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M12 5v14M5 12h14"/>
                                 </svg>
                             </button>
-                            <button class="explorer-action" onclick="toggleChatSize()" data-tooltip="Expand">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-                                </svg>
-                            </button>
-                            <button class="explorer-action" onclick="clearChat()" data-tooltip="Clear History">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                </svg>
-                            </button>
                         </div>
+                        <div class="chat-history-list" id="chatHistoryList"></div>
                     </div>
 
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="message">
-                            <div class="message-header">
-                                <div class="message-avatar assistant">
-                                    <img src="/static/images/logo-small.png" alt="AI" onerror="this.style.display='none'">
+                    <!-- Chat Main Area -->
+                    <div class="chat-main">
+                        <div class="chat-header">
+                            <div class="chat-title">
+                                <button class="explorer-action" onclick="toggleChatHistory()" data-tooltip="Chat History">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                                    </svg>
+                                </button>
+                                <span class="chat-title-text" id="chatTitleText">New Chat</span>
+                            </div>
+                            <div class="chat-header-actions">
+                                <button class="explorer-action" onclick="ChatHistory.create()" data-tooltip="New Chat">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12h14"/>
+                                    </svg>
+                                </button>
+                                <button class="explorer-action" onclick="toggleChatSize()" data-tooltip="Expand">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message">
+                                <div class="message-header">
+                                    <div class="message-avatar assistant">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                                        </svg>
+                                    </div>
+                                    <span class="message-sender">DuilioCode</span>
                                 </div>
-                                <span class="message-sender">DuilioCode</span>
-                            </div>
-                            <div class="message-content">
-                                <p>Hello! I'm your local AI assistant. I can help you:</p>
-                                <ul>
-                                    <li>Create entire projects and file structures</li>
-                                    <li>Edit and refactor existing code</li>
-                                    <li>Explain concepts and debug issues</li>
-                                    <li>Generate scripts, pipelines, and configs</li>
-                                </ul>
-                                <p>Open a folder to get started, or just ask me anything!</p>
+                                <div class="message-content">
+                                    <p>Hello! I'm your local AI assistant. I can help you:</p>
+                                    <ul>
+                                        <li>Create entire projects and file structures</li>
+                                        <li>Edit and refactor existing code</li>
+                                        <li>Explain concepts and debug issues</li>
+                                        <li>Generate scripts, pipelines, and configs</li>
+                                    </ul>
+                                    <p>Open a folder to get started, or just ask me anything!</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="chat-input-area">
-                        <div class="chat-input-wrapper">
-                            <textarea 
-                                class="chat-textarea" 
-                                id="chatInput" 
-                                placeholder="Ask me to create files, explain code, or anything..."
-                                rows="1"></textarea>
-                            <button class="chat-send-btn" onclick="sendMessage()" title="Send (Ctrl+Enter)">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="model-selector-inline">
-                            <label>Model:</label>
-                            <select id="modelSelect"></select>
+                        <div class="chat-input-area">
+                            <div class="chat-input-wrapper">
+                                <textarea 
+                                    class="chat-textarea" 
+                                    id="chatInput" 
+                                    placeholder="Ask me to create files, explain code, or anything..."
+                                    rows="1"></textarea>
+                                <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()" title="Send (Ctrl+Enter)">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                    </svg>
+                                </button>
+                                <button class="chat-stop-btn" id="stopBtn" onclick="Chat.stop()" title="Stop generation" style="display: none;">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="model-selector-inline">
+                                <label>Model:</label>
+                                <select id="modelSelect"></select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -364,10 +463,12 @@
     <script src="/static/js/files.js"></script>
     <script src="/static/js/tabs.js"></script>
     <script src="/static/js/chat.js"></script>
+    <script src="/static/js/chat-history.js"></script>
     <script src="/static/js/autocomplete.js"></script>
     <script src="/static/js/contextmenu.js"></script>
     <script src="/static/js/keyboard.js"></script>
     <script src="/static/js/ui.js"></script>
+    <script src="/static/js/activity-bar.js"></script>
     <script src="/static/js/app.js"></script>
 </body>
 </html>

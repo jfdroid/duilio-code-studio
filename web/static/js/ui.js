@@ -88,5 +88,29 @@ const UI = {
     quickPrompt(prompt) {
         document.getElementById('chatInput').value = prompt;
         Chat.send();
+    },
+
+    /**
+     * Focus chat input
+     */
+    focusChat() {
+        const input = document.getElementById('chatInput');
+        if (input) {
+            input.focus();
+        }
+    },
+
+    /**
+     * Open search panel (placeholder)
+     */
+    openSearch() {
+        Utils.showNotification('Search feature coming soon', 'info');
     }
 };
+
+// Global shortcuts functions
+function toggleExplorer() { UI.toggleExplorer(); }
+function toggleChatSize() { Chat.toggleSize(); }
+function focusChat() { UI.focusChat(); }
+function openSearch() { UI.openSearch(); }
+function quickPrompt(p) { UI.quickPrompt(p); }

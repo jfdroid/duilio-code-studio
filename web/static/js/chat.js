@@ -4,6 +4,8 @@
  */
 
 const Chat = {
+    abortController: null,
+
     /**
      * Send message to AI
      */
@@ -15,32 +17,80 @@ const Chat = {
         
         // Add user message
         this.addMessage('user', message);
+        if (typeof ChatHistory !== 'undefined') {
+            ChatHistory.addMessage('user', message);
+        }
         input.value = '';
         input.style.height = 'auto';
         
-        // Show loading
+        // Show loading and stop button
         AppState.setLoading(true);
         this.showTypingIndicator();
+        this.toggleStopButton(true);
+        
+        // Create abort controller for cancellation
+        this.abortController = new AbortController();
         
         try {
             // Get file context if file is open
-            let context = null;
-            if (AppState.editor.currentFile) {
-                const content = document.getElementById('codeEditor').value;
-                context = `Current file: ${AppState.editor.currentFile.path}\n\nContent:\n\`\`\`${AppState.editor.currentFile.language}\n${content.slice(0, 2000)}\n\`\`\``;
+            let context = '';
+            
+            // Add workspace context
+            if (AppState.workspace.currentPath) {
+                context += `Current workspace: ${AppState.workspace.currentPath}\n`;
             }
             
-            const response = await API.generate(message, AppState.chat.currentModel, context);
+            // Add file context
+            if (AppState.editor.currentFile) {
+                const content = document.getElementById('codeEditor').value;
+                context += `Current file: ${AppState.editor.currentFile.path}\n\nContent:\n\`\`\`${AppState.editor.currentFile.language}\n${content.slice(0, 2000)}\n\`\`\``;
+            }
+            
+            // Add system instruction for file operations
+            const systemContext = context ? `You have access to the user's workspace. When they ask you to create files, use the workspace path as base: ${AppState.workspace.currentPath || '~'}. ${context}` : null;
+            
+            const response = await API.generate(message, AppState.chat.currentModel, systemContext);
             
             this.hideTypingIndicator();
             this.addMessage('assistant', response.response);
+            if (typeof ChatHistory !== 'undefined') {
+                ChatHistory.addMessage('assistant', response.response);
+            }
             
         } catch (error) {
             this.hideTypingIndicator();
-            this.addMessage('assistant', `Error: ${error.message}`);
+            if (error.name === 'AbortError') {
+                this.addMessage('assistant', 'Generation stopped.');
+            } else {
+                this.addMessage('assistant', `Error: ${error.message}`);
+            }
         } finally {
             AppState.setLoading(false);
+            this.toggleStopButton(false);
+            this.abortController = null;
         }
+    },
+
+    /**
+     * Stop current generation
+     */
+    stop() {
+        if (this.abortController) {
+            this.abortController.abort();
+            this.hideTypingIndicator();
+            this.toggleStopButton(false);
+            AppState.setLoading(false);
+        }
+    },
+
+    /**
+     * Toggle stop button visibility
+     */
+    toggleStopButton(show) {
+        const sendBtn = document.getElementById('sendBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        if (sendBtn) sendBtn.style.display = show ? 'none' : 'flex';
+        if (stopBtn) stopBtn.style.display = show ? 'flex' : 'none';
     },
     
     /**

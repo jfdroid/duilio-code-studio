@@ -100,7 +100,19 @@
 }
 
 .welcome-logo {
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-8);
+}
+
+.welcome-logo.monochrome {
+    width: 80px;
+    height: 80px;
+    color: #30363d;
+    opacity: 0.6;
+}
+
+.welcome-logo.monochrome svg {
+    width: 100%;
+    height: 100%;
 }
 
 .welcome-logo img {
@@ -112,83 +124,55 @@
     border: 2px solid var(--border-color);
 }
 
-.welcome-fallback-icon {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-    border-radius: var(--radius-xl);
+/* Shortcuts List - Cursor Style */
+.shortcuts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 320px;
+}
+
+.shortcut-item {
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: white;
-}
-
-.welcome-fallback-icon svg {
-    width: 40px;
-    height: 40px;
-}
-
-.welcome-title {
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
-    margin-bottom: var(--space-3);
-}
-
-.welcome-subtitle {
-    font-size: var(--font-size-lg);
-    color: var(--text-secondary);
-    max-width: 500px;
-    line-height: 1.6;
-    margin-bottom: var(--space-8);
-}
-
-/* Quick Actions */
-.quick-actions {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
-    max-width: 500px;
-}
-
-.quick-action {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: var(--space-4);
-    text-align: left;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all var(--transition-base);
+    transition: background 0.1s ease;
 }
 
-.quick-action:hover {
-    border-color: var(--accent-blue);
-    transform: translateY(-2px);
+.shortcut-item:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
 
-.quick-action-icon {
-    width: 32px;
-    height: 32px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-md);
+.shortcut-label {
+    font-size: 14px;
+    color: #6e7681;
+    font-weight: 400;
+}
+
+.shortcut-item:hover .shortcut-label {
+    color: #8b949e;
+}
+
+.shortcut-keys {
     display: flex;
+    gap: 4px;
+}
+
+.shortcut-keys kbd {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: var(--space-2);
-    color: var(--accent-blue);
-}
-
-.quick-action-icon svg {
-    width: 18px;
-    height: 18px;
-}
-
-.quick-action-title {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    margin-bottom: var(--space-1);
-}
-
-.quick-action-desc {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    min-width: 24px;
+    height: 22px;
+    padding: 0 6px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 11px;
+    color: #6e7681;
+    font-weight: 500;
 }

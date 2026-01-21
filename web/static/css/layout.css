@@ -130,8 +130,8 @@
     margin-top: 6px;
 }
 
-/* Explorer Panel */
-.explorer-panel {
+/* Sidebar Panels Container */
+.sidebar-panels {
     width: var(--explorer-width);
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
@@ -141,8 +141,214 @@
     flex-shrink: 0;
 }
 
-.explorer-panel.hidden {
+.sidebar-panels.hidden {
     display: none;
+}
+
+.sidebar-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.sidebar-panel.hidden {
+    display: none;
+}
+
+/* Search Panel */
+.search-container {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.search-input-wrapper {
+    display: flex;
+    gap: 8px;
+}
+
+.search-input {
+    flex: 1;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.search-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.search-btn:hover {
+    background: var(--border-color);
+}
+
+.search-options {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.search-option {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.search-results {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.search-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+}
+
+.search-result-item {
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.search-result-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.search-result-file {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.search-result-line {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+/* Git Panel */
+.git-container {
+    padding: 12px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.git-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+}
+
+.git-file-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    gap: 8px;
+}
+
+.git-file-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.git-status-badge {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+}
+
+.git-status-badge.modified { background: #d29922; color: #000; }
+.git-status-badge.added { background: #3fb950; color: #000; }
+.git-status-badge.deleted { background: #f85149; color: #fff; }
+.git-status-badge.untracked { background: #6e7681; color: #fff; }
+
+/* Settings Panel */
+.settings-container {
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.settings-section {
+    margin-bottom: 24px;
+}
+
+.settings-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 13px;
+}
+
+.settings-item label {
+    color: var(--text-secondary);
+}
+
+.settings-item select,
+.settings-item input[type="range"] {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+.settings-item input[type="range"] {
+    width: 100px;
+}
+
+.settings-about {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.settings-link a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.settings-link a:hover {
+    text-decoration: underline;
 }
 
 .explorer-header {
