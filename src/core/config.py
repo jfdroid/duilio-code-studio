@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     WEB_DIR: Optional[Path] = None
     TEMPLATES_DIR: Optional[Path] = None
     WORKSPACE_FILE: Optional[Path] = None
+    DATA_DIR: Optional[Path] = None  # For user preferences, conversation history, etc.
     
     # === Ollama ===
     OLLAMA_HOST: str = "http://localhost:11434"
@@ -57,6 +58,9 @@ class Settings(BaseSettings):
         self.WEB_DIR = self.BASE_DIR / "web"
         self.TEMPLATES_DIR = self.WEB_DIR / "templates"
         self.WORKSPACE_FILE = self.BASE_DIR / ".duilio_workspace.json"
+        self.DATA_DIR = Path.home() / ".duilio" / "data"
+        # Ensure data directory exists
+        self.DATA_DIR.mkdir(parents=True, exist_ok=True)
     
     class Config:
         env_file = ".env"
