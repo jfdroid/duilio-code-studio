@@ -1,6 +1,37 @@
-# 🚀 DuilioCode Studio
+<p align="center">
+  <img src="assets/logo.png" alt="DuilioCode Studio" width="180">
+</p>
 
-Your **local and offline** AI coding assistant with full file system access. Like Cursor, but 100% private.
+<h1 align="center">DuilioCode Studio</h1>
+
+<p align="center">
+  <strong>Your local AI coding assistant. 100% offline. 100% private.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/jfdroid/duilio-code-studio/blob/master/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  </a>
+  <a href="https://github.com/jfdroid/duilio-code-studio/stargazers">
+    <img src="https://img.shields.io/github/stars/jfdroid/duilio-code-studio?style=social" alt="Stars">
+  </a>
+  <a href="https://github.com/jfdroid/duilio-code-studio/issues">
+    <img src="https://img.shields.io/github/issues/jfdroid/duilio-code-studio" alt="Issues">
+  </a>
+  <img src="https://img.shields.io/badge/python-3.10+-green.svg" alt="Python">
+  <img src="https://img.shields.io/badge/ollama-required-orange.svg" alt="Ollama">
+</p>
+
+<p align="center">
+  <a href="#-features">Features</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-documentation">Docs</a> •
+  <a href="#-contributing">Contributing</a>
+</p>
+
+---
+
+Like **Cursor AI** or **GitHub Copilot**, but runs entirely on your machine with no cloud dependencies.
 
 ## ✨ Features
 
@@ -176,17 +207,48 @@ duilio-code-studio/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to:
-- Open issues for bugs or features
-- Submit pull requests
-- Share your feedback
+We love contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Quick Steps
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
+
+## 🔒 Security
+
+For security issues, please see [SECURITY.md](SECURITY.md).
 
 ## 📄 License
 
-MIT License - Use freely!
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Ollama](https://ollama.ai/) - Local LLM runtime
+- [Qwen2.5-Coder](https://github.com/QwenLM/Qwen2.5-Coder) - Amazing code model
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+
+## ⭐ Star History
+
+If you find DuilioCode useful, please consider giving it a star!
 
 ---
 
-**DuilioCode Studio** - Your offline Cursor! 🚀
+<p align="center">
+  <strong>DuilioCode Studio</strong> - Your offline AI coding companion! 🚀
+</p>
 
-Made with ❤️ for developers who value privacy.
+<p align="center">
+  Made with ❤️ for developers who value privacy
+</p>
+
+<p align="center">
+  <a href="https://github.com/jfdroid/duilio-code-studio">GitHub</a> •
+  <a href="https://github.com/jfdroid/duilio-code-studio/issues">Report Bug</a> •
+  <a href="https://github.com/jfdroid/duilio-code-studio/issues">Request Feature</a>
+</p>

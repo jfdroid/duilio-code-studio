@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DuilioCode Studio - Your local AI coding assistant. 100% offline, 100% private.">
+    <meta name="theme-color" content="#0d1117">
     <title>DuilioCode Studio</title>
+    <link rel="icon" type="image/png" href="/static/images/logo-small.png">
+    <link rel="apple-touch-icon" href="/static/images/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -558,6 +562,19 @@
             padding: 40px;
         }
 
+        .welcome-logo {
+            margin-bottom: 24px;
+        }
+        
+        .welcome-logo img {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 8px 32px rgba(88, 166, 255, 0.3);
+            border: 3px solid var(--accent-blue);
+        }
+
         .welcome-icon {
             width: 80px;
             height: 80px;
@@ -693,6 +710,70 @@
 
         .form-input:focus { outline: none; border-color: var(--accent-blue); }
 
+        /* Path Autocomplete Styles */
+        .path-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        
+        .path-suggestions.active { display: block; }
+        
+        .path-suggestion {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: background 0.1s;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .path-suggestion:last-child { border-bottom: none; }
+        .path-suggestion:hover,
+        .path-suggestion.selected { background: var(--bg-active); }
+        
+        .path-suggestion-icon { font-size: 16px; }
+        
+        .path-suggestion-text {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-primary);
+        }
+        
+        .path-suggestion-name {
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+        
+        .path-quick-btn {
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .path-quick-btn:hover {
+            background: var(--bg-active);
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+
         .form-hint {
             font-size: 11px;
             color: var(--text-muted);
@@ -813,10 +894,14 @@
                 <div class="editor-panel" id="editorPanel">
                     <!-- Welcome Screen (shown by default) -->
                     <div class="welcome-screen" id="welcomeScreen">
-                        <div class="welcome-icon">🚀</div>
-                        <h2 class="welcome-title">Welcome to DuilioCode</h2>
+                        <div class="welcome-logo">
+                            <img src="/static/images/logo.png" alt="DuilioCode" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div class="welcome-icon" style="display:none;">🚀</div>
+                        </div>
+                        <h2 class="welcome-title">Welcome to DuilioCode Studio</h2>
                         <p class="welcome-subtitle">
-                            Your local AI coding assistant. Create projects, edit files, and build software entirely offline.
+                            Your local AI coding assistant powered by <strong>Qwen2.5-Coder</strong>.<br>
+                            100% offline. 100% private. Create, edit, and build software with AI.
                         </p>
                         <div class="quick-actions">
                             <div class="quick-action" onclick="openWorkspaceModal()">
@@ -928,7 +1013,7 @@
 
     <!-- Workspace Modal -->
     <div class="modal-overlay" id="workspaceModal">
-        <div class="modal">
+        <div class="modal" style="width: 520px;">
             <div class="modal-header">
                 <span class="modal-title">📂 Open Folder</span>
                 <button class="modal-close" onclick="closeWorkspaceModal()">×</button>
@@ -936,17 +1021,37 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>Folder Path</label>
-                    <input type="text" class="form-input" id="workspaceInput" placeholder="Enter folder path...">
-                    <p class="form-hint">
-                        💡 <strong>Tips:</strong><br>
-                        • Use <code>~</code> for your home folder (e.g., <code>~/projects</code>)<br>
-                        • Use absolute paths (e.g., <code>/Users/john/projects</code>)<br>
-                        • The folder will become your workspace
+                    <div class="path-input-container" style="position: relative;">
+                        <input type="text" 
+                               class="form-input" 
+                               id="workspaceInput" 
+                               placeholder="Start typing a path... (e.g., ~/projects)"
+                               autocomplete="off"
+                               oninput="handlePathInput(this.value)"
+                               onkeydown="handlePathKeydown(event)">
+                        <div id="pathSuggestions" class="path-suggestions"></div>
+                    </div>
+                    <div class="path-quick-buttons" style="display: flex; gap: 8px; margin-top: 8px;">
+                        <button class="path-quick-btn" onclick="setQuickPath('~')">
+                            🏠 Home
+                        </button>
+                        <button class="path-quick-btn" onclick="setQuickPath('~/Desktop')">
+                            🖥️ Desktop
+                        </button>
+                        <button class="path-quick-btn" onclick="setQuickPath('~/Documents')">
+                            📄 Documents
+                        </button>
+                        <button class="path-quick-btn" onclick="setQuickPath('~/Downloads')">
+                            📥 Downloads
+                        </button>
+                    </div>
+                    <p class="form-hint" style="margin-top: 12px;">
+                        💡 <strong>Tips:</strong> Type a path and suggestions will appear. Use <kbd>↑</kbd>/<kbd>↓</kbd> to navigate, <kbd>Tab</kbd> or <kbd>Enter</kbd> to select.
                     </p>
                 </div>
                 <div class="form-group">
                     <label>Recent Folders</label>
-                    <div id="recentFolders" style="max-height: 150px; overflow-y: auto;"></div>
+                    <div id="recentFolders" style="max-height: 120px; overflow-y: auto;"></div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1411,6 +1516,145 @@
             } catch (error) {
                 alert('Error: ' + error.message);
             }
+        }
+
+        // ============================================
+        // PATH AUTOCOMPLETE
+        // ============================================
+        let pathSuggestions = [];
+        let selectedSuggestionIndex = -1;
+        let autocompleteTimeout = null;
+
+        async function handlePathInput(value) {
+            // Debounce the autocomplete requests
+            clearTimeout(autocompleteTimeout);
+            
+            if (!value || value.length < 1) {
+                hidePathSuggestions();
+                return;
+            }
+
+            autocompleteTimeout = setTimeout(async () => {
+                await fetchPathSuggestions(value);
+            }, 150);
+        }
+
+        async function fetchPathSuggestions(partial) {
+            try {
+                const response = await fetch(`${API_BASE}/api/files/autocomplete?partial=${encodeURIComponent(partial)}`);
+                const data = await response.json();
+                
+                pathSuggestions = data.suggestions || [];
+                selectedSuggestionIndex = -1;
+                renderPathSuggestions();
+            } catch (error) {
+                console.error('Autocomplete error:', error);
+                hidePathSuggestions();
+            }
+        }
+
+        function renderPathSuggestions() {
+            const container = document.getElementById('pathSuggestions');
+            
+            if (pathSuggestions.length === 0) {
+                hidePathSuggestions();
+                return;
+            }
+
+            container.innerHTML = pathSuggestions.map((item, index) => `
+                <div class="path-suggestion ${index === selectedSuggestionIndex ? 'selected' : ''}"
+                     onclick="selectPathSuggestion(${index})"
+                     onmouseenter="selectedSuggestionIndex = ${index}; highlightSuggestion()">
+                    <span class="path-suggestion-icon">📁</span>
+                    <span class="path-suggestion-text">
+                        <span class="path-suggestion-name">${item.name}</span>
+                        <span style="color: var(--text-muted); margin-left: 8px;">${item.path}</span>
+                    </span>
+                </div>
+            `).join('');
+            
+            container.classList.add('active');
+        }
+
+        function hidePathSuggestions() {
+            const container = document.getElementById('pathSuggestions');
+            container.classList.remove('active');
+            pathSuggestions = [];
+            selectedSuggestionIndex = -1;
+        }
+
+        function highlightSuggestion() {
+            const items = document.querySelectorAll('.path-suggestion');
+            items.forEach((item, idx) => {
+                item.classList.toggle('selected', idx === selectedSuggestionIndex);
+            });
+        }
+
+        function selectPathSuggestion(index) {
+            if (index >= 0 && index < pathSuggestions.length) {
+                const suggestion = pathSuggestions[index];
+                const input = document.getElementById('workspaceInput');
+                input.value = suggestion.path + '/';
+                hidePathSuggestions();
+                input.focus();
+                // Trigger another fetch for subdirectories
+                handlePathInput(input.value);
+            }
+        }
+
+        function handlePathKeydown(event) {
+            const container = document.getElementById('pathSuggestions');
+            const isVisible = container.classList.contains('active');
+
+            if (!isVisible) {
+                if (event.key === 'Enter') {
+                    openWorkspace();
+                }
+                return;
+            }
+
+            switch (event.key) {
+                case 'ArrowDown':
+                    event.preventDefault();
+                    selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, pathSuggestions.length - 1);
+                    highlightSuggestion();
+                    scrollSuggestionIntoView();
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, 0);
+                    highlightSuggestion();
+                    scrollSuggestionIntoView();
+                    break;
+                case 'Tab':
+                case 'Enter':
+                    event.preventDefault();
+                    if (selectedSuggestionIndex >= 0) {
+                        selectPathSuggestion(selectedSuggestionIndex);
+                    } else if (pathSuggestions.length > 0) {
+                        selectPathSuggestion(0);
+                    } else if (event.key === 'Enter') {
+                        openWorkspace();
+                    }
+                    break;
+                case 'Escape':
+                    hidePathSuggestions();
+                    break;
+            }
+        }
+
+        function scrollSuggestionIntoView() {
+            const selected = document.querySelector('.path-suggestion.selected');
+            if (selected) {
+                selected.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function setQuickPath(path) {
+            const input = document.getElementById('workspaceInput');
+            input.value = path + '/';
+            input.focus();
+            handlePathInput(input.value);
         }
 
         // ============================================

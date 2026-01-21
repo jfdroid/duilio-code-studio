@@ -232,3 +232,69 @@ async def check_exists(
         "is_file": is_file,
         "is_directory": is_dir
     }
+
+
+@router.get("/autocomplete")
+async def autocomplete_path(
+    partial: str = Query(..., description="Partial path to autocomplete"),
+    file_service: FileService = Depends(get_file_service)
+) -> Dict[str, Any]:
+    """
+    Autocomplete directory paths.
+    
+    Given a partial path, returns matching directories.
+    Used for the Open Folder dialog.
+    """
+    import os
+    from pathlib import Path
+    
+    # Expand ~ to home directory
+    expanded = os.path.expanduser(partial)
+    path = Path(expanded)
+    
+    # Determine parent directory and prefix to search
+    if path.is_dir() and partial.endswith('/'):
+        search_dir = path
+        prefix = ""
+    else:
+        search_dir = path.parent
+        prefix = path.name.lower()
+    
+    suggestions = []
+    
+    try:
+        if search_dir.exists() and search_dir.is_dir():
+            for item in sorted(search_dir.iterdir()):
+                # Only show directories
+                if not item.is_dir():
+                    continue
+                # Skip hidden directories (unless user typed a dot)
+                if item.name.startswith('.') and not prefix.startswith('.'):
+                    continue
+                # Match prefix
+                if prefix and not item.name.lower().startswith(prefix):
+                    continue
+                
+                # Convert back to ~ notation if in home
+                display_path = str(item)
+                home = os.path.expanduser("~")
+                if display_path.startswith(home):
+                    display_path = "~" + display_path[len(home):]
+                
+                suggestions.append({
+                    "path": display_path,
+                    "name": item.name,
+                    "is_dir": True
+                })
+                
+                if len(suggestions) >= 20:
+                    break
+    except PermissionError:
+        pass
+    except Exception:
+        pass
+    
+    return {
+        "partial": partial,
+        "suggestions": suggestions
+    }
