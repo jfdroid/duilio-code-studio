@@ -125,21 +125,44 @@ ollama pull qwen2.5-coder:7b
 | `/api/chat` | POST | Chat with history |
 | `/api/models` | GET | List models |
 
-## 📁 Project Structure
+## 📁 Project Structure (Clean Architecture)
 
 ```
 duilio-code-studio/
 ├── src/
-│   └── api/
-│       └── main.py      # FastAPI server with file ops
+│   ├── api/
+│   │   ├── main.py          # FastAPI entry point
+│   │   ├── dependencies.py  # Dependency injection
+│   │   └── routes/          # API endpoints
+│   │       ├── health.py    # Health checks
+│   │       ├── chat.py      # AI generation
+│   │       ├── files.py     # File operations
+│   │       ├── workspace.py # Project management
+│   │       └── models.py    # Model management
+│   ├── core/
+│   │   ├── config.py        # Settings
+│   │   └── exceptions.py    # Custom exceptions
+│   ├── services/
+│   │   ├── ollama_service.py    # AI/LLM operations
+│   │   ├── file_service.py      # File system operations
+│   │   └── workspace_service.py # Workspace management
+│   └── schemas/
+│       ├── requests.py      # Request models
+│       └── responses.py     # Response models
 ├── web/
-│   └── templates/
-│       └── index.html   # IDE interface
-├── config/
-│   └── settings.py      # Configuration
-├── start.sh             # Startup script
-└── requirements.txt     # Dependencies
+│   ├── templates/
+│   │   └── index.html       # IDE interface
+│   └── static/              # CSS, JS assets
+├── start.sh                 # Startup script
+└── requirements.txt         # Dependencies
 ```
+
+### Architecture Principles
+
+- **SOLID Principles** - Clean separation of concerns
+- **Single Responsibility** - Each module has one job
+- **Dependency Injection** - Services injected via FastAPI
+- **Domain-Driven** - Business logic in services layer
 
 ## 🆚 Comparison
 

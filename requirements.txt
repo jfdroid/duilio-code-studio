@@ -1,5 +1,5 @@
-# DuilioCode Studio - Dependências
-# Apenas para código, sem bibliotecas de imagem
+# DuilioCode Studio - Dependencies
+# Code-focused, no image libraries
 
 # Web Framework
 fastapi>=0.109.0
@@ -15,5 +15,5 @@ pydantic-settings>=2.1.0
 # Utilities
 python-multipart>=0.0.6
 
-# Opcional: para syntax highlighting no backend
+# Optional: syntax highlighting in backend
 pygments>=2.17.0

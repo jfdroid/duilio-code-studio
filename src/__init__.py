@@ -1,3 +1,8 @@
-"""Local AI Studio - Free local AI for chat and image generation."""
+"""
+DuilioCode Studio
+=================
+Local AI coding assistant powered by Qwen2.5-Coder.
+"""
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
+__author__ = "DuilioCode Team"

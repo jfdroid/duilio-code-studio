@@ -41,7 +41,7 @@ else
     python3 -m venv venv
     source venv/bin/activate
     pip install --upgrade pip
-    pip install fastapi uvicorn httpx pydantic
+    pip install fastapi uvicorn httpx pydantic pydantic-settings python-multipart pygments
 fi
 
 echo ""
@@ -51,6 +51,6 @@ echo ""
 echo "Press Ctrl+C to stop"
 echo ""
 
-# Start server
-cd src/api
-python -m uvicorn main:app --host 127.0.0.1 --port 8080 --reload
+# Start server from src directory (Clean Architecture)
+cd src
+python3 -m uvicorn api.main:app --host 127.0.0.1 --port 8080 --reload
