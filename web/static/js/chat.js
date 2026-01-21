@@ -223,13 +223,15 @@ const Chat = {
             fullPath = AppState.workspace.currentPath + '/' + path.replace(/^\.\//, '');
         }
         
-        // Try to open the file
-        if (typeof Files !== 'undefined' && Files.open) {
-            Files.open(fullPath);
+        console.log('[DuilioCode] Opening file from chat:', fullPath);
+        
+        // Try to open the file using FileManager (the correct module name)
+        if (typeof FileManager !== 'undefined' && FileManager.open) {
+            FileManager.open(fullPath);
             Utils.showNotification(`Opening ${path}...`, 'info');
         } else {
-            console.log('[DuilioCode] Would open file:', fullPath);
-            Utils.showNotification(`File: ${path}`, 'info');
+            console.error('[DuilioCode] FileManager not available');
+            Utils.showNotification(`Cannot open: ${path}`, 'error');
         }
     },
     

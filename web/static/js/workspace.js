@@ -153,18 +153,51 @@ const Workspace = {
     },
     
     /**
-     * Toggle folder expansion
+     * Toggle folder expansion with lazy loading
      */
-    toggleFolder(element, item) {
+    async toggleFolder(element, item) {
         const childId = `children-${item.path.replace(/[^a-zA-Z0-9]/g, '_')}`;
-        const childContainer = document.getElementById(childId);
+        let childContainer = document.getElementById(childId);
         
-        if (childContainer) {
+        const icon = element.querySelector('.tree-item-icon');
+        const closedFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+        const openFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M22 10H2"/></svg>';
+        
+        // If no child container exists, we need to lazy load
+        if (!childContainer) {
+            // Show loading state
+            icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+            
+            try {
+                // Load children from API
+                const tree = await API.getWorkspaceTree(item.path, 2);
+                
+                if (tree && tree.children && tree.children.length > 0) {
+                    // Create child container
+                    childContainer = document.createElement('div');
+                    childContainer.className = 'tree-children';
+                    childContainer.id = childId;
+                    element.after(childContainer);
+                    
+                    // Render children
+                    this.renderFileTree(tree, childContainer);
+                    icon.innerHTML = openFolder;
+                    element.classList.add('expanded');
+                } else {
+                    // Empty folder
+                    icon.innerHTML = closedFolder;
+                    Utils.showNotification('Folder is empty', 'info');
+                }
+            } catch (error) {
+                console.error('Error loading folder:', error);
+                icon.innerHTML = closedFolder;
+                Utils.showNotification('Error loading folder', 'error');
+            }
+        } else {
+            // Toggle existing container
             const isCollapsed = childContainer.classList.toggle('collapsed');
-            const icon = element.querySelector('.tree-item-icon');
-            const closedFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
-            const openFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M22 10H2"/></svg>';
             icon.innerHTML = isCollapsed ? closedFolder : openFolder;
+            element.classList.toggle('expanded', !isCollapsed);
         }
     },
     
