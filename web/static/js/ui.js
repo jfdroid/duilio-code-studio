@@ -66,9 +66,15 @@ const UI = {
             const select = document.getElementById('modelSelect');
             
             if (select && data.models) {
-                select.innerHTML = data.models.map(m => 
-                    `<option value="${m.name}" ${m.name === CONFIG.DEFAULT_MODEL ? 'selected' : ''}>${m.name}</option>`
+                // Add AUTO option first (selected by default)
+                let options = '<option value="auto" selected>AUTO (Smart Selection)</option>';
+                
+                // Add all available models
+                options += data.models.map(m => 
+                    `<option value="${m.name}">${m.name}</option>`
                 ).join('');
+                
+                select.innerHTML = options;
             }
         } catch (error) {
             console.error('Failed to load models:', error);
@@ -80,6 +86,7 @@ const UI = {
      */
     setModel(model) {
         AppState.chat.currentModel = model;
+        AppState.chat.autoSelectModel = (model === 'auto');
     },
     
     /**
