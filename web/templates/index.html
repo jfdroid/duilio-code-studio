@@ -26,11 +26,27 @@
     <div class="app-container">
         <!-- Activity Bar -->
         <div class="activity-bar">
-            <button class="activity-btn active" data-panel="explorer" onclick="toggleExplorer()" title="Explorer">📁</button>
-            <button class="activity-btn" title="Search">🔍</button>
-            <button class="activity-btn" title="Source Control">⎇</button>
+            <button class="activity-btn active" data-panel="explorer" onclick="toggleExplorer()" title="Explorer">
+                <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+            </button>
+            <button class="activity-btn" title="Search">
+                <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+            </button>
+            <button class="activity-btn" title="Source Control">
+                <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/>
+                </svg>
+            </button>
             <div class="activity-spacer"></div>
-            <button class="activity-btn" title="Settings">⚙️</button>
+            <button class="activity-btn" title="Settings">
+                <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </button>
         </div>
 
         <!-- Explorer Panel -->
@@ -38,16 +54,32 @@
             <div class="explorer-header">
                 <span class="explorer-title">Explorer</span>
                 <div class="explorer-actions">
-                    <button class="explorer-action" onclick="createNewFile()" title="New File">📄</button>
-                    <button class="explorer-action" onclick="createNewFolder()" title="New Folder">📁</button>
-                    <button class="explorer-action" onclick="Workspace.refresh()" title="Refresh">🔄</button>
+                    <button class="explorer-action" onclick="createNewFile()" title="New File">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+                        </svg>
+                    </button>
+                    <button class="explorer-action" onclick="createNewFolder()" title="New Folder">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
+                        </svg>
+                    </button>
+                    <button class="explorer-action" onclick="Workspace.refresh()" title="Refresh">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
             <!-- Workspace Selector -->
             <div class="workspace-selector">
                 <div class="workspace-path" onclick="openWorkspaceModal()">
-                    <span class="workspace-path-icon">📂</span>
+                    <span class="workspace-path-icon">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </span>
                     <span class="workspace-path-text" id="workspacePathText">Open Folder...</span>
                 </div>
             </div>
@@ -74,7 +106,11 @@
                     <div class="welcome-screen" id="welcomeScreen">
                         <div class="welcome-logo">
                             <img src="/static/images/logo.png" alt="DuilioCode" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="welcome-icon" style="display:none;">🚀</div>
+                            <div class="welcome-fallback-icon" style="display:none;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                </svg>
+                            </div>
                         </div>
                         <h2 class="welcome-title">Welcome to DuilioCode Studio</h2>
                         <p class="welcome-subtitle">
@@ -83,22 +119,38 @@
                         </p>
                         <div class="quick-actions">
                             <div class="quick-action" onclick="openWorkspaceModal()">
-                                <div class="quick-action-icon">📂</div>
+                                <div class="quick-action-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                </div>
                                 <div class="quick-action-title">Open Folder</div>
                                 <div class="quick-action-desc">Start working in a project</div>
                             </div>
                             <div class="quick-action" onclick="createNewFile()">
-                                <div class="quick-action-icon">📄</div>
+                                <div class="quick-action-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+                                    </svg>
+                                </div>
                                 <div class="quick-action-title">New File</div>
                                 <div class="quick-action-desc">Create a new file</div>
                             </div>
                             <div class="quick-action" onclick="quickPrompt('Create a Python Flask REST API with CRUD operations')">
-                                <div class="quick-action-icon">⚡</div>
+                                <div class="quick-action-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                    </svg>
+                                </div>
                                 <div class="quick-action-title">Generate Project</div>
                                 <div class="quick-action-desc">AI creates code for you</div>
                             </div>
                             <div class="quick-action" onclick="quickPrompt('Explain Clean Architecture with examples')">
-                                <div class="quick-action-icon">📚</div>
+                                <div class="quick-action-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                    </svg>
+                                </div>
                                 <div class="quick-action-title">Learn Concepts</div>
                                 <div class="quick-action-desc">Ask about programming</div>
                             </div>
@@ -111,8 +163,8 @@
                             <span class="editor-path" id="editorPath"></span>
                             <div class="editor-actions">
                                 <span id="fileLanguage" style="font-size: 11px; color: var(--text-muted);"></span>
-                                <button class="editor-btn" onclick="revertFile()">↩️ Revert</button>
-                                <button class="editor-btn primary" onclick="saveCurrentFile()">💾 Save</button>
+                                <button class="editor-btn" onclick="revertFile()">Revert</button>
+                                <button class="editor-btn primary" onclick="saveCurrentFile()">Save</button>
                             </div>
                         </div>
                         <div class="editor-content">
@@ -125,19 +177,31 @@
                 <div class="chat-panel" id="chatPanel">
                     <div class="chat-header">
                         <div class="chat-title">
-                            <span>🤖</span>
+                            <span class="chat-title-icon">
+                                <img src="/static/images/logo-small.png" alt="AI" onerror="this.parentElement.innerHTML='<svg class=\'icon\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><circle cx=\'12\' cy=\'12\' r=\'10\'/><path d=\'M12 16v-4\'/><path d=\'M12 8h.01\'/></svg>'">
+                            </span>
                             <span>DuilioCode AI</span>
                         </div>
                         <div>
-                            <button class="explorer-action" onclick="toggleChatSize()" title="Expand">⬜</button>
-                            <button class="explorer-action" onclick="clearChat()" title="Clear">🗑️</button>
+                            <button class="explorer-action" onclick="toggleChatSize()" title="Expand">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                                </svg>
+                            </button>
+                            <button class="explorer-action" onclick="clearChat()" title="Clear">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
                     <div class="chat-messages" id="chatMessages">
                         <div class="message">
                             <div class="message-header">
-                                <div class="message-avatar assistant">🤖</div>
+                                <div class="message-avatar assistant">
+                                    <img src="/static/images/logo-small.png" alt="AI" onerror="this.style.display='none'">
+                                </div>
                                 <span class="message-sender">DuilioCode</span>
                             </div>
                             <div class="message-content">
@@ -160,7 +224,11 @@
                                 id="chatInput" 
                                 placeholder="Ask me to create files, explain code, or anything..."
                                 rows="1"></textarea>
-                            <button class="chat-send-btn" onclick="sendMessage()" title="Send (Ctrl+Enter)">➤</button>
+                            <button class="chat-send-btn" onclick="sendMessage()" title="Send (Ctrl+Enter)">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                            </button>
                         </div>
                         <div class="model-selector-inline">
                             <label>Model:</label>
@@ -174,7 +242,10 @@
         <!-- Status Bar -->
         <div class="status-bar">
             <div class="status-left">
-                <span class="status-item" id="connectionStatus">🟡 Checking...</span>
+                <span class="status-item">
+                    <span class="status-dot checking" id="statusDot"></span>
+                    <span id="connectionStatus">Checking...</span>
+                </span>
                 <span class="status-item" id="modelStatus"></span>
             </div>
             <div class="status-right">
@@ -187,8 +258,13 @@
     <div class="modal-overlay" id="workspaceModal">
         <div class="modal" style="width: 520px;">
             <div class="modal-header">
-                <span class="modal-title">📂 Open Folder</span>
-                <button class="modal-close" onclick="closeWorkspaceModal()">×</button>
+                <span class="modal-title">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Open Folder
+                </span>
+                <button class="modal-close" onclick="closeWorkspaceModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -204,13 +280,13 @@
                         <div id="pathSuggestions" class="path-suggestions"></div>
                     </div>
                     <div class="path-quick-buttons">
-                        <button class="path-quick-btn" onclick="setQuickPath('~')">🏠 Home</button>
-                        <button class="path-quick-btn" onclick="setQuickPath('~/Desktop')">🖥️ Desktop</button>
-                        <button class="path-quick-btn" onclick="setQuickPath('~/Documents')">📄 Documents</button>
-                        <button class="path-quick-btn" onclick="setQuickPath('~/Downloads')">📥 Downloads</button>
+                        <button class="path-quick-btn" onclick="setQuickPath('~')">Home</button>
+                        <button class="path-quick-btn" onclick="setQuickPath('~/Desktop')">Desktop</button>
+                        <button class="path-quick-btn" onclick="setQuickPath('~/Documents')">Documents</button>
+                        <button class="path-quick-btn" onclick="setQuickPath('~/Downloads')">Downloads</button>
                     </div>
                     <p class="form-hint" style="margin-top: 12px;">
-                        💡 <strong>Tips:</strong> Type a path and suggestions will appear. Use <kbd>↑</kbd>/<kbd>↓</kbd> to navigate, <kbd>Tab</kbd> or <kbd>Enter</kbd> to select.
+                        Type a path and suggestions will appear. Use arrow keys to navigate, Tab or Enter to select.
                     </p>
                 </div>
                 <div class="form-group">
@@ -229,8 +305,13 @@
     <div class="modal-overlay" id="newFileModal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title" id="newFileModalTitle">📄 New File</span>
-                <button class="modal-close" onclick="closeNewFileModal()">×</button>
+                <span class="modal-title" id="newFileModalTitle">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    New File
+                </span>
+                <button class="modal-close" onclick="closeNewFileModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -248,20 +329,20 @@
 
     <!-- Context Menu -->
     <div class="context-menu" id="contextMenu">
-        <div class="context-item" onclick="contextNewFile()">📄 New File</div>
-        <div class="context-item" onclick="contextNewFolder()">📁 New Folder</div>
+        <div class="context-item" onclick="contextNewFile()">New File</div>
+        <div class="context-item" onclick="contextNewFolder()">New Folder</div>
         <div class="context-divider"></div>
-        <div class="context-item" onclick="contextRename()">✏️ Rename</div>
-        <div class="context-item" onclick="contextCopyPath()">📋 Copy Path</div>
+        <div class="context-item" onclick="contextRename()">Rename</div>
+        <div class="context-item" onclick="contextCopyPath()">Copy Path</div>
         <div class="context-divider"></div>
-        <div class="context-item context-item--danger" onclick="contextDelete()">🗑️ Delete</div>
+        <div class="context-item context-item--danger" onclick="contextDelete()">Delete</div>
     </div>
 
     <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
 
-    <!-- Application Scripts (order matters!) -->
+    <!-- Application Scripts -->
     <script src="/static/js/config.js"></script>
     <script src="/static/js/state.js"></script>
     <script src="/static/js/utils.js"></script>

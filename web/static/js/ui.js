@@ -24,11 +24,12 @@ const UI = {
      */
     updateConnectionStatus(status) {
         const indicator = document.getElementById('connectionStatus');
+        const statusDot = document.getElementById('statusDot');
         const modelStatus = document.getElementById('modelStatus');
         
         if (status.status === 'ok' && status.ollama?.status === 'running') {
-            indicator.textContent = '🟢 Connected';
-            indicator.style.color = 'var(--accent-green)';
+            indicator.textContent = 'Connected';
+            statusDot.className = 'status-dot';
             
             if (status.ollama?.models_count > 0) {
                 modelStatus.textContent = `${status.ollama.models_count} models`;
@@ -37,8 +38,8 @@ const UI = {
             AppState.connection.status = 'connected';
             AppState.connection.ollamaRunning = true;
         } else {
-            indicator.textContent = '🔴 Offline';
-            indicator.style.color = 'var(--accent-red)';
+            indicator.textContent = 'Offline';
+            statusDot.className = 'status-dot offline';
             AppState.connection.status = 'offline';
             AppState.connection.ollamaRunning = false;
         }

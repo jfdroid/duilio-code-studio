@@ -51,11 +51,12 @@ const PathAutocomplete = {
             return;
         }
         
+        const folderIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
         container.innerHTML = this.suggestions.map((item, index) => `
             <div class="path-suggestion ${index === this.selectedIndex ? 'selected' : ''}"
                  onclick="PathAutocomplete.select(${index})"
                  onmouseenter="PathAutocomplete.highlight(${index})">
-                <span class="path-suggestion-icon">📁</span>
+                <span class="path-suggestion-icon">${folderIcon}</span>
                 <span class="path-suggestion-text">
                     <span class="path-suggestion-name">${item.name}</span>
                     <span style="color: var(--text-muted); margin-left: 8px;">${item.path}</span>

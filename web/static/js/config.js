@@ -16,15 +16,16 @@ const CONFIG = {
     // Connection check interval (ms)
     CONNECTION_CHECK_INTERVAL: 30000,
     
-    // File Icons by extension
+    // File Icons by extension (using SVG icons via CSS classes instead of emojis)
     FILE_ICONS: {
-        'py': '🐍', 'js': '📜', 'ts': '💠', 'jsx': '⚛️', 'tsx': '⚛️',
-        'kt': '🟣', 'java': '☕', 'go': '🐹', 'rs': '🦀', 'cpp': '⚙️', 'c': '⚙️',
-        'html': '🌐', 'css': '🎨', 'scss': '🎨', 'json': '📋', 'yaml': '📋', 'yml': '📋',
-        'md': '📝', 'txt': '📄', 'sh': '💻', 'bash': '💻',
-        'sql': '🗃️', 'xml': '📰', 'svg': '🖼️', 'png': '🖼️', 'jpg': '🖼️',
-        'pdf': '📕', 'zip': '📦', 'tar': '📦', 'gz': '📦',
-        'swift': '🍎', 'rb': '💎', 'php': '🐘', 'vue': '💚', 'svelte': '🔥'
+        // Languages
+        'py': 'py', 'js': 'js', 'ts': 'ts', 'jsx': 'jsx', 'tsx': 'tsx',
+        'kt': 'kt', 'java': 'java', 'go': 'go', 'rs': 'rs', 'cpp': 'cpp', 'c': 'c',
+        'html': 'html', 'css': 'css', 'scss': 'scss', 'json': 'json', 'yaml': 'yaml', 'yml': 'yaml',
+        'md': 'md', 'txt': 'txt', 'sh': 'sh', 'bash': 'sh',
+        'sql': 'sql', 'xml': 'xml', 'svg': 'svg', 'png': 'img', 'jpg': 'img',
+        'pdf': 'pdf', 'zip': 'zip', 'tar': 'zip', 'gz': 'zip',
+        'swift': 'swift', 'rb': 'rb', 'php': 'php', 'vue': 'vue', 'svelte': 'svelte'
     },
     
     // Keyboard Shortcuts

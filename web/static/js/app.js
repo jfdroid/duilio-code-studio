@@ -10,7 +10,7 @@ const App = {
      * Initialize the application
      */
     async init() {
-        console.log('🚀 DuilioCode Studio initializing...');
+        console.log('[DuilioCode] Initializing...');
         
         try {
             // Initialize keyboard shortcuts
@@ -34,10 +34,10 @@ const App = {
             // Render initial tabs
             Tabs.render();
             
-            console.log('✅ DuilioCode Studio ready!');
+            console.log('[DuilioCode] Ready');
             
         } catch (error) {
-            console.error('❌ Initialization error:', error);
+            console.error('[DuilioCode] Initialization error:', error);
         }
     },
     

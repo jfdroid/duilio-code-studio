@@ -68,25 +68,25 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     settings = get_settings()
-    print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION}")
-    print(f"📁 Base dir: {settings.BASE_DIR}")
+    print(f"[{settings.APP_NAME}] v{settings.APP_VERSION}")
+    print(f"[Config] Base dir: {settings.BASE_DIR}")
     
     # Check Ollama
     ollama = get_ollama_service()
     status = await ollama.health_check()
     if status.get("status") == "running":
-        print(f"✅ Ollama: {status.get('models_count', 0)} models available")
+        print(f"[Ollama] {status.get('models_count', 0)} models available")
     else:
-        print("⚠️  Ollama: Offline - AI features unavailable")
+        print("[Ollama] Offline - AI features unavailable")
     
-    print(f"🌐 Server: http://{settings.HOST}:{settings.PORT}")
-    print(f"📖 Docs:   http://{settings.HOST}:{settings.PORT}/docs")
+    print(f"[Server] http://{settings.HOST}:{settings.PORT}")
+    print(f"[Docs]   http://{settings.HOST}:{settings.PORT}/docs")
     
     yield
     
     # Shutdown
     await ollama.close()
-    print("👋 Shutdown complete")
+    print("[Server] Shutdown complete")
 
 
 # === Application Factory ===
@@ -162,8 +162,8 @@ def create_app() -> FastAPI:
                 <!DOCTYPE html>
                 <html>
                 <head><title>DuilioCode Studio</title></head>
-                <body>
-                    <h1>🚀 DuilioCode Studio</h1>
+                <body style="font-family: sans-serif; padding: 40px;">
+                    <h1>DuilioCode Studio</h1>
                     <p>API is running. Visit <a href="/docs">/docs</a> for API documentation.</p>
                 </body>
                 </html>

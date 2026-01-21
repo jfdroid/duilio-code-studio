@@ -120,7 +120,8 @@ const Workspace = {
             div.dataset.path = item.path;
             div.dataset.isDir = item.is_directory;
             
-            const icon = item.is_directory ? '📁' : Utils.getFileIcon(item.name);
+            const folderIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+            const icon = item.is_directory ? folderIcon : Utils.getFileIcon(item.name);
             
             div.innerHTML = `
                 <span class="tree-item-icon">${icon}</span>
@@ -159,9 +160,11 @@ const Workspace = {
         const childContainer = document.getElementById(childId);
         
         if (childContainer) {
-            childContainer.classList.toggle('collapsed');
+            const isCollapsed = childContainer.classList.toggle('collapsed');
             const icon = element.querySelector('.tree-item-icon');
-            icon.textContent = childContainer.classList.contains('collapsed') ? '📁' : '📂';
+            const closedFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+            const openFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M22 10H2"/></svg>';
+            icon.innerHTML = isCollapsed ? closedFolder : openFolder;
         }
     },
     
@@ -185,11 +188,12 @@ const Workspace = {
             return;
         }
         
+        const folderIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
         container.innerHTML = validPaths.map(path => {
             const escapedPath = path.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             return `
                 <div class="workspace-path" onclick="Workspace.selectRecentFolder('${escapedPath}')" style="margin-bottom: 8px;">
-                    <span class="workspace-path-icon">📂</span>
+                    <span class="workspace-path-icon">${folderIcon}</span>
                     <span class="workspace-path-text">${Utils.shortenPath(path)}</span>
                 </div>
             `;
