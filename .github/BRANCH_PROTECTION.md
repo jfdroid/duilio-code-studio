@@ -9,7 +9,37 @@ This guide explains how to set up branch protection rules for the DuilioCode Stu
 - Ensure CI passes before merging
 - Maintain code quality
 
+## ⚠️ Common Warning: "This ruleset does not target any resources"
+
+If you see this warning:
+> "This ruleset does not target any resources and will not be applied."
+
+**Solution:** You need to add a **Target branch**:
+
+1. Scroll down in the ruleset settings
+2. Find **"Target branches"** section
+3. Click **"Add target"** → **"Include default branch"**
+   - OR click **"Add target"** → **"Include by pattern"** → type `master`
+4. Save changes
+
+The warning will disappear once a target is configured.
+
+---
+
 ## Setup Instructions
+
+### Option A: Using Rulesets (New GitHub UI)
+
+1. Go to: **Settings** → **Rules** → **Rulesets**
+2. Click **"New ruleset"** → **"New branch ruleset"**
+3. Configure:
+   - **Ruleset Name:** `master`
+   - **Enforcement status:** `Active`
+   - **Target branches:** Click "Add target" → "Include default branch"
+   - **Rules:** Check "Require a pull request before merging"
+4. Save
+
+### Option B: Using Branch Protection (Classic)
 
 ### Step 1: Go to Repository Settings
 
