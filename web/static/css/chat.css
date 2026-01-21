@@ -5,34 +5,34 @@
 
 /* Chat Panel */
 .chat-panel {
-    width: 400px;
+    width: 380px;
     min-width: 320px;
-    max-width: 800px;
     border-left: 1px solid #30363d;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     background: #161b22;
     flex-shrink: 0;
     overflow: hidden;
-    resize: horizontal;
-    position: relative;
 }
 
 .chat-panel.expanded {
-    width: 60%;
-    min-width: 500px;
-    max-width: 70%;
+    width: 500px;
 }
 
-/* Chat History Sidebar */
+/* Chat History Sidebar - shown as dropdown/overlay */
 .chat-history-sidebar {
-    width: 200px;
-    min-width: 200px;
+    position: absolute;
+    top: 48px;
+    left: 0;
+    width: 250px;
+    max-height: 400px;
     background: #0d1117;
-    border-right: 1px solid #21262d;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     display: none;
     flex-direction: column;
-    flex-shrink: 0;
+    z-index: 100;
 }
 
 .chat-history-sidebar.visible {
@@ -107,6 +107,13 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+    position: relative;
+}
+
+.chat-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .chat-title-text {
