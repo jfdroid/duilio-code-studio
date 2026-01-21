@@ -4,11 +4,14 @@ Workspace Routes
 Workspace/project management endpoints.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any
+import os
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Dict, Any, List
 from pydantic import BaseModel, Field
+from pathlib import Path
 
 from services.workspace_service import WorkspaceService, get_workspace_service
+from services.file_service import FileService, get_file_service
 from core.exceptions import WorkspaceError
 
 
@@ -42,7 +45,9 @@ async def get_workspace(
         "is_git": state.is_git,
         "git_branch": state.git_branch,
         "total_files": state.total_files,
-        "languages": state.languages
+        "languages": state.languages,
+        "home_directory": os.path.expanduser("~"),
+        "recent_paths": state.recent_files[:10] if state.recent_files else []
     }
 
 
@@ -67,11 +72,74 @@ async def set_workspace(
             "is_git": state.is_git,
             "git_branch": state.git_branch,
             "total_files": state.total_files,
-            "languages": state.languages
+            "languages": state.languages,
+            "home_directory": os.path.expanduser("~"),
+            "recent_paths": state.recent_files[:10] if state.recent_files else []
         }
         
     except WorkspaceError as e:
         raise HTTPException(status_code=400, detail=e.detail)
+
+
+@router.get("/tree")
+async def get_file_tree(
+    path: str = Query(..., description="Root path"),
+    depth: int = Query(default=3, ge=1, le=10),
+    file_service: FileService = Depends(get_file_service)
+) -> Dict[str, Any]:
+    """
+    Get file tree structure.
+    
+    Returns a nested tree of files and directories.
+    """
+    def build_tree(dir_path: Path, current_depth: int) -> Dict[str, Any]:
+        result = {
+            "name": dir_path.name or str(dir_path),
+            "path": str(dir_path),
+            "is_directory": True,
+            "children": []
+        }
+        
+        if current_depth > depth:
+            return result
+        
+        try:
+            items = sorted(dir_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
+            
+            for item in items:
+                # Skip hidden files and common non-content directories
+                if item.name.startswith('.'):
+                    continue
+                if item.name in {'node_modules', '__pycache__', 'venv', '.venv', 'build', 'dist', '.git'}:
+                    continue
+                
+                if item.is_dir():
+                    child = build_tree(item, current_depth + 1)
+                    result["children"].append(child)
+                else:
+                    result["children"].append({
+                        "name": item.name,
+                        "path": str(item),
+                        "is_directory": False,
+                        "size": item.stat().st_size if item.exists() else 0
+                    })
+        except PermissionError:
+            pass
+        except Exception as e:
+            print(f"Error reading {dir_path}: {e}")
+        
+        return result
+    
+    expanded = os.path.expanduser(path)
+    root = Path(expanded).resolve()
+    
+    if not root.exists():
+        raise HTTPException(status_code=404, detail=f"Path not found: {path}")
+    
+    if not root.is_dir():
+        raise HTTPException(status_code=400, detail=f"Path is not a directory: {path}")
+    
+    return build_tree(root, 1)
 
 
 @router.get("/recent")
