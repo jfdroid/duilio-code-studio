@@ -10,10 +10,16 @@ const Chat = {
      * Send message to AI
      */
     async send() {
+        console.log('[DuilioCode] Chat.send() called');
         const input = document.getElementById('chatInput');
         const message = input.value.trim();
         
-        if (!message || AppState.chat.isLoading) return;
+        console.log('[DuilioCode] Message:', message, 'isLoading:', AppState.chat.isLoading);
+        
+        if (!message || AppState.chat.isLoading) {
+            console.log('[DuilioCode] Blocked: empty message or already loading');
+            return;
+        }
         
         // Add user message
         this.addMessage('user', message);
@@ -42,7 +48,13 @@ const Chat = {
             
             // Add file context
             if (AppState.editor.currentFile) {
-                const content = document.getElementById('codeEditor').value;
+                // Get content from Monaco or fallback textarea
+                let content = '';
+                if (typeof MonacoEditor !== 'undefined' && MonacoEditor.isReady) {
+                    content = MonacoEditor.getContent();
+                } else {
+                    content = document.getElementById('codeEditor')?.value || '';
+                }
                 context += `Current file: ${AppState.editor.currentFile.path}\n\nContent:\n\`\`\`${AppState.editor.currentFile.language}\n${content.slice(0, 2000)}\n\`\`\``;
             }
             
@@ -52,7 +64,10 @@ const Chat = {
             // Use smart model selection (pass null to let backend decide) or specific model
             const selectedModel = document.getElementById('modelSelect')?.value;
             const modelToUse = (selectedModel === 'auto' || !selectedModel) ? null : selectedModel;
+            
+            console.log('[DuilioCode] Calling API.generate:', { message, modelToUse, hasContext: !!systemContext });
             const response = await API.generate(message, modelToUse, systemContext);
+            console.log('[DuilioCode] API Response:', response);
             
             // Update model selector to show which model was actually used
             if (response.model && selectedModel === 'auto') {
