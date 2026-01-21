@@ -391,9 +391,25 @@
                                     </svg>
                                 </button>
                             </div>
-                            <div class="model-selector-inline">
-                                <label>Model:</label>
-                                <select id="modelSelect" onchange="UI.setModel(this.value)"></select>
+                            <div class="chat-options">
+                                <div class="mode-selector">
+                                    <button class="mode-btn" id="chatModeBtn" onclick="Chat.setMode('chat')" data-tooltip="Chat Mode - Just talk, explain, suggest">
+                                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                        </svg>
+                                        <span>Chat</span>
+                                    </button>
+                                    <button class="mode-btn active" id="agentModeBtn" onclick="Chat.setMode('agent')" data-tooltip="Agent Mode - Create files, run commands, modify code">
+                                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                                        </svg>
+                                        <span>Agent</span>
+                                    </button>
+                                </div>
+                                <div class="model-selector-inline">
+                                    <label>Model:</label>
+                                    <select id="modelSelect" onchange="UI.setModel(this.value)"></select>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -5,6 +5,34 @@
 
 const Chat = {
     abortController: null,
+    mode: 'agent', // 'chat' or 'agent'
+
+    /**
+     * Set chat mode
+     */
+    setMode(mode) {
+        this.mode = mode;
+        
+        // Update UI
+        const chatBtn = document.getElementById('chatModeBtn');
+        const agentBtn = document.getElementById('agentModeBtn');
+        
+        if (chatBtn) chatBtn.classList.toggle('active', mode === 'chat');
+        if (agentBtn) {
+            agentBtn.classList.toggle('active', mode === 'agent');
+            agentBtn.dataset.mode = mode === 'agent' ? 'agent' : '';
+        }
+        
+        // Update placeholder
+        const input = document.getElementById('chatInput');
+        if (input) {
+            input.placeholder = mode === 'agent' 
+                ? 'Ask me to create files, run commands, modify code...'
+                : 'Ask me anything, I\'ll explain and suggest...';
+        }
+        
+        Utils.showNotification(`Mode: ${mode === 'agent' ? 'Agent (Execute Actions)' : 'Chat (Conversation Only)'}`, 'info');
+    },
 
     /**
      * Send message to AI
@@ -14,7 +42,7 @@ const Chat = {
         const input = document.getElementById('chatInput');
         const message = input.value.trim();
         
-        console.log('[DuilioCode] Message:', message, 'isLoading:', AppState.chat.isLoading);
+        console.log('[DuilioCode] Message:', message, 'isLoading:', AppState.chat.isLoading, 'mode:', this.mode);
         
         if (!message || AppState.chat.isLoading) {
             console.log('[DuilioCode] Blocked: empty message or already loading');
@@ -65,8 +93,32 @@ const Chat = {
             const selectedModel = document.getElementById('modelSelect')?.value;
             const modelToUse = (selectedModel === 'auto' || !selectedModel) ? null : selectedModel;
             
-            console.log('[DuilioCode] Calling API.generate:', { message, modelToUse, hasContext: !!systemContext });
-            const response = await API.generate(message, modelToUse, systemContext);
+            // Add mode to context
+            const modeContext = this.mode === 'agent' 
+                ? `\n\nIMPORTANT: You are in AGENT MODE. When the user asks to create files, modify code, or run commands, you MUST output the actual actions in a structured format that can be executed. Use these formats:
+
+For creating files:
+\`\`\`create-file:path/to/file.ext
+file content here
+\`\`\`
+
+For modifying files:
+\`\`\`modify-file:path/to/file.ext
+new content
+\`\`\`
+
+For running commands:
+\`\`\`run-command
+command here
+\`\`\`
+
+ALWAYS include the actual code/content, not just instructions.`
+                : '\n\nYou are in CHAT MODE. Just explain, suggest, and discuss. Do not execute any actions.';
+            
+            const fullContext = (systemContext || '') + modeContext;
+            
+            console.log('[DuilioCode] Calling API.generate:', { message, modelToUse, mode: this.mode });
+            const response = await API.generate(message, modelToUse, fullContext);
             console.log('[DuilioCode] API Response:', response);
             
             // Update model selector to show which model was actually used
@@ -75,9 +127,16 @@ const Chat = {
             }
             
             this.hideTypingIndicator();
-            this.addMessage('assistant', response.response);
+            
+            // In Agent mode, process and execute actions
+            let responseText = response.response;
+            if (this.mode === 'agent') {
+                responseText = await this.processAgentActions(response.response);
+            }
+            
+            this.addMessage('assistant', responseText);
             if (typeof ChatHistory !== 'undefined') {
-                ChatHistory.addMessage('assistant', response.response);
+                ChatHistory.addMessage('assistant', responseText);
             }
             
         } catch (error) {
@@ -261,6 +320,126 @@ const Chat = {
         }
     },
     
+    /**
+     * Process agent actions from AI response
+     * Extracts and executes: create-file, modify-file, run-command
+     */
+    async processAgentActions(responseText) {
+        let processedText = responseText;
+        let actionsExecuted = [];
+        
+        // Process create-file actions
+        const createFileRegex = /```create-file:([\w\-./]+)\n([\s\S]*?)```/g;
+        let match;
+        
+        while ((match = createFileRegex.exec(responseText)) !== null) {
+            const filePath = match[1].trim();
+            const content = match[2];
+            
+            try {
+                // Determine full path
+                let fullPath = filePath;
+                if (!filePath.startsWith('/') && AppState.workspace.currentPath) {
+                    fullPath = `${AppState.workspace.currentPath}/${filePath}`;
+                }
+                
+                console.log('[DuilioCode Agent] Creating file:', fullPath);
+                
+                // Create the file via API
+                await API.createFile(fullPath, false, content);
+                
+                actionsExecuted.push(`✅ Created: ${filePath}`);
+                
+                // Replace the code block with success message
+                processedText = processedText.replace(match[0], 
+                    `✅ **File created:** \`${filePath}\`\n\`\`\`\n${content.slice(0, 500)}${content.length > 500 ? '\n...(truncated)' : ''}\n\`\`\``
+                );
+                
+            } catch (error) {
+                console.error('[DuilioCode Agent] Failed to create file:', error);
+                actionsExecuted.push(`❌ Failed to create: ${filePath} - ${error.message}`);
+                processedText = processedText.replace(match[0], 
+                    `❌ **Failed to create:** \`${filePath}\`\nError: ${error.message}`
+                );
+            }
+        }
+        
+        // Process modify-file actions
+        const modifyFileRegex = /```modify-file:([\w\-./]+)\n([\s\S]*?)```/g;
+        
+        while ((match = modifyFileRegex.exec(responseText)) !== null) {
+            const filePath = match[1].trim();
+            const content = match[2];
+            
+            try {
+                let fullPath = filePath;
+                if (!filePath.startsWith('/') && AppState.workspace.currentPath) {
+                    fullPath = `${AppState.workspace.currentPath}/${filePath}`;
+                }
+                
+                console.log('[DuilioCode Agent] Modifying file:', fullPath);
+                
+                await API.writeFile(fullPath, content);
+                actionsExecuted.push(`✅ Modified: ${filePath}`);
+                
+                processedText = processedText.replace(match[0], 
+                    `✅ **File modified:** \`${filePath}\``
+                );
+                
+            } catch (error) {
+                console.error('[DuilioCode Agent] Failed to modify file:', error);
+                actionsExecuted.push(`❌ Failed to modify: ${filePath}`);
+            }
+        }
+        
+        // Process run-command actions
+        const runCommandRegex = /```run-command\n([\s\S]*?)```/g;
+        
+        while ((match = runCommandRegex.exec(responseText)) !== null) {
+            const command = match[1].trim();
+            
+            try {
+                console.log('[DuilioCode Agent] Running command:', command);
+                
+                // Execute via terminal API
+                const result = await API.post('/api/tools/execute', {
+                    code: command,
+                    language: 'shell',
+                    cwd: AppState.workspace.currentPath || '~'
+                });
+                
+                actionsExecuted.push(`✅ Executed: ${command}`);
+                
+                const output = result.output || result.error || 'Command completed';
+                processedText = processedText.replace(match[0], 
+                    `✅ **Command executed:** \`${command}\`\n\`\`\`\n${output}\n\`\`\``
+                );
+                
+                // Also write to terminal if open
+                if (typeof Terminal !== 'undefined' && Terminal.activeTerminal) {
+                    Terminal.write(`$ ${command}`);
+                    Terminal.write(output);
+                }
+                
+            } catch (error) {
+                console.error('[DuilioCode Agent] Failed to run command:', error);
+                actionsExecuted.push(`❌ Failed: ${command}`);
+            }
+        }
+        
+        // Show summary notification
+        if (actionsExecuted.length > 0) {
+            Utils.showNotification(`Agent executed ${actionsExecuted.length} action(s)`, 'success');
+            
+            // Refresh file tree
+            if (typeof Workspace !== 'undefined') {
+                Workspace.refresh();
+            }
+        }
+        
+        return processedText;
+    },
+
     /**
      * Apply code from chat to editor
      */
