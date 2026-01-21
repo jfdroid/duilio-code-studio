@@ -169,3 +169,31 @@ async def generate_stream(
         stream_generator(),
         media_type="text/event-stream"
     )
+
+
+@router.post("/recommend-model")
+async def recommend_model(
+    prompt: str,
+    ollama: OllamaService = Depends(get_ollama_service)
+) -> Dict[str, Any]:
+    """
+    Get recommended model for a given prompt.
+    Analyzes the prompt and suggests the best model.
+    """
+    try:
+        models = await ollama.list_models()
+        model, is_code, reason = OllamaService.get_recommended_model(prompt, models)
+        
+        return {
+            "recommended_model": model,
+            "is_code_related": is_code,
+            "reason": reason,
+            "prompt_type": "code" if is_code else "general"
+        }
+    except Exception as e:
+        return {
+            "recommended_model": "qwen2.5-coder:14b",
+            "is_code_related": True,
+            "reason": f"Error: {str(e)}, using default",
+            "prompt_type": "code"
+        }

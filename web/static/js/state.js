@@ -24,7 +24,8 @@ const AppState = {
     chat: {
         messages: [],
         isLoading: false,
-        currentModel: CONFIG.DEFAULT_MODEL
+        currentModel: CONFIG.DEFAULT_MODEL,
+        autoSelectModel: true  // Smart model selection enabled by default
     },
     
     // UI state

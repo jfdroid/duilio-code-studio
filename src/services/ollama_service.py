@@ -59,6 +59,83 @@ When providing code:
 - Add explanatory comments
 - Indicate possible errors or edge cases"""
 
+    # System prompt for general/creative tasks
+    GENERAL_SYSTEM_PROMPT = """You are DuilioCode, a helpful and creative AI assistant.
+
+Your characteristics:
+- IMPORTANT: Always respond in the SAME LANGUAGE the user writes to you. If they write in Portuguese, respond in Portuguese. If in English, respond in English. Match their language exactly.
+- You are creative, helpful, and knowledgeable
+- You can write stories, poems, presentations, articles
+- You explain complex topics in simple terms
+- You are friendly and engaging
+- You provide detailed and thoughtful responses
+
+Be natural and conversational while being helpful and informative."""
+
+    # Keywords that indicate code-related questions
+    CODE_KEYWORDS = [
+        'code', 'codigo', 'função', 'function', 'class', 'classe', 'bug', 'error', 'erro',
+        'python', 'javascript', 'typescript', 'java', 'kotlin', 'react', 'vue', 'angular',
+        'api', 'database', 'sql', 'mongodb', 'git', 'docker', 'kubernetes', 'aws', 'azure',
+        'html', 'css', 'scss', 'json', 'yaml', 'xml', 'script', 'programar', 'programming',
+        'debug', 'refactor', 'refatorar', 'implementar', 'implement', 'criar arquivo',
+        'create file', 'variable', 'variavel', 'loop', 'array', 'object', 'objeto',
+        'import', 'export', 'module', 'package', 'npm', 'pip', 'framework', 'library',
+        'biblioteca', 'algoritmo', 'algorithm', 'data structure', 'estrutura de dados',
+        'teste', 'test', 'unit test', 'integration', 'deploy', 'build', 'compile'
+    ]
+
+    @classmethod
+    def is_code_related(cls, prompt: str) -> bool:
+        """
+        Detect if the prompt is code-related.
+        Returns True if it seems to be about programming.
+        """
+        prompt_lower = prompt.lower()
+        
+        # Check for code keywords
+        for keyword in cls.CODE_KEYWORDS:
+            if keyword in prompt_lower:
+                return True
+        
+        # Check for code patterns (function calls, brackets, etc)
+        code_patterns = ['()', '{}', '[]', '=>', '->', '==', '!=', '&&', '||', '```']
+        for pattern in code_patterns:
+            if pattern in prompt:
+                return True
+        
+        return False
+
+    @classmethod
+    def get_recommended_model(cls, prompt: str, available_models: list) -> tuple:
+        """
+        Get recommended model based on prompt type.
+        Returns (model_name, is_code_related, reason)
+        """
+        is_code = cls.is_code_related(prompt)
+        
+        # Preferred models for each type
+        code_models = ['qwen2.5-coder:14b', 'qwen2.5-coder:7b', 'codellama', 'deepseek-coder']
+        general_models = ['llama3.2', 'llama3.1', 'mistral', 'gemma2', 'phi3']
+        
+        model_names = [m.lower() if isinstance(m, str) else m.get('name', '').lower() for m in available_models]
+        
+        if is_code:
+            # Find best code model
+            for preferred in code_models:
+                for available in model_names:
+                    if preferred in available:
+                        return (available, True, "Code-related question detected")
+        else:
+            # Find best general model
+            for preferred in general_models:
+                for available in model_names:
+                    if preferred in available:
+                        return (available, False, "General question - using conversational model")
+        
+        # Fallback to first available
+        return (model_names[0] if model_names else 'qwen2.5-coder:14b', is_code, "Using default model")
+
     def __init__(self):
         self.settings = get_settings()
         self.base_url = self.settings.OLLAMA_HOST
@@ -160,24 +237,42 @@ When providing code:
         system_prompt: Optional[str] = None,
         context: Optional[str] = None,
         temperature: float = 0.7,
-        max_tokens: int = 4096
+        max_tokens: int = 4096,
+        auto_select_model: bool = True
     ) -> GenerationResult:
         """
         Generate text/code using specified model.
         
         Args:
             prompt: User prompt
-            model: Model to use (defaults to settings)
+            model: Model to use (defaults to smart selection)
             system_prompt: Custom system prompt
             context: Conversation context
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
+            auto_select_model: If True, automatically select best model
             
         Returns:
             GenerationResult with response and metadata.
         """
-        model = model or self.settings.DEFAULT_MODEL
-        system = system_prompt or self.CODE_SYSTEM_PROMPT
+        # Smart model selection based on prompt
+        is_code = self.is_code_related(prompt)
+        
+        if model is None and auto_select_model:
+            # Try to get best model
+            try:
+                models = await self.list_models()
+                model, _, _ = self.get_recommended_model(prompt, models)
+            except:
+                model = self.settings.DEFAULT_MODEL
+        else:
+            model = model or self.settings.DEFAULT_MODEL
+        
+        # Select appropriate system prompt
+        if system_prompt is None:
+            system = self.CODE_SYSTEM_PROMPT if is_code else self.GENERAL_SYSTEM_PROMPT
+        else:
+            system = system_prompt
         
         # Build full prompt with context
         full_prompt = prompt

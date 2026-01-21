@@ -49,7 +49,14 @@ const Chat = {
             // Add system instruction for file operations
             const systemContext = context ? `You have access to the user's workspace. When they ask you to create files, use the workspace path as base: ${AppState.workspace.currentPath || '~'}. ${context}` : null;
             
-            const response = await API.generate(message, AppState.chat.currentModel, systemContext);
+            // Use smart model selection (pass null to let backend decide)
+            const modelToUse = AppState.chat.autoSelectModel ? null : AppState.chat.currentModel;
+            const response = await API.generate(message, modelToUse, systemContext);
+            
+            // Show which model was used if auto-selected
+            if (AppState.chat.autoSelectModel && response.model) {
+                console.log(`[DuilioCode] Used model: ${response.model}`);
+            }
             
             this.hideTypingIndicator();
             this.addMessage('assistant', response.response);
