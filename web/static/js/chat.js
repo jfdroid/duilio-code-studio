@@ -69,7 +69,17 @@ const Chat = {
             if (error.name === 'AbortError') {
                 this.addMessage('assistant', 'Generation stopped.');
             } else {
-                this.addMessage('assistant', `Error: ${error.message}`);
+                // Properly handle error object
+                let errorMsg = 'Unknown error';
+                if (typeof error === 'string') {
+                    errorMsg = error;
+                } else if (error.message) {
+                    errorMsg = error.message;
+                } else if (error.detail) {
+                    errorMsg = typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail);
+                }
+                this.addMessage('assistant', `Error: ${errorMsg}`);
+                console.error('[DuilioCode] Chat error:', error);
             }
         } finally {
             AppState.setLoading(false);

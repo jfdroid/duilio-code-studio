@@ -27,7 +27,13 @@ const API = {
         });
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            throw new Error(error.detail || `HTTP ${response.status}`);
+            let errorMsg = `HTTP ${response.status}`;
+            if (error.detail) {
+                errorMsg = typeof error.detail === 'string' 
+                    ? error.detail 
+                    : (Array.isArray(error.detail) ? error.detail[0]?.msg || JSON.stringify(error.detail) : JSON.stringify(error.detail));
+            }
+            throw new Error(errorMsg);
         }
         return response.json();
     },

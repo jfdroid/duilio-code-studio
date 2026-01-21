@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api", tags=["Chat"])
 class GenerateRequest(BaseModel):
     """Request for code/text generation."""
     prompt: str = Field(..., description="The prompt")
-    model: str = Field(default="qwen2.5-coder:14b")
+    model: Optional[str] = Field(default=None, description="Model to use (None for auto-selection)")
     system_prompt: Optional[str] = None
     context: Optional[str] = None
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
