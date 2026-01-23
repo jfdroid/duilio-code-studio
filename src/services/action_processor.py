@@ -32,13 +32,13 @@ class ActionProcessor:
         self.file_service = file_service or get_file_service()
         self.workspace_service = workspace_service or get_workspace_service()
         
-        # Importar ConversationMemory se não fornecido
+        # Import ConversationMemory if not provided
         if conversation_memory is None:
             try:
                 from services.conversation_memory import ConversationMemory
                 self.conversation_memory = ConversationMemory()
             except ImportError:
-                # Fallback se não disponível
+                # Fallback if not available
                 self.conversation_memory = None
         else:
             self.conversation_memory = conversation_memory
@@ -200,7 +200,7 @@ class ActionProcessor:
                                 f"✅ **Directory created:** `{path}`"
                             )
                         else:
-                            # Registrar na memória de conversa se disponível
+                            # Record in conversation memory if available
                             if self.conversation_memory:
                                 try:
                                     self.conversation_memory.record_file_creation(
@@ -235,7 +235,7 @@ class ActionProcessor:
                     if result['success']:
                         success_count += 1
                         
-                        # Registrar na memória de conversa se disponível
+                        # Record in conversation memory if available
                         if self.conversation_memory:
                             try:
                                 self.conversation_memory.record_file_modification(
@@ -284,18 +284,18 @@ class ActionProcessor:
             'total_actions': len(actions)
         }
         
-        # Adicionar resumo de memória de conversa se disponível
+        # Add conversation memory summary if available
         if self.conversation_memory:
             try:
                 result['conversation_memory'] = self.conversation_memory.get_context_summary()
             except Exception as e:
-                # Se houver erro, não quebrar o processamento
+                # If there's an error, don't break processing
                 result['conversation_memory'] = f"[Error getting conversation memory: {str(e)}]"
         
         return result
     
     def _extract_dependencies_from_content(self, content: str) -> List[str]:
-        """Extrai dependências do conteúdo do arquivo."""
+        """Extract dependencies from file content."""
         dependencies = []
         
         # Python imports
@@ -310,7 +310,7 @@ class ActionProcessor:
         require_imports = re.findall(r'require\s*\(\s*[\'"]([^\'"]+)[\'"]', content)
         dependencies.extend(require_imports)
         
-        return list(set(dependencies))  # Remover duplicatas
+        return list(set(dependencies))  # Remove duplicates
     
     async def _create_file(
         self, 
