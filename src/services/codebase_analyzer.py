@@ -141,6 +141,23 @@ class CodebaseAnalyzer:
         self._files: List[FileAnalysis] = []
         self._tree_lines: List[str] = []
         
+        # Importar estruturas otimizadas (opcional, para não quebrar compatibilidade)
+        try:
+            from services.directory_tree import DirectoryTree
+            from services.dependency_graph import FileDependencyGraph
+            from services.relevance_scorer import RelevanceScorer
+            
+            self.directory_tree = DirectoryTree(str(self.root_path))
+            self.dependency_graph = FileDependencyGraph()
+            self.relevance_scorer = RelevanceScorer()
+            self._use_optimized_structures = True
+        except ImportError:
+            # Fallback se estruturas não estiverem disponíveis
+            self.directory_tree = None
+            self.dependency_graph = None
+            self.relevance_scorer = None
+            self._use_optimized_structures = False
+        
     def _should_skip_dir(self, name: str) -> bool:
         """Check if directory should be skipped."""
         return name in self.SKIP_DIRS or name.startswith('.')
@@ -407,25 +424,27 @@ class CodebaseAnalyzer:
         
         return " | ".join(parts)
     
-    def analyze(self, max_files: int = 100) -> CodebaseAnalysis:
+    def analyze(self, max_files: int = 100, query: str = "") -> CodebaseAnalysis:
         """
-        Analyze the codebase.
+        Analyze the codebase with optimized structures.
         
         Args:
             max_files: Maximum number of files to analyze in detail
+            query: Optional query for relevance scoring
             
         Returns:
             CodebaseAnalysis with full project context
+            
+        BigO:
+        - File collection: O(n) where n is total files
+        - Tree building: O(n) with DirectoryTree (Trie)
+        - Dependency graph: O(n * m) where m is avg imports per file
+        - Relevance scoring: O(n log n) for ranking
         """
         if not self.root_path.exists():
             raise ValueError(f"Path does not exist: {self.root_path}")
         
-        # Build file tree
-        self._tree_lines = [f"{self.root_path.name}/"]
-        self._build_tree(self.root_path)
-        file_tree = "\n".join(self._tree_lines)
-        
-        # Collect all files
+        # Collect all files (O(n))
         all_files: List[Path] = []
         languages: Dict[str, int] = defaultdict(int)
         total_lines = 0
@@ -440,6 +459,9 @@ class CodebaseAnalyzer:
                     if item.is_dir():
                         if not self._should_skip_dir(item.name):
                             collect_files(item, depth + 1)
+                            # Adicionar ao DirectoryTree se disponível
+                            if self._use_optimized_structures and self.directory_tree:
+                                self.directory_tree.add_path(str(item))
                     elif item.is_file():
                         if not item.name.startswith('.'):
                             all_files.append(item)
@@ -447,10 +469,24 @@ class CodebaseAnalyzer:
                             lang = self._get_language(ext)
                             if lang != 'Unknown':
                                 languages[lang] += 1
+                            # Adicionar ao DirectoryTree se disponível
+                            if self._use_optimized_structures and self.directory_tree:
+                                self.directory_tree.add_path(str(item))
             except:
                 pass
         
         collect_files(self.root_path)
+        
+        # Build file tree (usar DirectoryTree se disponível, senão método antigo)
+        if self._use_optimized_structures and self.directory_tree:
+            # Usar DirectoryTree para gerar tree string
+            all_paths = self.directory_tree.get_all_paths(include_files=True)
+            file_tree = f"{self.root_path.name}/\n" + "\n".join(all_paths[:100])
+        else:
+            # Fallback para método antigo
+            self._tree_lines = [f"{self.root_path.name}/"]
+            self._build_tree(self.root_path)
+            file_tree = "\n".join(self._tree_lines)
         
         # Prioritize files
         priority_files = []
@@ -471,6 +507,22 @@ class CodebaseAnalyzer:
             else:
                 other_files.append(f)
         
+        # Se há query e RelevanceScorer disponível, usar para priorizar
+        if query and self._use_optimized_structures and self.relevance_scorer:
+            # Converter Path para string para scoring
+            all_file_paths = [str(f) for f in all_files]
+            # Rankear arquivos por relevância
+            ranked = self.relevance_scorer.rank_files(
+                all_file_paths,
+                query=query,
+                dependency_graph=self.dependency_graph,
+                directory_tree=self.directory_tree,
+                limit=max_files
+            )
+            # Reordenar other_files baseado no score
+            ranked_paths = {path: score for path, score in ranked}
+            other_files.sort(key=lambda f: ranked_paths.get(str(f), 0.0), reverse=True)
+        
         # Analyze priority files first
         files_to_analyze = priority_files + config_files + other_files[:max_files - len(priority_files) - len(config_files)]
         
@@ -482,6 +534,19 @@ class CodebaseAnalyzer:
             if analysis:
                 self._files.append(analysis)
                 total_lines += analysis.lines
+                
+                # Adicionar ao grafo de dependências se disponível
+                if self._use_optimized_structures and self.dependency_graph:
+                    self.dependency_graph.add_file(
+                        file_path=str(f),
+                        imports=analysis.imports,
+                        metadata={
+                            'language': analysis.language,
+                            'lines': analysis.lines,
+                            'classes': analysis.classes,
+                            'functions': analysis.functions
+                        }
+                    )
                 
                 if f in priority_files:
                     main_analyses.append(analysis)
@@ -501,7 +566,7 @@ class CodebaseAnalyzer:
             dependencies=self._analyze_dependencies(),
         )
     
-    def get_context_for_ai(self, analysis: CodebaseAnalysis, max_length: int = 8000) -> str:
+    def get_context_for_ai(self, analysis: CodebaseAnalysis, max_length: int = 8000, query: str = "") -> str:
         """
         Generate AI context from analysis.
         
@@ -543,11 +608,28 @@ class CodebaseAnalyzer:
         parts.append("```\n")
         
         # Main files with content
-        parts.append("📄 KEY FILES:\n")
+        # Se há query, usar RelevanceScorer para priorizar arquivos relevantes
+        files_to_show = analysis.main_files + analysis.config_files
+        
+        if query and self._use_optimized_structures and self.relevance_scorer:
+            # Rankear arquivos por relevância à query
+            file_paths = [f.path for f in files_to_show]
+            ranked = self.relevance_scorer.rank_files(
+                file_paths,
+                query=query,
+                dependency_graph=self.dependency_graph,
+                directory_tree=self.directory_tree,
+                limit=len(files_to_show)
+            )
+            # Reordenar baseado no score
+            ranked_dict = {path: score for path, score in ranked}
+            files_to_show.sort(key=lambda f: ranked_dict.get(f.path, 0.0), reverse=True)
+        
+        parts.append("📄 KEY FILES (Use these as REFERENCE when creating similar files):\n")
         
         current_length = len('\n'.join(parts))
         
-        for f in analysis.main_files + analysis.config_files:
+        for f in files_to_show:
             if current_length > max_length:
                 break
             
@@ -555,13 +637,25 @@ class CodebaseAnalyzer:
             file_section += f"Language: {f.language} | Lines: {f.lines}\n"
             file_section += f"Summary: {f.summary}\n"
             
-            # Add content for important files
-            if f.content and len(f.content) < 3000:
+            # Adicionar informações de dependências se disponível
+            if self._use_optimized_structures and self.dependency_graph:
+                deps = self.dependency_graph.get_dependencies(f.path, direct_only=True)
+                if deps:
+                    dep_names = [Path(d).name for d in deps[:5]]
+                    file_section += f"Dependencies: {', '.join(dep_names)}\n"
+            
+            # Add content for important files - increase limit for reference files
+            if f.content and len(f.content) < 5000:  # Increased from 3000 to show more content
                 file_section += f"```{f.extension[1:]}\n{f.content}\n```\n"
             
             if current_length + len(file_section) < max_length:
                 parts.append(file_section)
                 current_length += len(file_section)
+        
+        # Add note about using files as reference
+        if current_length < max_length:
+            parts.append("\n💡 TIP: When creating new files, use the files above as REFERENCE and TEMPLATE.")
+            parts.append("Match their structure, imports, exports, and coding style exactly.")
         
         return '\n'.join(parts)
 

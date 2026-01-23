@@ -199,12 +199,22 @@ const ChatHistory = {
 
         container.scrollTop = container.scrollHeight;
 
-        // Highlight code blocks
-        container.querySelectorAll('pre code').forEach(block => {
-            if (typeof hljs !== 'undefined') {
-                hljs.highlightElement(block);
-            }
-        });
+        // Highlight code blocks (skip create-file and modify-file blocks)
+        if (typeof hljs !== 'undefined') {
+            container.querySelectorAll('pre code').forEach(block => {
+                // Skip highlighting for create-file and modify-file blocks
+                const text = block.textContent || '';
+                if (text.includes('create-file:') || text.includes('modify-file:')) {
+                    return;
+                }
+                try {
+                    hljs.highlightElement(block);
+                } catch (error) {
+                    // Ignore highlighting errors (e.g., unknown language)
+                    console.debug('[ChatHistory] Highlight error:', error);
+                }
+            });
+        }
     },
 
     /**

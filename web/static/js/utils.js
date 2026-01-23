@@ -101,6 +101,104 @@ const Utils = {
     },
     
     /**
+     * Normalize file path - resolve relative paths and avoid duplication
+     * @param {string} filePath - Path from AI or user input
+     * @param {string} workspacePath - Current workspace path
+     * @returns {string} Normalized absolute path
+     */
+    normalizeFilePath(filePath, workspacePath) {
+        if (!filePath || typeof filePath !== 'string') {
+            return filePath || '';
+        }
+        
+        // Trim whitespace
+        filePath = filePath.trim();
+        
+        // If no workspace, return path as-is (or make absolute if starts with /)
+        if (!workspacePath) {
+            return filePath.startsWith('/') ? filePath : `/${filePath}`;
+        }
+        
+        // Normalize workspace path (remove trailing slash, ensure starts with /)
+        const normalizedWorkspace = workspacePath.replace(/\/+$/, '').replace(/^\/+/, '/');
+        const workspaceWithoutSlash = normalizedWorkspace.replace(/^\/+/, '');
+        
+        // Remove leading ./ from filePath
+        let cleanPath = filePath.replace(/^\.\//, '');
+        
+        // CRITICAL: Check if path already contains workspace (avoid duplication)
+        // Check multiple variations to catch all cases
+        const pathVariations = [
+            cleanPath,
+            '/' + cleanPath,
+            cleanPath.replace(/^\/+/, ''),
+            '/' + cleanPath.replace(/^\/+/, '')
+        ];
+        
+        for (const pathVar of pathVariations) {
+            // Check if this variation contains the workspace
+            if (pathVar.includes(normalizedWorkspace) || pathVar.includes(workspaceWithoutSlash)) {
+                // Path contains workspace - find where it starts and use from there
+                let normalized = pathVar;
+                
+                // Find first occurrence of workspace
+                const workspaceIndex = normalized.indexOf(normalizedWorkspace);
+                const workspaceNoSlashIndex = normalized.indexOf(workspaceWithoutSlash);
+                
+                let startIndex = -1;
+                if (workspaceIndex >= 0) {
+                    startIndex = workspaceIndex;
+                } else if (workspaceNoSlashIndex >= 0) {
+                    startIndex = workspaceNoSlashIndex;
+                    normalized = '/' + normalized; // Add leading slash
+                    startIndex++; // Adjust for added slash
+                }
+                
+                if (startIndex >= 0) {
+                    // Extract from workspace onwards
+                    normalized = normalized.substring(startIndex);
+                } else {
+                    // Ensure starts with /
+                    if (!normalized.startsWith('/')) {
+                        normalized = '/' + normalized;
+                    }
+                }
+                
+                // Remove any duplicate workspace segments
+                const escapedWorkspace = normalizedWorkspace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const escapedNoSlash = workspaceWithoutSlash.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                
+                // Remove duplicates: /workspace/workspace -> /workspace
+                normalized = normalized.replace(new RegExp(`(${escapedWorkspace})/+(${escapedWorkspace})`, 'g'), '$1');
+                normalized = normalized.replace(new RegExp(`(${escapedNoSlash})/+(${escapedNoSlash})`, 'g'), '$1');
+                normalized = normalized.replace(new RegExp(`(${escapedWorkspace})/+(${escapedNoSlash})`, 'g'), '$1');
+                normalized = normalized.replace(new RegExp(`(${escapedNoSlash})/+(${escapedWorkspace})`, 'g'), '$1');
+                
+                // Normalize slashes
+                normalized = normalized.replace(/\/+/g, '/');
+                
+                return normalized;
+            }
+        }
+        
+        // Path doesn't contain workspace - treat as relative or absolute
+        if (cleanPath.startsWith('/')) {
+            // Already absolute path
+            // If it's clearly outside workspace (doesn't start with workspace path), use as-is
+            if (!cleanPath.startsWith(normalizedWorkspace)) {
+                // This is an absolute path outside the workspace (e.g., /Users/username/Desktop/file.txt)
+                // Return as-is - user explicitly requested this location
+                return cleanPath;
+            }
+            // If it starts with workspace but wasn't caught above, use as-is
+            return cleanPath;
+        }
+        
+        // Relative path - join with workspace
+        return `${normalizedWorkspace}/${cleanPath}`.replace(/\/+/g, '/');
+    },
+    
+    /**
      * Generate unique ID
      */
     generateId() {

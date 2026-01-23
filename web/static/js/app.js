@@ -16,6 +16,14 @@ const App = {
             // Initialize keyboard shortcuts
             Keyboard.init();
             
+            // Initialize Command Palette and Quick Open
+            if (typeof CommandPalette !== 'undefined') {
+                CommandPalette.init();
+            }
+            if (typeof QuickOpen !== 'undefined') {
+                QuickOpen.init();
+            }
+            
             // Initialize Monaco Editor (async, non-blocking)
             if (typeof MonacoEditor !== 'undefined') {
                 MonacoEditor.init().then(() => {
@@ -27,11 +35,6 @@ const App = {
                 }).catch(err => {
                     console.warn('[DuilioCode] Monaco failed to load, using fallback editor:', err);
                 });
-            }
-            
-            // Initialize Terminal
-            if (typeof Terminal !== 'undefined') {
-                Terminal.init();
             }
             
             // Initialize Chat Renderers (Mermaid, KaTeX)
@@ -82,7 +85,13 @@ const App = {
     setupEventListeners() {
         // Context menu
         document.addEventListener('contextmenu', (e) => ContextMenu.show(e));
-        document.addEventListener('click', () => ContextMenu.hide());
+        document.addEventListener('click', (e) => {
+            // Hide context menu when clicking outside of it
+            // Tree items handle their own clicks and stop propagation, so they won't trigger this
+            if (!e.target.closest('.context-menu')) {
+                ContextMenu.hide();
+            }
+        });
         
         // Chat textarea auto-resize
         const chatInput = document.getElementById('chatInput');
@@ -153,19 +162,6 @@ function toggleChatHistory() {
 }
 function openSearch() { ActivityBar.show('search'); }
 function focusChat() { document.getElementById('chatInput')?.focus(); }
-function toggleTerminal() { 
-    if (typeof Terminal !== 'undefined') {
-        Terminal.toggle();
-        // Update button state
-        const btn = document.getElementById('terminalStatusBtn');
-        if (btn) btn.classList.toggle('active', Terminal.isVisible);
-    }
-}
-
 function toggleProblems() {
     Utils.showNotification('Problems panel coming soon', 'info');
-}
-
-function toggleOutput() {
-    Utils.showNotification('Output panel coming soon', 'info');
 }

@@ -299,3 +299,211 @@
 .typing-dot:nth-child(1) { animation-delay: 0s; }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ==================== Command Palette ==================== */
+
+.command-palette,
+.quick-open {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+}
+
+.command-palette.visible,
+.quick-open.visible {
+    display: flex;
+}
+
+.command-palette-overlay,
+.quick-open-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.command-palette-modal,
+.quick-open-modal {
+    position: relative;
+    width: 90%;
+    max-width: 640px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    max-height: 70vh;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.command-palette-header,
+.quick-open-header {
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.command-palette-input,
+.quick-open-input {
+    width: 100%;
+    padding: var(--space-3);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    font-family: var(--font-base);
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.command-palette-input:focus,
+.quick-open-input:focus {
+    border-color: var(--accent-blue);
+}
+
+.command-palette-list,
+.quick-open-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
+    padding: var(--space-2) 0;
+}
+
+.command-palette-category {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    background: var(--bg-tertiary);
+    margin-top: var(--space-2);
+}
+
+.command-palette-category:first-child {
+    margin-top: 0;
+}
+
+.command-palette-item,
+.quick-open-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    color: var(--text-primary);
+}
+
+.command-palette-item:hover,
+.quick-open-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.command-palette-item.selected,
+.quick-open-item.selected {
+    background: var(--bg-active);
+}
+
+.command-palette-label {
+    flex: 1;
+    font-size: var(--font-size-base);
+}
+
+.command-palette-label mark {
+    background: var(--accent-blue);
+    color: var(--bg-primary);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+.command-palette-shortcut {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+
+.command-palette-empty,
+.quick-open-empty {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.command-palette-footer,
+.quick-open-footer {
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.command-palette-hint,
+.quick-open-hint {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+/* Quick Open specific */
+.quick-open-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--space-3);
+    align-items: center;
+}
+
+.quick-open-icon {
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+}
+
+.quick-open-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.quick-open-label {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.quick-open-label mark {
+    background: var(--accent-blue);
+    color: var(--bg-primary);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+.quick-open-path {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    text-align: right;
+}
+
+.quick-open-item.recent .quick-open-label::before {
+    content: '🕐 ';
+    margin-right: 4px;
+    opacity: 0.6;
+}

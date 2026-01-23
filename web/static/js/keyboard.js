@@ -1,6 +1,9 @@
 /**
  * DuilioCode Studio - Keyboard Shortcuts Module
- * Global keyboard shortcut handling
+ * Minimal keyboard handling - only Escape for closing modals
+ * 
+ * NOTE: We removed most keyboard shortcuts to avoid conflicts with browser shortcuts.
+ * Users can access features via UI buttons and Command Palette.
  */
 
 const Keyboard = {
@@ -15,38 +18,22 @@ const Keyboard = {
      * Handle global keydown
      */
     handleGlobalKeydown(event) {
-        const ctrlOrMeta = event.ctrlKey || event.metaKey;
-        
-        // Save: Ctrl+S
-        if (ctrlOrMeta && event.key === 's') {
-            event.preventDefault();
-            FileManager.save();
-            return;
-        }
-        
-        // Open Folder: Ctrl+O
-        if (ctrlOrMeta && event.key === 'o') {
-            event.preventDefault();
-            Workspace.openModal();
-            return;
-        }
-        
-        // New File: Ctrl+N
-        if (ctrlOrMeta && event.key === 'n') {
-            event.preventDefault();
-            FileManager.createNew();
-            return;
-        }
-        
-        // Toggle Explorer: Ctrl+B
-        if (ctrlOrMeta && event.key === 'b') {
-            event.preventDefault();
-            UI.toggleExplorer();
-            return;
-        }
-        
-        // Escape: Close modals
+        // Only handle Escape for closing modals/palettes
+        // This doesn't conflict with browser shortcuts
         if (event.key === 'Escape') {
+            // Close command palette first
+            if (typeof CommandPalette !== 'undefined' && CommandPalette.isVisible) {
+                event.preventDefault();
+                CommandPalette.hide();
+                return;
+            }
+            // Close quick open
+            if (typeof QuickOpen !== 'undefined' && QuickOpen.isVisible) {
+                event.preventDefault();
+                QuickOpen.hide();
+                return;
+            }
+            // Close other modals
             Workspace.closeModal();
             FileManager.closeModal();
             ContextMenu.hide();

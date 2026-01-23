@@ -66,15 +66,16 @@ const Chat = {
         this.abortController = new AbortController();
         
         try {
-            // Get file context if file is open
+            // Build comprehensive context
             let context = '';
+            const workspacePath = AppState.workspace.currentPath;
             
             // Add workspace context
-            if (AppState.workspace.currentPath) {
-                context += `Current workspace: ${AppState.workspace.currentPath}\n`;
+            if (workspacePath) {
+                context += `Current workspace: ${workspacePath}\n`;
             }
             
-            // Add file context
+            // Add file context if file is open
             if (AppState.editor.currentFile) {
                 // Get content from Monaco or fallback textarea
                 let content = '';
@@ -83,24 +84,86 @@ const Chat = {
                 } else {
                     content = document.getElementById('codeEditor')?.value || '';
                 }
-                context += `Current file: ${AppState.editor.currentFile.path}\n\nContent:\n\`\`\`${AppState.editor.currentFile.language}\n${content.slice(0, 2000)}\n\`\`\``;
+                context += `\n=== CURRENTLY OPEN FILE ===\n`;
+                context += `File: ${AppState.editor.currentFile.path}\n`;
+                context += `Language: ${AppState.editor.currentFile.language}\n`;
+                context += `Content (first 2000 chars):\n\`\`\`${AppState.editor.currentFile.language}\n${content.slice(0, 2000)}\n\`\`\`\n`;
             }
             
-            // Add system instruction for file operations
-            const systemContext = context ? `You have access to the user's workspace. When they ask you to create files, use the workspace path as base: ${AppState.workspace.currentPath || '~'}. ${context}` : null;
+            // Build system context
+            // NOTE: The backend will automatically include codebase analysis when include_codebase: true
+            // We add instructions here to guide the AI on how to use that context
+            let systemContext = '';
+            if (workspacePath) {
+                systemContext += `You have access to the user's workspace at: ${workspacePath}\n`;
+                systemContext += `The backend will provide you with FULL CODEBASE ANALYSIS including:\n`;
+                systemContext += `- Project structure and file tree\n`;
+                systemContext += `- Key files with their content\n`;
+                systemContext += `- Dependencies and entry points\n`;
+                systemContext += `- Coding patterns and conventions\n\n`;
+                systemContext += `You MUST use this analysis to make intelligent decisions when creating files.\n`;
+            }
+            if (context) {
+                systemContext += context;
+            }
+            
+            const finalSystemContext = systemContext || null;
             
             // Use smart model selection (pass null to let backend decide) or specific model
             const selectedModel = document.getElementById('modelSelect')?.value;
             const modelToUse = (selectedModel === 'auto' || !selectedModel) ? null : selectedModel;
             
-            // Add mode to context
+            // Add mode to context with CRITICAL instructions for file creation
             const modeContext = this.mode === 'agent' 
-                ? `\n\nIMPORTANT: You are in AGENT MODE. When the user asks to create files, modify code, or run commands, you MUST output the actual actions in a structured format that can be executed. Use these formats:
+                ? `\n\n=== AGENT MODE - CRITICAL INSTRUCTIONS ===
 
-For creating files:
+You are in AGENT MODE. When the user asks to create files, modify code, or run commands, you MUST output the actual actions in a structured format.
+
+BEFORE CREATING ANY FILE:
+1. ANALYZE the codebase structure provided in the context above
+2. UNDERSTAND the project's architecture, patterns, and conventions
+3. IDENTIFY where similar files are located in the project
+4. FOLLOW existing directory structures and naming conventions
+5. MATCH the coding style, imports, and structure of similar files
+6. RESPECT framework-specific patterns (React, Python, Node.js, etc.)
+7. CREATE files in the CORRECT directories based on their purpose and type
+8. ENSURE new files integrate properly with existing code (imports, exports, dependencies)
+
+FILE CREATION FORMAT (CRITICAL - USE THIS EXACT FORMAT):
 \`\`\`create-file:path/to/file.ext
 file content here
 \`\`\`
+
+IMPORTANT: You can create MULTIPLE files in ONE response by using multiple \`\`\`create-file: blocks.
+When user asks for a "project" or "complete application", create ALL necessary files in the SAME response.
+
+PATH RULES (CRITICAL):
+- CRITICAL: When user asks for a file WITHOUT specifying a directory (e.g., "create utils.js"), create it in the ROOT of the workspace (e.g., utils.js, NOT src/utils.js)
+- ONLY create files in subdirectories if:
+  * User explicitly specifies a directory (e.g., "create src/utils.js")
+  * The codebase already has a clear structure and similar files exist in that directory
+  * You're creating a complete project with multiple files and following established patterns
+- For simple single-file requests, ALWAYS use root unless user specifies otherwise
+- For files INSIDE the workspace: Use RELATIVE paths from workspace root
+- For files OUTSIDE the workspace (when user explicitly requests): Use ABSOLUTE paths (e.g., /Users/username/Desktop/file.txt, ~/Documents/file.txt)
+- If user asks to create a file in a specific location (Desktop, Documents, etc.), use the FULL ABSOLUTE PATH they requested
+- If creating a component/module/test and similar files exist, follow their pattern
+- NEVER create files randomly - always base on codebase analysis (for workspace files) or user's explicit request (for external paths)
+
+CONTENT RULES:
+- When user asks to create a file "based on", "similar to", "like", or "following the pattern of" another file:
+  * Find similar files in the codebase (same type, same directory, similar name)
+  * Use those files as REFERENCE and TEMPLATE
+  * Match the EXACT structure, imports, exports, and patterns from the reference files
+  * Keep the same coding style, naming conventions, and organization
+  * Adapt the content to the new file's purpose while maintaining consistency
+- Match the coding style of similar files in the project
+- Include proper imports/exports matching project patterns
+- Follow the same structure and organization as existing files
+- Use the same naming conventions (camelCase, PascalCase, snake_case, etc.)
+- Include proper headers, comments, and documentation if the project uses them
+- Match indentation style (spaces vs tabs, 2 vs 4 spaces)
+- When creating files similar to existing ones, analyze the reference files' content in the codebase context and replicate their patterns
 
 For modifying files:
 \`\`\`modify-file:path/to/file.ext
@@ -112,12 +175,23 @@ For running commands:
 command here
 \`\`\`
 
-ALWAYS include the actual code/content, not just instructions.`
+CONTEXT RETENTION:
+- Remember ALL files created in previous messages in this conversation
+- When user refers to "that file" or "the file we created", remember which file they mean
+- Maintain full conversation context - you have access to all previous messages
+- When modifying files, reference the file by its path from previous context
+
+REMEMBER: You have FULL CONTEXT of the codebase. Use it to make intelligent decisions about file placement and structure.
+When creating files "based on" or "similar to" existing files, use their FULL CONTENT from the codebase context as a TEMPLATE.`
                 : '\n\nYou are in CHAT MODE. Just explain, suggest, and discuss. Do not execute any actions.';
             
-            const fullContext = (systemContext || '') + modeContext;
+            const fullContext = (finalSystemContext || '') + modeContext;
             
-            console.log('[DuilioCode] Calling API.generate:', { message, modelToUse, mode: this.mode });
+            console.log('[DuilioCode] Calling API.generate with codebase context');
+            console.log('[DuilioCode] Workspace:', workspacePath);
+            console.log('[DuilioCode] Context length:', fullContext?.length || 0);
+            
+            // CRITICAL: Pass include_codebase to ensure backend analyzes the codebase
             const response = await API.generate(message, modelToUse, fullContext);
             console.log('[DuilioCode] API Response:', response);
             
@@ -210,10 +284,22 @@ ALWAYS include the actual code/content, not just instructions.`
         container.insertAdjacentHTML('beforeend', messageHtml);
         container.scrollTop = container.scrollHeight;
         
-        // Highlight code blocks
-        container.querySelectorAll('pre code').forEach(block => {
-            hljs.highlightElement(block);
-        });
+        // Highlight code blocks (skip create-file and modify-file blocks)
+        if (typeof hljs !== 'undefined') {
+            container.querySelectorAll('pre code').forEach(block => {
+                // Skip highlighting for create-file and modify-file blocks
+                const text = block.textContent || '';
+                if (text.includes('create-file:') || text.includes('modify-file:')) {
+                    return;
+                }
+                try {
+                    hljs.highlightElement(block);
+                } catch (error) {
+                    // Ignore highlighting errors (e.g., unknown language)
+                    console.debug('[Chat] Highlight error:', error);
+                }
+            });
+        }
         
         // Render Mermaid diagrams
         if (typeof ChatRenderers !== 'undefined') {
@@ -329,7 +415,8 @@ ALWAYS include the actual code/content, not just instructions.`
         let actionsExecuted = [];
         
         // Process create-file actions
-        const createFileRegex = /```create-file:([\w\-./]+)\n([\s\S]*?)```/g;
+        // Improved regex to handle paths with spaces, special chars, and multiple files
+        const createFileRegex = /```create-file:([^\n]+)\n([\s\S]*?)```/g;
         let match;
         
         while ((match = createFileRegex.exec(responseText)) !== null) {
@@ -337,13 +424,40 @@ ALWAYS include the actual code/content, not just instructions.`
             const content = match[2];
             
             try {
-                // Determine full path
-                let fullPath = filePath;
-                if (!filePath.startsWith('/') && AppState.workspace.currentPath) {
-                    fullPath = `${AppState.workspace.currentPath}/${filePath}`;
+                // CRITICAL: Normalize path to avoid duplication
+                // BUT: If path is absolute and clearly outside workspace, preserve it
+                const workspacePath = AppState.workspace.currentPath;
+
+                console.log('[DuilioCode Agent] ===== FILE CREATION =====');
+                console.log('[DuilioCode Agent] Original path from AI:', filePath);
+                console.log('[DuilioCode Agent] Workspace path:', workspacePath);
+
+                // Check if path is absolute and outside workspace
+                let fullPath;
+                if (filePath.startsWith('/') && workspacePath && !filePath.startsWith(workspacePath)) {
+                    // Absolute path outside workspace - use as-is (e.g., /Users/username/Desktop/file.txt)
+                    console.log('[DuilioCode Agent] Path is absolute and outside workspace - using as-is');
+                    fullPath = filePath;
+                } else {
+                    // Normalize path (handles relative paths and paths within workspace)
+                    fullPath = Utils.normalizeFilePath(filePath, workspacePath);
                 }
                 
-                console.log('[DuilioCode Agent] Creating file:', fullPath);
+                console.log('[DuilioCode Agent] Normalized path:', fullPath);
+                console.log('[DuilioCode Agent] Path contains workspace?', fullPath.includes(workspacePath || ''));
+                
+                // FINAL SAFETY CHECK: If path still contains duplicate workspace, fix it
+                if (workspacePath) {
+                    const duplicatePattern = workspacePath + '/' + workspacePath;
+                    if (fullPath.includes(duplicatePattern)) {
+                        console.warn('[DuilioCode Agent] WARNING: Duplicate workspace detected, fixing...');
+                        const escaped = workspacePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        fullPath = fullPath.replace(new RegExp(escaped + '/' + escaped, 'g'), workspacePath);
+                        console.log('[DuilioCode Agent] Fixed path:', fullPath);
+                    }
+                }
+                
+                console.log('[DuilioCode Agent] Final path to create:', fullPath);
                 
                 // Create the file via API
                 await API.createFile(fullPath, false, content);
@@ -365,19 +479,21 @@ ALWAYS include the actual code/content, not just instructions.`
         }
         
         // Process modify-file actions
-        const modifyFileRegex = /```modify-file:([\w\-./]+)\n([\s\S]*?)```/g;
+        // Improved regex to handle paths with spaces and special chars
+        const modifyFileRegex = /```modify-file:([^\n]+)\n([\s\S]*?)```/g;
         
         while ((match = modifyFileRegex.exec(responseText)) !== null) {
             const filePath = match[1].trim();
             const content = match[2];
             
             try {
-                let fullPath = filePath;
-                if (!filePath.startsWith('/') && AppState.workspace.currentPath) {
-                    fullPath = `${AppState.workspace.currentPath}/${filePath}`;
-                }
+                // CRITICAL: Normalize path to avoid duplication
+                const workspacePath = AppState.workspace.currentPath;
+                const fullPath = Utils.normalizeFilePath(filePath, workspacePath);
                 
                 console.log('[DuilioCode Agent] Modifying file:', fullPath);
+                console.log('[DuilioCode Agent] Original path:', filePath);
+                console.log('[DuilioCode Agent] Workspace:', workspacePath);
                 
                 await API.writeFile(fullPath, content);
                 actionsExecuted.push(`✅ Modified: ${filePath}`);
@@ -415,11 +531,6 @@ ALWAYS include the actual code/content, not just instructions.`
                     `✅ **Command executed:** \`${command}\`\n\`\`\`\n${output}\n\`\`\``
                 );
                 
-                // Also write to terminal if open
-                if (typeof Terminal !== 'undefined' && Terminal.activeTerminal) {
-                    Terminal.write(`$ ${command}`);
-                    Terminal.write(output);
-                }
                 
             } catch (error) {
                 console.error('[DuilioCode Agent] Failed to run command:', error);

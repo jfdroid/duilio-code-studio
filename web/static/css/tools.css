@@ -1,6 +1,6 @@
 /**
  * DuilioCode Studio - Tools CSS
- * Styles for Terminal, Split.js, Mermaid, KaTeX
+ * Styles for Split.js, Mermaid, KaTeX
  */
 
 /* ==================== Panel Resizers ==================== */
@@ -57,7 +57,7 @@
     min-width: 0;
 }
 
-/* Chat panel */
+/* Chat panel - Always anchored to right edge */
 .chat-panel {
     width: 380px;
     min-width: 300px;
@@ -66,100 +66,11 @@
     flex-direction: column;
     overflow: hidden;
     flex-shrink: 0;
+    margin-right: 0;
+    margin-left: auto;
+    order: 999; /* Ensure it's always last */
 }
 
-/* ==================== Terminal ==================== */
-
-.terminal-panel {
-    display: flex;
-    flex-direction: column;
-    background: #0d1117;
-    border-top: 1px solid #30363d;
-    min-height: 150px;
-}
-
-.terminal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 8px;
-    height: 36px;
-    background: #161b22;
-    border-bottom: 1px solid #21262d;
-    flex-shrink: 0;
-}
-
-.terminal-tabs {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-}
-
-.terminal-tab {
-    padding: 6px 12px;
-    background: transparent;
-    border: none;
-    border-radius: 4px 4px 0 0;
-    color: #8b949e;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-}
-
-.terminal-tab:hover {
-    background: #21262d;
-    color: #e6edf3;
-}
-
-.terminal-tab.active {
-    background: #0d1117;
-    color: #e6edf3;
-    border-bottom: 2px solid #58a6ff;
-}
-
-.terminal-tab-new {
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    color: #8b949e;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.terminal-tab-new:hover {
-    background: #21262d;
-    color: #e6edf3;
-}
-
-.terminal-actions {
-    display: flex;
-    gap: 4px;
-}
-
-.terminal-container {
-    flex: 1;
-    padding: 8px;
-    overflow: hidden;
-}
-
-/* xterm.js overrides */
-.terminal-container .xterm {
-    padding: 0;
-}
-
-.terminal-container .xterm-viewport {
-    overflow-y: auto !important;
-}
-
-.terminal-container .xterm-screen {
-    width: 100% !important;
-}
 
 /* ==================== Mermaid Diagrams ==================== */
 

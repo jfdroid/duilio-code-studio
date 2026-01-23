@@ -169,7 +169,7 @@ def create_app() -> FastAPI:
                     <p>API is running. Visit <a href="/docs">/docs</a> for API documentation.</p>
                 </body>
                 </html>
-            """)
+""")
     
     return app
 

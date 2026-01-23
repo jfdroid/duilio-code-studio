@@ -56,16 +56,20 @@ class AnalyzeCodebaseRequest(BaseModel):
 _codebase_cache: Dict[str, str] = {}
 
 
-def get_codebase_context(path: str, force_refresh: bool = False) -> str:
+def get_codebase_context(path: str, force_refresh: bool = False, query: str = "") -> str:
     """Get or generate codebase context with caching."""
     global _codebase_cache
     
-    if not force_refresh and path in _codebase_cache:
-        return _codebase_cache[path]
+    cache_key = f"{path}:{query}"
+    if not force_refresh and cache_key in _codebase_cache:
+        return _codebase_cache[cache_key]
     
     try:
-        context = analyze_codebase(path, max_files=50)
-        _codebase_cache[path] = context
+        from services.codebase_analyzer import CodebaseAnalyzer
+        analyzer = CodebaseAnalyzer(path)
+        analysis = analyzer.analyze(max_files=100)
+        context = analyzer.get_context_for_ai(analysis, max_length=8000, query=query)
+        _codebase_cache[cache_key] = context
         return context
     except Exception as e:
         return f"[Error analyzing codebase: {str(e)}]"
@@ -149,10 +153,50 @@ async def generate(
             system_prompt = f"{base_system}\n\n{classification.system_prompt_modifier}"
             
             if workspace_path:
-                system_prompt += f"\n\n=== IMPORTANT WORKSPACE CONTEXT ==="
+                system_prompt += f"\n\n=== CRITICAL WORKSPACE CONTEXT ==="
                 system_prompt += f"\nThe user has opened workspace: {workspace_path}"
                 system_prompt += "\nWhen they ask about 'this codebase', 'this project', 'esse codigo', 'esse projeto', or 'the code', you MUST refer to the workspace analysis provided in the context."
                 system_prompt += "\nYou KNOW this codebase - analyze it, explain it, help them work with it!"
+                
+                # Add specific instructions for file creation
+                if request.include_codebase:
+                    system_prompt += "\n\n=== FILE CREATION INSTRUCTIONS ==="
+                    system_prompt += "\n\nCRITICAL: You MUST use this EXACT format to create files:"
+                    system_prompt += "\n```create-file:path/to/file.ext"
+                    system_prompt += "\n[file content here]"
+                    system_prompt += "\n```"
+                    system_prompt += "\n\nYou can create MULTIPLE files in ONE response by using multiple ```create-file: blocks."
+                    system_prompt += "\n\nThe codebase analysis in the context shows you:"
+                    system_prompt += "\n- The complete project structure and file tree"
+                    system_prompt += "\n- Where different types of files are located"
+                    system_prompt += "\n- Coding patterns, conventions, and style used"
+                    system_prompt += "\n- Dependencies and how files are organized"
+                    system_prompt += "\n- FULL CONTENT of key files (use these as REFERENCE when creating similar files)"
+                    system_prompt += "\n\nWhen creating files, you MUST:"
+                    system_prompt += "\n1. ALWAYS use ```create-file:path format (NOT regular code blocks)"
+                    system_prompt += "\n2. CRITICAL PATH RULE: If user asks for file WITHOUT directory, create in ROOT (utils.js, NOT src/utils.js)"
+                    system_prompt += "\n3. For files INSIDE workspace: Use RELATIVE paths (e.g., src/components/Button.jsx ONLY if user specifies or pattern exists)"
+                    system_prompt += "\n4. For files OUTSIDE workspace: Use ABSOLUTE paths (e.g., /Users/username/Desktop/file.txt)"
+                    system_prompt += "\n5. When user asks for a 'project' or 'complete application', create ALL files in ONE response"
+                    system_prompt += "\n6. Use codebase analysis to understand project structure (for workspace files)"
+                    system_prompt += "\n7. Place files in the SAME directories where similar files exist (ONLY if user wants to follow pattern OR explicitly specifies directory)"
+                    system_prompt += "\n7. Follow the EXACT naming conventions and patterns used"
+                    system_prompt += "\n8. Match the coding style, imports, and structure of existing files"
+                    system_prompt += "\n9. NEVER create files randomly - always base on codebase analysis (workspace) or user's explicit request (external)"
+                    system_prompt += "\n10. Ensure new files integrate properly with existing code (for workspace files)"
+                    system_prompt += "\n11. MAINTAIN context from previous messages - remember files created earlier in the conversation"
+                    system_prompt += "\n\nCRITICAL: When user asks to create a file 'based on', 'similar to', 'like', or 'following the pattern of' another file:"
+                    system_prompt += "\n- The codebase context shows you similar files with their FULL CONTENT"
+                    system_prompt += "\n- Use those files as REFERENCE and TEMPLATE - copy their structure exactly"
+                    system_prompt += "\n- Match the EXACT structure, imports, exports, and patterns from the reference files"
+                    system_prompt += "\n- Keep the same coding style, naming conventions, and organization"
+                    system_prompt += "\n- Adapt the content to the new file's purpose while maintaining consistency"
+                    system_prompt += "\n- Example: If you see 'Button.jsx' in context and user asks for 'Card.jsx', use Button.jsx as the template"
+                    system_prompt += "\n\nCRITICAL: CONTEXT RETENTION:"
+                    system_prompt += "\n- Remember ALL files created in previous messages in this conversation"
+                    system_prompt += "\n- When user refers to 'that file' or 'the file we created', remember which file they mean"
+                    system_prompt += "\n- Maintain full conversation context - you have access to all previous messages"
+                    system_prompt += "\n- When modifying files, reference the file by its path from previous context"
             
             if intent:
                 system_prompt += f"\n\n=== DETECTED INTENT ===\n{intent}"
@@ -176,6 +220,23 @@ async def generate(
             auto_select_model=False  # We already selected
         )
         
+        # === 8.5. PROCESS AGENT ACTIONS (if present) ===
+        response_content = result.response
+        actions_processed = False
+        actions_result = None
+        
+        # Check if response contains agent actions (create-file, modify-file, run-command)
+        if 'create-file:' in response_content or 'modify-file:' in response_content or 'run-command' in response_content:
+            from services.action_processor import get_action_processor
+            processor = get_action_processor()
+            actions_result = await processor.process_actions(
+                response_content,
+                workspace_path
+            )
+            response_content = actions_result['processed_text']
+            actions_processed = True
+            print(f"[DuilioCode] Processed {actions_result['total_actions']} actions: {actions_result['success_count']} success, {actions_result['error_count']} errors")
+        
         # === 9. RECORD USAGE FOR LEARNING ===
         response_time = time.time() - start_time
         user_prefs.record_model_usage(
@@ -192,7 +253,7 @@ async def generate(
                 user_prefs.record_language_detected(lang)
         
         return {
-            "response": result.response,
+            "response": response_content,
             "model": result.model,
             "done": result.done,
             "total_duration": result.total_duration,
@@ -209,7 +270,9 @@ async def generate(
                 "workspace_path": workspace_path,
                 "context_length": len(full_context) if full_context else 0,
                 "has_codebase_context": workspace_path is not None and request.include_codebase
-            }
+            },
+            "actions_processed": actions_processed,
+            "actions_result": actions_result
         }
         
     except Exception as e:
@@ -272,7 +335,8 @@ async def chat(
         
         if workspace_path:
             try:
-                codebase_context = get_codebase_context(workspace_path)
+                # Passar última mensagem do usuário como query para relevance scoring
+                codebase_context = get_codebase_context(workspace_path, query=last_user_message)
                 context_parts.append(codebase_context)
             except:
                 pass
@@ -285,6 +349,36 @@ async def chat(
             if workspace_path:
                 system_prompt += f"\n\nActive workspace: {workspace_path}"
                 system_prompt += "\nRefer to the codebase analysis when answering questions about 'this project' or 'the code'."
+                system_prompt += "\n\n=== FILE CREATION FORMAT ==="
+                system_prompt += "\nCRITICAL: When creating files, use this EXACT format:"
+                system_prompt += "\n```create-file:path/to/file.ext"
+                system_prompt += "\n[file content]"
+                system_prompt += "\n```"
+                system_prompt += "\n\n=== FILE MODIFICATION FORMAT ==="
+                system_prompt += "\nCRITICAL: When MODIFYING existing files, use this EXACT format:"
+                system_prompt += "\n```modify-file:path/to/file.ext"
+                system_prompt += "\n[COMPLETE file content with your changes]"
+                system_prompt += "\n```"
+                system_prompt += "\n\nIMPORTANT: When modifying files:"
+                system_prompt += "\n- Include ALL existing code that should be preserved"
+                system_prompt += "\n- Only change what was requested"
+                system_prompt += "\n- Maintain the same structure, imports, and style"
+                system_prompt += "\n- If adding a function, include it in the appropriate place in the file"
+                system_prompt += "\n\nYou can create MULTIPLE files in ONE response using multiple ```create-file: blocks."
+                system_prompt += "\nFor workspace files, use RELATIVE paths. For external files, use ABSOLUTE paths."
+                system_prompt += "\n\nCRITICAL: When user asks to create MULTIPLE FOLDERS/DIRECTORIES or PROJECT STRUCTURE:"
+                system_prompt += "\n- Create COMPLETE, PROFESSIONAL, PRODUCTION-READY structures!"
+                system_prompt += "\n- NEVER create empty folders - ALWAYS include useful, functional files"
+                system_prompt += "\n- For React projects: Create index.js with proper exports in each folder"
+                system_prompt += "\n- For hooks: Create useExample.js with complete, working hook AND index.js"
+                system_prompt += "\n- For utils: Create index.js with multiple utility functions (formatDate, debounce, etc.)"
+                system_prompt += "\n- For services: Create api.js with complete API service AND index.js"
+                system_prompt += "\n- For public: Create index.html with complete HTML5 structure"
+                system_prompt += "\n- ALWAYS create meaningful, production-ready files with best practices"
+                system_prompt += "\n- Include proper imports, exports, error handling, and documentation"
+                system_prompt += "\n- DO NOT skip any folder - create ALL folders with COMPLETE, PROFESSIONAL content"
+                system_prompt += "\n- QUALITY IS PARAMOUNT: Every file must be production-ready and well-structured"
+                system_prompt += "\n\nMAINTAIN CONTEXT: Remember all files created in previous messages in this conversation."
         
         # Add context to prompt
         full_prompt = ""
@@ -321,18 +415,36 @@ async def chat(
             auto_select_model=False
         )
         
+        # Process agent actions if in agent mode (detected by presence of create-file, modify-file, etc)
+        response_content = result.response
+        actions_processed = False
+        actions_result = None
+        
+        # Check if response contains agent actions
+        if 'create-file:' in response_content or 'modify-file:' in response_content:
+            from services.action_processor import get_action_processor
+            processor = get_action_processor()
+            actions_result = await processor.process_actions(
+                response_content,
+                workspace_path
+            )
+            response_content = actions_result['processed_text']
+            actions_processed = True
+        
         return {
             "choices": [{
                 "message": {
                     "role": "assistant",
-                    "content": result.response
+                    "content": response_content
                 }
             }],
             "model": result.model,
             "classification": {
                 "category": classification.category.value,
                 "is_code_related": classification.is_code_related
-            }
+            },
+            "actions_processed": actions_processed,
+            "actions_result": actions_result
         }
         
     except Exception as e:

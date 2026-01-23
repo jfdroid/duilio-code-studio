@@ -8,8 +8,22 @@ const FileManager = {
      * Open a file
      */
     async open(path) {
+        console.log('[FileManager] ===== OPEN FILE CALLED =====');
+        console.log('[FileManager] Path:', path);
+        console.log('[FileManager] Path type:', typeof path);
+        console.log('[FileManager] API available:', typeof API !== 'undefined');
+        
+        if (!path) {
+            console.error('[FileManager] No path provided!');
+            alert('Error: No file path provided');
+            return;
+        }
+        
         try {
+            console.log('[FileManager] Calling API.readFile...');
             const data = await API.readFile(path);
+            console.log('[FileManager] File loaded successfully:', data.path, 'Language:', data.language);
+            console.log('[FileManager] Content length:', data.content?.length || 0);
             
             AppState.setCurrentFile({
                 path: data.path,
@@ -28,32 +42,74 @@ const FileManager = {
             }
             
             // Add tab
-            Tabs.add(path, data.language);
+            Tabs.add(data.path, data.language);
             
-            // Show editor
-            document.getElementById('welcomeScreen').style.display = 'none';
-            document.getElementById('fileEditorContainer').style.display = 'flex';
-            document.getElementById('editorPath').textContent = Utils.shortenPath(path);
-            document.getElementById('fileLanguage').textContent = data.language;
+            // Show editor - CRITICAL: Ensure these elements exist and are shown
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const fileEditorContainer = document.getElementById('fileEditorContainer');
+            const editorPath = document.getElementById('editorPath');
+            const fileLanguage = document.getElementById('fileLanguage');
+            const editorPanel = document.getElementById('editorPanel');
+            
+            // CRITICAL: Hide welcome screen FIRST, then show editor
+            if (welcomeScreen) {
+                welcomeScreen.style.display = 'none';
+            }
+            
+            // CRITICAL: Show file editor container with explicit styles
+            if (fileEditorContainer) {
+                // Remove any inline display:none and set to flex
+                fileEditorContainer.removeAttribute('style');
+                fileEditorContainer.style.display = 'flex';
+                fileEditorContainer.style.flexDirection = 'column';
+                fileEditorContainer.style.height = '100%';
+                fileEditorContainer.style.width = '100%';
+            } else {
+                console.error('[FileManager] CRITICAL: fileEditorContainer element not found in DOM!');
+                throw new Error('Editor container element not found');
+            }
+            
+            // Update path and language
+            if (editorPath) {
+                editorPath.textContent = Utils.shortenPath(data.path);
+            }
+            if (fileLanguage) {
+                fileLanguage.textContent = data.language;
+            }
             
             // Use Monaco Editor if available, fallback to textarea
             if (typeof MonacoEditor !== 'undefined' && MonacoEditor.isReady) {
                 MonacoEditor.setContent(data.content, data.language);
+                console.log('[FileManager] Content set in Monaco editor');
             } else if (typeof MonacoEditor !== 'undefined' && !MonacoEditor.isReady) {
                 // Monaco is loading, queue the content
                 MonacoEditor.pendingContent = data.content;
                 MonacoEditor.pendingLanguage = data.language;
+                console.log('[FileManager] Content queued for Monaco');
             } else {
                 // Fallback to textarea
-                document.getElementById('codeEditor').value = data.content;
+                const codeEditor = document.getElementById('codeEditor');
+                if (codeEditor) {
+                    codeEditor.value = data.content;
+                    codeEditor.style.display = 'block';
+                    console.log('[FileManager] Content set in textarea fallback');
+                }
             }
             
             // Highlight in tree
             document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('selected'));
-            const treeItem = document.querySelector(`.tree-item[data-path="${path}"]`);
-            if (treeItem) treeItem.classList.add('selected');
+            const treeItem = document.querySelector(`.tree-item[data-path="${data.path}"]`);
+            if (treeItem) {
+                treeItem.classList.add('selected');
+                console.log('[FileManager] File highlighted in tree');
+            } else {
+                console.warn('[FileManager] Tree item not found for path:', data.path);
+            }
+            
+            console.log('[FileManager] File opened successfully');
             
         } catch (error) {
+            console.error('[FileManager] Error opening file:', error);
             alert('Error opening file: ' + error.message);
         }
     },

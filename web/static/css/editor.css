@@ -208,6 +208,17 @@
     margin-left: 6px;
 }
 
+/* File Editor Container */
+#fileEditorContainer {
+    display: none; /* Hidden by default, shown when file is opened */
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    flex: 1; /* Take available space in flex container */
+    min-height: 0; /* Allow flex shrinking */
+}
+
 /* Welcome Screen */
 .welcome-screen {
     display: flex;
@@ -215,8 +226,11 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    width: 100%;
     text-align: center;
     padding: var(--space-10);
+    flex: 1; /* Take available space in flex container */
+    min-height: 0; /* Allow flex shrinking */
 }
 
 .welcome-logo {
