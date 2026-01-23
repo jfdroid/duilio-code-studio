@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 from services.file_service import FileService, get_file_service
 from services.workspace_service import WorkspaceService, get_workspace_service
+from services.dependency_graph import FileDependencyGraph
 
 
 class ActionProcessor:
@@ -42,6 +43,9 @@ class ActionProcessor:
                 self.conversation_memory = None
         else:
             self.conversation_memory = conversation_memory
+        
+        # Initialize dependency graph for ordering files
+        self.dependency_graph = FileDependencyGraph()
     
     def extract_actions(self, response_text: str) -> List[Dict[str, Any]]:
         """
@@ -155,6 +159,80 @@ class ActionProcessor:
             workspace_context = self.workspace_service.get_project_context()
             if workspace_context.get("has_workspace"):
                 workspace_path = workspace_context.get("root_path")
+        
+        # Build dependency graph from create-file actions and order by dependencies
+        create_file_actions = [a for a in actions if a['type'] == 'create-file' and not a.get('is_directory', False)]
+        directory_actions = [a for a in actions if a['type'] == 'create-file' and a.get('is_directory', False)]
+        other_actions = [a for a in actions if a['type'] != 'create-file']
+        
+        if len(create_file_actions) > 1:
+            # Reset graph for this batch
+            self.dependency_graph = FileDependencyGraph()
+            
+            # Build graph from file contents
+            # Map original paths to normalized paths for matching
+            path_mapping = {}  # normalized -> original_path
+            for action in create_file_actions:
+                path = action['path']
+                content = action.get('content', '')
+                dependencies = self._extract_dependencies_from_content(content)
+                
+                # Normalize path for graph
+                normalized = self.normalize_path(path, workspace_path)
+                path_mapping[normalized] = path
+                
+                # Add file to graph using normalized path
+                # Map dependencies to other files in the batch
+                mapped_dependencies = []
+                for dep in dependencies:
+                    # Try to find if this dependency matches any file in the batch
+                    for other_action in create_file_actions:
+                        other_path = other_action['path']
+                        other_normalized = self.normalize_path(other_path, workspace_path)
+                        # Check if dependency matches file name or path
+                        if dep in other_path or dep in other_normalized:
+                            mapped_dependencies.append(other_normalized)
+                
+                self.dependency_graph.add_file(
+                    file_path=normalized,
+                    imports=mapped_dependencies,  # Use mapped dependencies
+                    metadata={'action': action}
+                )
+            
+            # Order create-file actions by dependencies (topological sort)
+            try:
+                ordered_paths = self.dependency_graph.topological_sort()
+                
+                # Create mapping: normalized_path -> action
+                path_to_action = {}
+                for action in create_file_actions:
+                    normalized = self.normalize_path(action['path'], workspace_path)
+                    path_to_action[normalized] = action
+                
+                # Reorder create-file actions based on topological sort
+                ordered_create_actions = []
+                seen_actions = set()
+                for normalized_path in ordered_paths:
+                    if normalized_path in path_to_action:
+                        action = path_to_action[normalized_path]
+                        if id(action) not in seen_actions:
+                            ordered_create_actions.append(action)
+                            seen_actions.add(id(action))
+                
+                # Add any actions not in the graph (shouldn't happen, but safety)
+                for action in create_file_actions:
+                    if id(action) not in seen_actions:
+                        ordered_create_actions.append(action)
+                
+                # Reorder: directories first, then ordered files, then other actions
+                actions = directory_actions + ordered_create_actions + other_actions
+            except Exception as e:
+                # If ordering fails, use original order
+                print(f"[ActionProcessor] Warning: Could not order files by dependencies: {e}")
+                actions = directory_actions + create_file_actions + other_actions
+        else:
+            # Single file or no files, keep original order but directories first
+            actions = directory_actions + create_file_actions + other_actions
         
         for action in actions:
             try:
