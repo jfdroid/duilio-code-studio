@@ -141,7 +141,7 @@ class CodebaseAnalyzer:
         self._files: List[FileAnalysis] = []
         self._tree_lines: List[str] = []
         
-        # Importar estruturas otimizadas (opcional, para não quebrar compatibilidade)
+        # Import optimized structures (optional, to not break compatibility)
         try:
             from services.directory_tree import DirectoryTree
             from services.dependency_graph import FileDependencyGraph
@@ -152,7 +152,7 @@ class CodebaseAnalyzer:
             self.relevance_scorer = RelevanceScorer()
             self._use_optimized_structures = True
         except ImportError:
-            # Fallback se estruturas não estiverem disponíveis
+            # Fallback if structures are not available
             self.directory_tree = None
             self.dependency_graph = None
             self.relevance_scorer = None
