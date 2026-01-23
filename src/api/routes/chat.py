@@ -378,7 +378,13 @@ async def chat(
                 system_prompt += "\n- Include proper imports, exports, error handling, and documentation"
                 system_prompt += "\n- DO NOT skip any folder - create ALL folders with COMPLETE, PROFESSIONAL content"
                 system_prompt += "\n- QUALITY IS PARAMOUNT: Every file must be production-ready and well-structured"
-                system_prompt += "\n\nMAINTAIN CONTEXT: Remember all files created in previous messages in this conversation."
+                system_prompt += "\n\n=== CONVERSATION CONTEXT ==="
+                system_prompt += "\nCRITICAL: You have access to the FULL conversation history above."
+                system_prompt += "\n- When user refers to 'the file we created', 'that file', or 'previous message', look at the conversation history"
+                system_prompt += "\n- Remember ALL files created in previous messages in this conversation"
+                system_prompt += "\n- When modifying files, you MUST include the COMPLETE file content from the conversation history or codebase context"
+                system_prompt += "\n- If you see a file was created in a previous message, use modify-file to update it, NOT create-file"
+                system_prompt += "\n- Always preserve existing code when modifying files - include ALL original content plus your changes"
         
         # Add context to prompt
         full_prompt = ""

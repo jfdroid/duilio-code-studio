@@ -1021,7 +1021,25 @@ IMPORTANT: Use the format ```create-file:user.js to create the file."""
     print_success("user.js created in the first message")
     
     # Second message: add method (should remember the created user.js)
-    prompt2 = """MODIFY the user.js file that we created in the previous message. Add a getFullName() method to the User class that returns the full name (name + email).
+    # First, read the current content to include in the prompt
+    user_content = read_file_content("user.js")
+    if user_content:
+        prompt2 = f"""MODIFY the user.js file that we created in the previous message. Add a getFullName() method to the User class that returns the full name (name + email).
+
+CURRENT FILE CONTENT:
+```javascript
+{user_content}
+```
+
+CRITICAL:
+- The user.js file ALREADY EXISTS and was created in the previous message
+- You MUST use the format ```modify-file:user.js (NOT create-file)
+- You MUST include ALL existing file content shown above
+- You MUST add the getFullName() method to the User class
+- DO NOT create new files, only MODIFY the existing file
+- The method should return a string combining name and email"""
+    else:
+        prompt2 = """MODIFY the user.js file that we created in the previous message. Add a getFullName() method to the User class that returns the full name (name + email).
 
 CRITICAL:
 - The user.js file ALREADY EXISTS and was created in the previous message
