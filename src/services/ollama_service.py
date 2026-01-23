@@ -224,28 +224,53 @@ FORMAT FOR MODIFYING FILES:
 [COMPLETE file content here - include ALL existing code + your changes]
 ```
 
-EXAMPLE - Adding a function to an existing file:
-```modify-file:utils.js
-// utils.js - ALL EXISTING CODE MUST BE INCLUDED
+CRITICAL RULES FOR MODIFY-FILE:
+1. When user provides CURRENT FILE CONTENT in their message, you MUST use that EXACT content as the base
+2. Copy ALL lines from the current file content EXACTLY as shown
+3. Add your changes (new functions, methods, fixes) in the appropriate place
+4. DO NOT rewrite the file - only add/modify what was requested
+5. If adding a method to a class, place it INSIDE the class, after existing methods
+6. If adding a function, place it after existing functions
+7. Maintain ALL imports, exports, and structure
+8. The output must be the COMPLETE file with ALL original content PLUS your changes
 
-export function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+EXAMPLE - Adding a method to a class (user provided current content):
+User says: "Add getFullName() method to User class. Current file content:
+```javascript
+class User {
+  constructor(name, email) {
+    this.name = name;
+    this.email = email;
+  }
 }
 
-// NEW FUNCTION - ADDED AS REQUESTED
-export function formatDate(date) {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+export default User;
+```"
+
+You MUST respond with:
+```modify-file:user.js
+class User {
+  constructor(name, email) {
+    this.name = name;
+    this.email = email;
+  }
+
+  getFullName() {
+    return `${this.name} ${this.email}`;
+  }
 }
+
+export default User;
 ```
+
+Notice: ALL original code is preserved, method is added INSIDE the class.
 
 IMPORTANT: When user asks to "add", "modify", "update", "change", or "edit" a file:
 - ALWAYS use ```modify-file: format (NOT regular code blocks)
-- ALWAYS include the COMPLETE file content
+- ALWAYS include the COMPLETE file content (copy from user's message if provided)
 - NEVER use ```create-file: for existing files
-- NEVER use regular code blocks (```js, ```python) for file modifications"""
+- NEVER use regular code blocks (```js, ```python) for file modifications
+- If user shows current file content, use it EXACTLY as the base"""
 
     # System prompt for general/creative tasks
     GENERAL_SYSTEM_PROMPT = """You are DuilioCode, a helpful and creative AI assistant.

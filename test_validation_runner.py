@@ -1024,37 +1024,44 @@ IMPORTANT: Use the format ```create-file:user.js to create the file."""
     # First, read the current content to include in the prompt
     user_content = read_file_content("user.js")
     if user_content:
+        # Escape braces for f-string
+        escaped_content = user_content.replace('{', '{{').replace('}', '}}')
         prompt2 = f"""MODIFY the user.js file that we created in the previous message. Add a getFullName() method to the User class that returns the full name (name + email).
 
-CURRENT FILE CONTENT (YOU MUST PRESERVE THIS):
+CURRENT FILE CONTENT (YOU MUST USE THIS EXACT CONTENT AS BASE):
 ```javascript
 {user_content}
 ```
 
-CRITICAL INSTRUCTIONS:
+CRITICAL INSTRUCTIONS - READ CAREFULLY:
 1. The user.js file ALREADY EXISTS and was created in the previous message
 2. You MUST use the format ```modify-file:user.js (NOT create-file)
-3. You MUST include ALL existing file content shown above EXACTLY as it is
+3. You MUST copy ALL the content shown above EXACTLY as it is
 4. You MUST add the getFullName() method INSIDE the User class, after the constructor
 5. The method should be: getFullName() {{ return `${{this.name}} ${{this.email}}`; }}
 6. DO NOT remove or change any existing code
 7. DO NOT create new files, only MODIFY the existing file
-8. The complete file should look like this structure:
-   - class User {{ constructor(name, email) {{ ... }} }}
-   - getFullName() method added here
-   - export default User;
+8. The output must be the COMPLETE file with ALL original content PLUS the new method
+
+STEP-BY-STEP:
+1. Start with: ```modify-file:user.js
+2. Copy the ENTIRE current file content shown above
+3. Add the getFullName() method INSIDE the class, after the constructor
+4. Keep the export statement
+5. End with: ```
 
 EXAMPLE OF CORRECT OUTPUT:
 ```modify-file:user.js
 {user_content}
-
   getFullName() {{
     return `${{this.name}} ${{this.email}}`;
   }}
 }}
 
 export default User;
-```"""
+```
+
+IMPORTANT: The file content above is the EXACT current content. Copy it completely, then add the method."""
     else:
         prompt2 = """MODIFY the user.js file that we created in the previous message. Add a getFullName() method to the User class that returns the full name (name + email).
 
@@ -1358,6 +1365,66 @@ def main():
     except Exception as e:
         print_error(f"Error in test 8.2: {e}")
         results.append(("8.2 - Contexto do Workspace", False))
+    
+    time.sleep(2)
+    
+    # Teste 4.1: Projeto Android Básico
+    try:
+        result = test_4_1_android_basic()
+        results.append(("4.1 - Projeto Android Básico", result))
+    except Exception as e:
+        print_error(f"Error in test 4.1: {e}")
+        results.append(("4.1 - Projeto Android Básico", False))
+    
+    time.sleep(2)
+    
+    # Teste 4.2: Android Clean Architecture
+    try:
+        result = test_4_2_android_clean_architecture()
+        results.append(("4.2 - Android Clean Architecture", result))
+    except Exception as e:
+        print_error(f"Error in test 4.2: {e}")
+        results.append(("4.2 - Android Clean Architecture", False))
+    
+    time.sleep(2)
+    
+    # Teste 5.3: API REST Node.js/Express
+    try:
+        result = test_5_3_express_api()
+        results.append(("5.3 - API REST Express", result))
+    except Exception as e:
+        print_error(f"Error in test 5.3: {e}")
+        results.append(("5.3 - API REST Express", False))
+    
+    time.sleep(2)
+    
+    # Teste 9.1: Projeto SOLID
+    try:
+        result = test_9_1_solid_project()
+        results.append(("9.1 - Projeto SOLID", result))
+    except Exception as e:
+        print_error(f"Error in test 9.1: {e}")
+        results.append(("9.1 - Projeto SOLID", False))
+    
+    time.sleep(2)
+    
+    # Teste 9.2: Clean Architecture
+    try:
+        result = test_9_2_clean_architecture()
+        results.append(("9.2 - Clean Architecture", result))
+    except Exception as e:
+        print_error(f"Error in test 9.2: {e}")
+        results.append(("9.2 - Clean Architecture", False))
+    
+    time.sleep(2)
+    
+    # Teste P1.1: FastAPI Project
+    try:
+        result = test_p1_1_fastapi_project()
+        results.append(("P1.1 - FastAPI Project", result))
+    except Exception as e:
+        print_error(f"Error in test P1.1: {e}")
+        results.append(("P1.1 - FastAPI Project", False))
     
     time.sleep(2)
     
