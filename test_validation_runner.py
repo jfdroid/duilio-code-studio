@@ -1180,6 +1180,320 @@ IMPORTANT: Use the format ```create-file:api.js to create the file."""
     
     return True
 
+def test_4_1_android_basic():
+    """Test 4.1: Android Basic Project"""
+    print_test("Test 4.1: Create basic Android Kotlin project")
+    
+    prompt = """CREATE a complete Android Kotlin project with ALL necessary files using the create-file: format:
+
+CREATE ALL these files:
+- app/src/main/java/com/example/app/MainActivity.kt
+- app/src/main/res/layout/activity_main.xml
+- app/src/main/AndroidManifest.xml
+- app/build.gradle.kts
+- build.gradle.kts (project level)
+- app/src/main/res/values/strings.xml
+- app/src/main/res/values/colors.xml
+- app/src/main/res/values/themes.xml
+- README.md with setup instructions
+
+IMPORTANT: Use multiple ```create-file: blocks to create ALL files in a single response."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Waiting for processing...")
+    time.sleep(5)
+    
+    # Check essential files
+    files = [
+        "app/src/main/java/com/example/app/MainActivity.kt",
+        "app/src/main/res/layout/activity_main.xml",
+        "app/src/main/AndroidManifest.xml",
+        "app/build.gradle.kts",
+        "build.gradle.kts",
+        "app/src/main/res/values/strings.xml",
+        "README.md"
+    ]
+    
+    all_created = True
+    for file in files:
+        if check_file_exists(file):
+            print_success(f"File {file} created")
+        else:
+            print_error(f"File {file} was not created")
+            all_created = False
+    
+    if not all_created:
+        return False
+    
+    # Check MainActivity
+    main_activity = read_file_content("app/src/main/java/com/example/app/MainActivity.kt")
+    if main_activity and ("class MainActivity" in main_activity or "MainActivity" in main_activity):
+        print_success("MainActivity functional")
+    else:
+        print_warning("MainActivity may not be correct")
+    
+    # Check build.gradle.kts
+    build_gradle = read_file_content("app/build.gradle.kts")
+    if build_gradle and ("kotlin" in build_gradle.lower() or "android" in build_gradle.lower()):
+        print_success("build.gradle.kts configured")
+    else:
+        print_warning("build.gradle.kts may not be correct")
+    
+    return True
+
+def test_4_2_android_clean_architecture():
+    """Test 4.2: Android Clean Architecture"""
+    print_test("Test 4.2: Create Android app with Clean Architecture")
+    
+    prompt = """CREATE a complete Android app following Clean Architecture with ALL layers using the create-file: format:
+
+CREATE the complete structure:
+- data layer (repositories, data sources, models)
+- domain layer (use cases, entities, interfaces)
+- presentation layer (viewmodels, ui)
+- Dependency injection setup (Hilt or Koin)
+- build.gradle.kts with dependencies
+- README.md
+
+IMPORTANT: Create ALL files using multiple ```create-file: blocks."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Waiting for processing...")
+    time.sleep(5)
+    
+    # Check layers
+    layers = [
+        "data", "domain", "presentation"
+    ]
+    
+    layers_found = 0
+    for layer in layers:
+        # Check if layer directory exists or files with layer name
+        files = [f for f in os.listdir(TEST_WORKSPACE) if layer in f.lower()]
+        if files or check_directory_exists(layer):
+            layers_found += 1
+            print_success(f"{layer} layer created")
+        else:
+            print_warning(f"{layer} layer may not be created")
+    
+    if layers_found >= 2:
+        print_success("Clean Architecture structure created")
+    else:
+        print_warning("Clean Architecture structure may be incomplete")
+    
+    return layers_found >= 2
+
+def test_5_3_express_api():
+    """Test 5.3: Express REST API"""
+    print_test("Test 5.3: Create Express REST API")
+    
+    prompt = """CREATE a complete Node.js + Express REST API with ALL files using the create-file: format:
+
+CREATE the complete structure:
+- routes/ (user routes)
+- controllers/ (user controller)
+- models/ (user model)
+- middleware/ (auth, error handling)
+- config/ (database, app config)
+- server.js or app.js (entry point)
+- package.json with dependencies
+- .env.example
+- README.md
+
+IMPORTANT: Create ALL files using multiple ```create-file: blocks."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Waiting for processing...")
+    time.sleep(5)
+    
+    # Check structure
+    files = [
+        "package.json",
+        "server.js", "app.js"  # Either one
+    ]
+    
+    entry_found = False
+    for file in files:
+        if check_file_exists(file):
+            entry_found = True
+            print_success(f"Entry point {file} created")
+            break
+    
+    if not entry_found:
+        print_error("Entry point not found")
+        return False
+    
+    # Check package.json
+    package_json = read_file_content("package.json")
+    if package_json:
+        if "express" in package_json.lower():
+            print_success("package.json configured with Express")
+        else:
+            print_warning("package.json may not have Express")
+    
+    # Check structure directories
+    structure_dirs = ["routes", "controllers", "models", "middleware"]
+    dirs_found = sum(1 for d in structure_dirs if check_directory_exists(d) or any(f.startswith(d) for f in os.listdir(TEST_WORKSPACE)))
+    
+    if dirs_found >= 2:
+        print_success(f"API structure created ({dirs_found} directories)")
+    else:
+        print_warning("API structure may be incomplete")
+    
+    return entry_found and dirs_found >= 2
+
+def test_9_1_solid_project():
+    """Test 9.1: SOLID Principles Project"""
+    print_test("Test 9.1: Create project following SOLID principles")
+    
+    prompt = """CREATE a complete Python project following ALL SOLID principles using the create-file: format:
+
+CREATE files demonstrating:
+- Single Responsibility: separate classes for different responsibilities
+- Open/Closed: extensible without modification
+- Liskov Substitution: subclasses replaceable
+- Interface Segregation: specific interfaces
+- Dependency Inversion: depend on abstractions
+
+Create:
+- Multiple classes demonstrating each principle
+- requirements.txt
+- README.md explaining SOLID principles
+- Example usage
+
+IMPORTANT: Create ALL files using multiple ```create-file: blocks."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Waiting for processing...")
+    time.sleep(5)
+    
+    # Check for Python files
+    py_files = [f for f in os.listdir(TEST_WORKSPACE) if f.endswith('.py')]
+    
+    if len(py_files) >= 3:
+        print_success(f"Multiple Python files created ({len(py_files)})")
+    else:
+        print_warning("May not have enough files to demonstrate SOLID")
+    
+    # Check for README
+    if check_file_exists("README.md"):
+        readme = read_file_content("README.md")
+        if readme:
+            solid_keywords = ["solid", "single responsibility", "open/closed", "liskov", "interface segregation", "dependency inversion"]
+            found = sum(1 for kw in solid_keywords if kw.lower() in readme.lower())
+            if found >= 3:
+                print_success("README explains SOLID principles")
+            else:
+                print_warning("README may not explain SOLID adequately")
+    
+    return len(py_files) >= 3
+
+def test_9_2_clean_architecture():
+    """Test 9.2: Clean Architecture Project"""
+    print_test("Test 9.2: Create project with Clean Architecture")
+    
+    prompt = """CREATE a complete project following Clean Architecture with ALL layers using the create-file: format:
+
+CREATE the complete structure:
+- Entities (domain layer)
+- Use Cases (application layer)
+- Interface Adapters (presentation, infrastructure)
+- Frameworks (external dependencies)
+- Dependencies pointing inward
+- README.md explaining architecture
+
+IMPORTANT: Create ALL files using multiple ```create-file: blocks."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Waiting for processing...")
+    time.sleep(5)
+    
+    # Check for architecture layers
+    layer_keywords = ["entity", "usecase", "usecases", "adapter", "framework", "domain", "application", "infrastructure"]
+    files = os.listdir(TEST_WORKSPACE)
+    layers_found = sum(1 for kw in layer_keywords if any(kw in f.lower() for f in files) or check_directory_exists(kw))
+    
+    if layers_found >= 3:
+        print_success(f"Clean Architecture layers created ({layers_found})")
+    else:
+        print_warning("Clean Architecture structure may be incomplete")
+    
+    return layers_found >= 3
+
+def test_p1_1_fastapi_project():
+    """Test P1.1: FastAPI Project"""
+    print_test("Test P1.1: Create complete FastAPI project")
+    
+    prompt = """CREATE a complete FastAPI REST API project with ALL files using the create-file: format:
+
+CREATE the complete structure:
+- src/api/ (routes)
+- src/models/ (database models)
+- src/services/ (business logic)
+- src/utils/ (helpers)
+- main.py (entry point)
+- requirements.txt
+- README.md
+- .env.example
+
+IMPORTANT: Create ALL files using multiple ```create-file: blocks."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Waiting for processing...")
+    time.sleep(5)
+    
+    # Check essential files
+    files = [
+        "main.py", "requirements.txt", "README.md"
+    ]
+    
+    all_created = True
+    for file in files:
+        if check_file_exists(file):
+            print_success(f"File {file} created")
+        else:
+            print_error(f"File {file} was not created")
+            all_created = False
+    
+    if not all_created:
+        return False
+    
+    # Check requirements.txt
+    requirements = read_file_content("requirements.txt")
+    if requirements and "fastapi" in requirements.lower():
+        print_success("requirements.txt has FastAPI")
+    else:
+        print_warning("requirements.txt may not have FastAPI")
+    
+    # Check structure
+    structure_dirs = ["src/api", "src/models", "src/services"]
+    dirs_found = sum(1 for d in structure_dirs if check_directory_exists(d) or any(d.replace("/", os.sep) in f for f in os.listdir(TEST_WORKSPACE)))
+    
+    if dirs_found >= 2:
+        print_success(f"FastAPI structure created ({dirs_found} directories)")
+    else:
+        print_warning("FastAPI structure may be incomplete")
+    
+    return all_created and dirs_found >= 2
+
 def main():
     """Run all tests"""
     print(f"\n{Colors.BOLD}{Colors.CYAN}{'='*70}")
