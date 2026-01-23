@@ -55,7 +55,7 @@ def check_server():
 _conversation_history: List[Dict] = []
 
 def send_chat_message(prompt: str, workspace_path: str = None, conversation_history: List[Dict] = None, use_history: bool = True) -> Tuple[str, Dict]:
-    """Envia mensagem para o chat e retorna resposta"""
+    """Send message to chat and return response"""
     url = f"{BASE_URL}/api/chat"
     
     global _conversation_history
@@ -89,23 +89,23 @@ def send_chat_message(prompt: str, workspace_path: str = None, conversation_hist
             # Check if actions were processed
             if result.get("actions_processed"):
                 actions_result = result.get("actions_result", {})
-                print_info(f"Ações processadas: {actions_result.get('success_count', 0)} sucesso, {actions_result.get('error_count', 0)} erros")
+                print_info(f"Actions processed: {actions_result.get('success_count', 0)} success, {actions_result.get('error_count', 0)} errors")
             
             return content, result
         else:
-            print_error(f"Erro na API: {response.status_code} - {response.text}")
+            print_error(f"API error: {response.status_code} - {response.text}")
             return None, None
     except Exception as e:
-        print_error(f"Erro ao enviar mensagem: {e}")
+        print_error(f"Error sending message: {e}")
         return None, None
 
 def reset_conversation_history():
-    """Reseta o histórico de conversa"""
+    """Reset conversation history"""
     global _conversation_history
     _conversation_history = []
 
 def check_file_exists(file_path: str, workspace: str = None) -> bool:
-    """Verifica se arquivo existe"""
+    """Check if file exists"""
     if not workspace:
         workspace = TEST_WORKSPACE
     
@@ -118,7 +118,7 @@ def check_file_exists(file_path: str, workspace: str = None) -> bool:
     return os.path.exists(full_path)
 
 def read_file_content(file_path: str, workspace: str = None) -> str:
-    """Lê conteúdo do arquivo"""
+    """Read file content"""
     if not workspace:
         workspace = TEST_WORKSPACE
     
@@ -131,11 +131,11 @@ def read_file_content(file_path: str, workspace: str = None) -> str:
         with open(full_path, 'r', encoding='utf-8') as f:
             return f.read()
     except Exception as e:
-        print_warning(f"Erro ao ler arquivo {file_path}: {e}")
+        print_warning(f"Error reading file {file_path}: {e}")
         return None
 
 def check_directory_exists(dir_path: str, workspace: str = None) -> bool:
-    """Verifica se diretório existe"""
+    """Check if directory exists"""
     if not workspace:
         workspace = TEST_WORKSPACE
     
@@ -146,7 +146,7 @@ def check_directory_exists(dir_path: str, workspace: str = None) -> bool:
     return os.path.isdir(full_path)
 
 def extract_create_file_actions(response_text: str) -> List[Tuple[str, str]]:
-    """Extrai ações create-file da resposta"""
+    """Extract create-file actions from response"""
     import re
     pattern = r'```create-file:([^\n]+)\n([\s\S]*?)```'
     matches = re.findall(pattern, response_text)
@@ -1176,7 +1176,7 @@ def main():
     # Reset conversation history
     reset_conversation_history()
     
-    # Executar testes
+    # Run tests
     results = []
     
     print(f"\n{Colors.BOLD}{'='*70}")
