@@ -615,6 +615,461 @@ def test_8_3_reference_existing_file():
     
     return True
 
+def test_2_2_fix_bug():
+    """Teste 2.2: Corrigir Bug"""
+    print_test("Teste 2.2: Corrigir bug no arquivo app.js")
+    
+    # Primeiro criar app.js com bug
+    if not check_file_exists("app.js"):
+        prompt = """CRIE um arquivo app.js usando o formato create-file: com uma função calculateTotal que tem um bug:
+
+```create-file:app.js
+function calculateTotal(items) {
+    return items.reduce((sum, item) => sum + item.price, 0);
+}
+
+// Esta função retorna NaN quando items está vazio ou undefined
+```"""
+        send_chat_message(prompt)
+        time.sleep(3)
+    
+    if not check_file_exists("app.js"):
+        print_error("Não foi possível criar app.js")
+        return False
+    
+    # Ler conteúdo original
+    original_content = read_file_content("app.js")
+    if not original_content:
+        print_error("Não foi possível ler app.js")
+        return False
+    
+    # Corrigir bug
+    prompt = """Corrija o bug no arquivo app.js na função calculateTotal que está retornando NaN quando items está vazio ou undefined."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Aguardando processamento...")
+    time.sleep(5)
+    
+    # Verificar se arquivo ainda existe
+    if not check_file_exists("app.js"):
+        print_error("Arquivo app.js foi removido!")
+        return False
+    
+    # Ler conteúdo modificado
+    modified_content = read_file_content("app.js")
+    if not modified_content:
+        return False
+    
+    # Verificar se bug foi corrigido (deve ter verificação de array vazio ou undefined)
+    bug_fixes = [
+        "items &&" in modified_content or "items ?" in modified_content,
+        "items.length" in modified_content or "Array.isArray" in modified_content,
+        "|| 0" in modified_content or "?? 0" in modified_content,
+        "if (!items" in modified_content or "if (items" in modified_content
+    ]
+    
+    if any(bug_fixes):
+        print_success("Bug identificado e corrigido")
+    else:
+        print_warning("Bug pode não ter sido corrigido")
+    
+    # Verificar se função ainda existe
+    if "calculateTotal" in modified_content:
+        print_success("Função calculateTotal preservada")
+    else:
+        print_error("Função calculateTotal não encontrada")
+        return False
+    
+    # Verificar se código existente foi preservado
+    if len(modified_content) >= len(original_content) * 0.5:
+        print_success("Código existente preservado")
+    else:
+        print_warning("Código existente pode ter sido removido")
+    
+    return True
+
+def test_2_3_refactor_code():
+    """Teste 2.3: Refatorar Código"""
+    print_test("Teste 2.3: Refatorar código aplicando SOLID")
+    
+    # Criar userService.js com código não refatorado
+    if not check_file_exists("userService.js"):
+        prompt = """CRIE um arquivo userService.js usando o formato create-file: com uma classe UserService que faz tudo:
+- Busca usuários
+- Valida dados
+- Salva no banco
+- Envia emails
+- Gera relatórios
+
+Tudo em uma única classe (violando Single Responsibility).
+
+IMPORTANTE: Use o formato ```create-file:userService.js para criar o arquivo."""
+        send_chat_message(prompt)
+        time.sleep(3)
+    
+    if not check_file_exists("userService.js"):
+        print_error("Não foi possível criar userService.js")
+        return False
+    
+    # Refatorar
+    prompt = """Refatore o arquivo userService.js aplicando os princípios SOLID, especialmente Single Responsibility. Separe as responsabilidades em classes diferentes."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Aguardando processamento...")
+    time.sleep(5)
+    
+    # Verificar se arquivo foi refatorado (pode ter criado múltiplos arquivos)
+    # Verificar se há múltiplas classes ou arquivos
+    files_created = []
+    for file in os.listdir(TEST_WORKSPACE):
+        if file.endswith('.js') and ('user' in file.lower() or 'service' in file.lower() or 'validator' in file.lower()):
+            files_created.append(file)
+    
+    if len(files_created) > 1:
+        print_success(f"Responsabilidades separadas em {len(files_created)} arquivos")
+    elif check_file_exists("userService.js"):
+        content = read_file_content("userService.js")
+        # Verificar se tem múltiplas classes ou funções separadas
+        class_count = content.count("class ")
+        if class_count > 1:
+            print_success("Múltiplas classes criadas (responsabilidades separadas)")
+        else:
+            print_warning("Pode não ter sido refatorado adequadamente")
+    
+    return True
+
+def test_5_2_react_project():
+    """Teste 5.2: Projeto React Completo"""
+    print_test("Teste 5.2: Criar projeto React completo")
+    
+    prompt = """CRIE um projeto React completo usando o formato create-file: para CADA arquivo:
+
+CRIE TODOS estes arquivos usando o formato ```create-file:path:
+- package.json com dependências (react, react-dom)
+- src/App.jsx (componente principal)
+- src/components/Header.jsx (componente de cabeçalho)
+- src/components/Footer.jsx (componente de rodapé)
+- src/index.js (ponto de entrada)
+- public/index.html (HTML base)
+- README.md (documentação)
+
+IMPORTANTE: Use múltiplos blocos ```create-file: para criar TODOS os arquivos em uma única resposta."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Aguardando processamento...")
+    time.sleep(5)
+    
+    # Verificar arquivos
+    files = [
+        "package.json",
+        "src/App.jsx",
+        "src/components/Header.jsx",
+        "src/components/Footer.jsx",
+        "src/index.js",
+        "public/index.html",
+        "README.md"
+    ]
+    
+    all_created = True
+    for file in files:
+        if check_file_exists(file):
+            print_success(f"Arquivo {file} criado")
+        else:
+            print_error(f"Arquivo {file} não foi criado")
+            all_created = False
+    
+    if not all_created:
+        return False
+    
+    # Verificar package.json
+    package_content = read_file_content("package.json")
+    if package_content:
+        if "react" in package_content.lower() and "dependencies" in package_content.lower():
+            print_success("package.json configurado corretamente")
+        else:
+            print_warning("package.json pode não estar correto")
+    
+    # Verificar componentes
+    app_content = read_file_content("src/App.jsx")
+    header_content = read_file_content("src/components/Header.jsx")
+    
+    if app_content and "import" in app_content.lower() and "export" in app_content.lower():
+        print_success("Componente App.jsx funcional")
+    else:
+        print_warning("App.jsx pode não estar correto")
+    
+    if header_content and ("function" in header_content.lower() or "const" in header_content.lower()):
+        print_success("Componente Header.jsx funcional")
+    else:
+        print_warning("Header.jsx pode não estar correto")
+    
+    return True
+
+def test_6_1_email_html():
+    """Teste 6.1: Email HTML"""
+    print_test("Teste 6.1: Criar template de email HTML")
+    
+    prompt = """Crie um template de email HTML profissional para confirmação de cadastro com:
+- Header com logo
+- Corpo com mensagem de boas-vindas
+- Footer com links sociais
+- Estilos inline para compatibilidade com clientes de email"""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Aguardando processamento...")
+    time.sleep(3)
+    
+    # Verificar se arquivo foi criado (pode ter vários nomes)
+    email_files = [f for f in os.listdir(TEST_WORKSPACE) if f.endswith('.html') and ('email' in f.lower() or 'template' in f.lower() or 'welcome' in f.lower())]
+    
+    if not email_files:
+        # Tentar encontrar qualquer HTML
+        html_files = [f for f in os.listdir(TEST_WORKSPACE) if f.endswith('.html')]
+        if html_files:
+            email_files = [html_files[0]]
+    
+    if not email_files:
+        print_error("Template de email não foi criado")
+        return False
+    
+    email_file = email_files[0]
+    print_success(f"Template de email criado: {email_file}")
+    
+    content = read_file_content(email_file)
+    if not content:
+        return False
+    
+    # Verificar características do template
+    checks = [
+        ("<html" in content.lower() or "<!doctype" in content.lower(), "HTML válido"),
+        ("style=" in content or "style:" in content, "Estilos inline"),
+        ("header" in content.lower() or "logo" in content.lower(), "Header presente"),
+        ("footer" in content.lower() or "social" in content.lower(), "Footer presente"),
+        ("welcome" in content.lower() or "boas-vindas" in content.lower() or "confirmação" in content.lower(), "Mensagem de boas-vindas")
+    ]
+    
+    for check, desc in checks:
+        if check:
+            print_success(desc)
+        else:
+            print_warning(f"{desc} pode estar faltando")
+    
+    return True
+
+def test_6_2_notification_templates():
+    """Teste 6.2: Mensagem de Notificação"""
+    print_test("Teste 6.2: Criar templates de notificação")
+    
+    prompt = """CRIE um arquivo notificationTemplates.js usando o formato create-file: com templates de mensagens:
+- Sucesso
+- Erro
+- Aviso
+- Informação
+
+IMPORTANTE: Use o formato ```create-file:notificationTemplates.js para criar o arquivo."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Aguardando processamento...")
+    time.sleep(3)
+    
+    if not check_file_exists("notificationTemplates.js"):
+        print_error("Arquivo notificationTemplates.js não foi criado")
+        return False
+    
+    print_success("Arquivo notificationTemplates.js criado")
+    
+    content = read_file_content("notificationTemplates.js")
+    if not content:
+        return False
+    
+    # Verificar templates
+    templates = ["sucesso", "success", "erro", "error", "aviso", "warning", "informação", "info"]
+    found = sum(1 for t in templates if t.lower() in content.lower())
+    
+    if found >= 3:
+        print_success("Templates de notificação presentes")
+    else:
+        print_warning("Alguns templates podem estar faltando")
+    
+    if "function" in content.lower() or "const" in content.lower() or "export" in content.lower():
+        print_success("Código bem estruturado")
+    else:
+        print_warning("Código pode não estar bem estruturado")
+    
+    return True
+
+def test_7_1_todo_list():
+    """Teste 7.1: Lista de Tarefas"""
+    print_test("Teste 7.1: Criar lista de tarefas para implementação")
+    
+    prompt = """CRIE um arquivo TODO.md usando o formato create-file: com uma lista de tarefas para implementar um sistema de autenticação:
+1. Criar modelo de usuário
+2. Implementar endpoints de login/registro
+3. Adicionar middleware de autenticação
+4. Criar testes unitários
+5. Documentar API
+
+IMPORTANTE: Use o formato ```create-file:TODO.md para criar o arquivo."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Aguardando processamento...")
+    time.sleep(3)
+    
+    if not check_file_exists("TODO.md"):
+        print_error("Arquivo TODO.md não foi criado")
+        return False
+    
+    print_success("Arquivo TODO.md criado")
+    
+    content = read_file_content("TODO.md")
+    if not content:
+        return False
+    
+    # Verificar tarefas
+    tasks = ["modelo", "usuário", "endpoints", "login", "registro", "middleware", "autenticação", "testes", "documentar", "api"]
+    found = sum(1 for t in tasks if t.lower() in content.lower())
+    
+    if found >= 5:
+        print_success("Tarefas listadas corretamente")
+    else:
+        print_warning("Algumas tarefas podem estar faltando")
+    
+    if "#" in content or "-" in content or "*" in content or "1." in content:
+        print_success("Formato Markdown correto")
+    else:
+        print_warning("Formato pode não estar correto")
+    
+    return True
+
+def test_8_1_conversation_context():
+    """Teste 8.1: Contexto de Conversa"""
+    print_test("Teste 8.1: Contexto de conversa (múltiplas mensagens)")
+    
+    # Primeira mensagem: criar classe User
+    prompt1 = """CRIE um arquivo user.js usando o formato create-file: com uma classe User que tem propriedades name e email.
+
+IMPORTANTE: Use o formato ```create-file:user.js para criar o arquivo."""
+    response1, _ = send_chat_message(prompt1)
+    if not response1:
+        return False
+    
+    print_info("Aguardando primeira mensagem...")
+    time.sleep(3)
+    
+    if not check_file_exists("user.js"):
+        print_error("user.js não foi criado na primeira mensagem")
+        return False
+    
+    # Segunda mensagem: adicionar método
+    prompt2 = "Agora adicione um método getFullName() na classe User que retorna o nome completo."
+    response2, _ = send_chat_message(prompt2)
+    if not response2:
+        return False
+    
+    print_info("Aguardando segunda mensagem...")
+    time.sleep(3)
+    
+    user_content = read_file_content("user.js")
+    if not user_content:
+        return False
+    
+    if "getFullName" in user_content:
+        print_success("Método getFullName adicionado")
+    else:
+        print_error("Método getFullName não foi adicionado")
+        return False
+    
+    if "class User" in user_content:
+        print_success("Classe User preservada")
+    else:
+        print_error("Classe User não encontrada")
+        return False
+    
+    # Terceira mensagem: criar service que usa User
+    prompt3 = "Crie um arquivo userService.js que importa e usa a classe User."
+    response3, _ = send_chat_message(prompt3)
+    if not response3:
+        return False
+    
+    print_info("Aguardando terceira mensagem...")
+    time.sleep(3)
+    
+    if not check_file_exists("userService.js"):
+        print_error("userService.js não foi criado")
+        return False
+    
+    service_content = read_file_content("userService.js")
+    if service_content:
+        if "import" in service_content.lower() and "user" in service_content.lower():
+            print_success("userService.js importa User corretamente")
+        else:
+            print_warning("userService.js pode não estar importando User corretamente")
+    
+    return True
+
+def test_8_2_workspace_context():
+    """Teste 8.2: Contexto do Workspace"""
+    print_test("Teste 8.2: Contexto do workspace")
+    
+    # Criar alguns arquivos primeiro para ter contexto
+    if not check_file_exists("config.json"):
+        prompt = 'CRIE um arquivo config.json usando create-file: com {"apiUrl": "https://api.example.com"}'
+        send_chat_message(prompt)
+        time.sleep(2)
+    
+    if not check_file_exists("utils.js"):
+        prompt = "CRIE um arquivo utils.js usando create-file: com uma função helper"
+        send_chat_message(prompt)
+        time.sleep(2)
+    
+    # Agora pedir para criar arquivo que se integre
+    prompt = """Analise o workspace atual e CRIE um arquivo api.js usando o formato create-file: que se integre com os arquivos existentes (config.json e utils.js).
+
+IMPORTANTE: Use o formato ```create-file:api.js para criar o arquivo."""
+    
+    response, result = send_chat_message(prompt)
+    if not response:
+        return False
+    
+    print_info("Aguardando processamento...")
+    time.sleep(5)
+    
+    if not check_file_exists("api.js"):
+        print_error("Arquivo api.js não foi criado")
+        return False
+    
+    print_success("Arquivo api.js criado")
+    
+    api_content = read_file_content("api.js")
+    if not api_content:
+        return False
+    
+    # Verificar se importa arquivos existentes
+    if ("import" in api_content.lower() or "require" in api_content.lower()) and ("config" in api_content.lower() or "utils" in api_content.lower()):
+        print_success("Integração com arquivos existentes")
+    else:
+        print_warning("Pode não estar integrando com arquivos existentes")
+    
+    return True
+
 def main():
     """Executa todos os testes"""
     print(f"\n{Colors.BOLD}{Colors.CYAN}{'='*70}")
