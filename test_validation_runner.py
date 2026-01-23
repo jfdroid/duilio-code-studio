@@ -1026,18 +1026,35 @@ IMPORTANT: Use the format ```create-file:user.js to create the file."""
     if user_content:
         prompt2 = f"""MODIFY the user.js file that we created in the previous message. Add a getFullName() method to the User class that returns the full name (name + email).
 
-CURRENT FILE CONTENT:
+CURRENT FILE CONTENT (YOU MUST PRESERVE THIS):
 ```javascript
 {user_content}
 ```
 
-CRITICAL:
-- The user.js file ALREADY EXISTS and was created in the previous message
-- You MUST use the format ```modify-file:user.js (NOT create-file)
-- You MUST include ALL existing file content shown above
-- You MUST add the getFullName() method to the User class
-- DO NOT create new files, only MODIFY the existing file
-- The method should return a string combining name and email"""
+CRITICAL INSTRUCTIONS:
+1. The user.js file ALREADY EXISTS and was created in the previous message
+2. You MUST use the format ```modify-file:user.js (NOT create-file)
+3. You MUST include ALL existing file content shown above EXACTLY as it is
+4. You MUST add the getFullName() method INSIDE the User class, after the constructor
+5. The method should be: getFullName() {{ return `${{this.name}} ${{this.email}}`; }}
+6. DO NOT remove or change any existing code
+7. DO NOT create new files, only MODIFY the existing file
+8. The complete file should look like this structure:
+   - class User {{ constructor(name, email) {{ ... }} }}
+   - getFullName() method added here
+   - export default User;
+
+EXAMPLE OF CORRECT OUTPUT:
+```modify-file:user.js
+{user_content}
+
+  getFullName() {{
+    return `${{this.name}} ${{this.email}}`;
+  }}
+}}
+
+export default User;
+```"""
     else:
         prompt2 = """MODIFY the user.js file that we created in the previous message. Add a getFullName() method to the User class that returns the full name (name + email).
 
@@ -1045,8 +1062,9 @@ CRITICAL:
 - The user.js file ALREADY EXISTS and was created in the previous message
 - You MUST use the format ```modify-file:user.js (NOT create-file)
 - You MUST include ALL existing file content (the User class with name and email)
-- You MUST add the getFullName() method to the User class
-- DO NOT create new files, only MODIFY the existing file"""
+- You MUST add the getFullName() method INSIDE the User class
+- DO NOT create new files, only MODIFY the existing file
+- The method should return a string combining name and email"""
     response2, _ = send_chat_message(prompt2, use_history=True)
     if not response2:
         print_error("Second message failed")
