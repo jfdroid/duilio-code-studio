@@ -336,16 +336,14 @@ class ActionProcessor:
             # Create parent directories if needed
             parent_dir = path_obj.parent
             if parent_dir:
-                # If parent exists as a FILE (not directory), remove it first
+                # CRITICAL: Never delete user files without explicit permission
+                # If parent exists as a FILE (not directory), return error instead of deleting
                 if parent_dir.exists() and parent_dir.is_file():
-                    try:
-                        parent_dir.unlink()  # Remove the file
-                    except Exception as e:
-                        return {
-                            'success': False,
-                            'error': f"Parent path exists as file and cannot be removed: {parent_dir} - {str(e)}",
-                            'path': file_path
-                        }
+                    return {
+                        'success': False,
+                        'error': f"Cannot create file: parent path exists as a file (not directory): {parent_dir}. Please remove or rename the existing file first, or choose a different path.",
+                        'path': file_path
+                    }
                 
                 # Create parent directory if it doesn't exist
                 if not parent_dir.exists():
@@ -365,7 +363,7 @@ class ActionProcessor:
                 if parent_dir.exists() and not parent_dir.is_dir():
                     return {
                         'success': False,
-                        'error': f"Parent path exists but is not a directory: {parent_dir}",
+                        'error': f"Cannot create file: parent path exists but is not a directory: {parent_dir}. Please remove or rename the existing file first.",
                         'path': file_path
                     }
             

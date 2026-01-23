@@ -720,6 +720,86 @@ def main():
     
     time.sleep(2)
     
+    # Teste 2.2: Corrigir Bug
+    try:
+        result = test_2_2_fix_bug()
+        results.append(("2.2 - Corrigir Bug", result))
+    except Exception as e:
+        print_error(f"Erro no teste 2.2: {e}")
+        results.append(("2.2 - Corrigir Bug", False))
+    
+    time.sleep(2)
+    
+    # Teste 2.3: Refatorar Código
+    try:
+        result = test_2_3_refactor_code()
+        results.append(("2.3 - Refatorar Código", result))
+    except Exception as e:
+        print_error(f"Erro no teste 2.3: {e}")
+        results.append(("2.3 - Refatorar Código", False))
+    
+    time.sleep(2)
+    
+    # Teste 5.2: Projeto React Completo
+    try:
+        result = test_5_2_react_project()
+        results.append(("5.2 - Projeto React Completo", result))
+    except Exception as e:
+        print_error(f"Erro no teste 5.2: {e}")
+        results.append(("5.2 - Projeto React Completo", False))
+    
+    time.sleep(2)
+    
+    # Teste 6.1: Email HTML
+    try:
+        result = test_6_1_email_html()
+        results.append(("6.1 - Email HTML", result))
+    except Exception as e:
+        print_error(f"Erro no teste 6.1: {e}")
+        results.append(("6.1 - Email HTML", False))
+    
+    time.sleep(2)
+    
+    # Teste 6.2: Mensagem de Notificação
+    try:
+        result = test_6_2_notification_templates()
+        results.append(("6.2 - Mensagem de Notificação", result))
+    except Exception as e:
+        print_error(f"Erro no teste 6.2: {e}")
+        results.append(("6.2 - Mensagem de Notificação", False))
+    
+    time.sleep(2)
+    
+    # Teste 7.1: Lista de Tarefas
+    try:
+        result = test_7_1_todo_list()
+        results.append(("7.1 - Lista de Tarefas", result))
+    except Exception as e:
+        print_error(f"Erro no teste 7.1: {e}")
+        results.append(("7.1 - Lista de Tarefas", False))
+    
+    time.sleep(2)
+    
+    # Teste 8.1: Contexto de Conversa
+    try:
+        result = test_8_1_conversation_context()
+        results.append(("8.1 - Contexto de Conversa", result))
+    except Exception as e:
+        print_error(f"Erro no teste 8.1: {e}")
+        results.append(("8.1 - Contexto de Conversa", False))
+    
+    time.sleep(2)
+    
+    # Teste 8.2: Contexto do Workspace
+    try:
+        result = test_8_2_workspace_context()
+        results.append(("8.2 - Contexto do Workspace", result))
+    except Exception as e:
+        print_error(f"Erro no teste 8.2: {e}")
+        results.append(("8.2 - Contexto do Workspace", False))
+    
+    time.sleep(2)
+    
     # Resumo
     print(f"\n{Colors.BOLD}{'='*70}")
     print("📊 RESUMO DOS TESTES")

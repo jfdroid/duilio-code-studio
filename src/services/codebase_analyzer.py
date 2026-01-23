@@ -424,13 +424,14 @@ class CodebaseAnalyzer:
         
         return " | ".join(parts)
     
-    def analyze(self, max_files: int = 100, query: str = "") -> CodebaseAnalysis:
+    def analyze(self, max_files: int = 100, query: str = "", use_cache: bool = True) -> CodebaseAnalysis:
         """
         Analyze the codebase with optimized structures.
         
         Args:
             max_files: Maximum number of files to analyze in detail
             query: Optional query for relevance scoring
+            use_cache: If True, use cache for analysis results
             
         Returns:
             CodebaseAnalysis with full project context
@@ -440,9 +441,28 @@ class CodebaseAnalyzer:
         - Tree building: O(n) with DirectoryTree (Trie)
         - Dependency graph: O(n * m) where m is avg imports per file
         - Relevance scoring: O(n log n) for ranking
+        - With cache: O(1) for cached results
         """
         if not self.root_path.exists():
             raise ValueError(f"Path does not exist: {self.root_path}")
+        
+        # Tentar obter do cache se habilitado
+        if use_cache:
+            try:
+                from services.cache_service import get_cache_service
+                cache = get_cache_service()
+                cache_key = cache._make_key(
+                    "codebase_analysis",
+                    str(self.root_path),
+                    max_files,
+                    query
+                )
+                cached_result = cache.get(cache_key)
+                if cached_result is not None:
+                    return cached_result
+            except Exception:
+                # Se cache falhar, continuar sem cache
+                pass
         
         # Collect all files (O(n))
         all_files: List[Path] = []
@@ -553,7 +573,7 @@ class CodebaseAnalyzer:
                 elif f in config_files:
                     config_analyses.append(analysis)
         
-        return CodebaseAnalysis(
+        result = CodebaseAnalysis(
             root_path=str(self.root_path),
             total_files=len(all_files),
             total_lines=total_lines,
@@ -565,6 +585,24 @@ class CodebaseAnalyzer:
             entry_points=self._find_entry_points(),
             dependencies=self._analyze_dependencies(),
         )
+        
+        # Armazenar no cache se habilitado
+        if use_cache:
+            try:
+                from services.cache_service import get_cache_service
+                cache = get_cache_service()
+                cache_key = cache._make_key(
+                    "codebase_analysis",
+                    str(self.root_path),
+                    max_files,
+                    query
+                )
+                cache.set(cache_key, result, ttl=3600)  # Cache por 1 hora
+            except Exception:
+                # Se cache falhar, continuar sem cache
+                pass
+        
+        return result
     
     def get_context_for_ai(self, analysis: CodebaseAnalysis, max_length: int = 8000, query: str = "") -> str:
         """
