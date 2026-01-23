@@ -51,11 +51,22 @@ def check_server():
     except:
         return False
 
-def send_chat_message(prompt: str, workspace_path: str = None, conversation_history: List[Dict] = None) -> Tuple[str, Dict]:
+# Global conversation history
+_conversation_history: List[Dict] = []
+
+def send_chat_message(prompt: str, workspace_path: str = None, conversation_history: List[Dict] = None, use_history: bool = True) -> Tuple[str, Dict]:
     """Envia mensagem para o chat e retorna resposta"""
     url = f"{BASE_URL}/api/chat"
     
-    messages = conversation_history or []
+    global _conversation_history
+    
+    if conversation_history is not None:
+        messages = conversation_history
+    elif use_history:
+        messages = _conversation_history.copy()
+    else:
+        messages = []
+    
     messages.append({"role": "user", "content": prompt})
     
     data = {
@@ -70,6 +81,11 @@ def send_chat_message(prompt: str, workspace_path: str = None, conversation_hist
             result = response.json()
             content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
             
+            # Update conversation history
+            if use_history:
+                _conversation_history.append({"role": "user", "content": prompt})
+                _conversation_history.append({"role": "assistant", "content": content})
+            
             # Check if actions were processed
             if result.get("actions_processed"):
                 actions_result = result.get("actions_result", {})
@@ -82,6 +98,11 @@ def send_chat_message(prompt: str, workspace_path: str = None, conversation_hist
     except Exception as e:
         print_error(f"Erro ao enviar mensagem: {e}")
         return None, None
+
+def reset_conversation_history():
+    """Reseta o histórico de conversa"""
+    global _conversation_history
+    _conversation_history = []
 
 def check_file_exists(file_path: str, workspace: str = None) -> bool:
     """Verifica se arquivo existe"""
@@ -644,7 +665,15 @@ function calculateTotal(items) {
         return False
     
     # Corrigir bug
-    prompt = """Corrija o bug no arquivo app.js na função calculateTotal que está retornando NaN quando items está vazio ou undefined."""
+    prompt = """MODIFIQUE o arquivo app.js que já existe no workspace. A função calculateTotal está retornando NaN quando items está vazio ou undefined.
+
+CRÍTICO:
+- O arquivo app.js JÁ EXISTE no workspace
+- Você DEVE usar o formato ```modify-file:app.js (NÃO create-file)
+- Você DEVE incluir TODO o conteúdo do arquivo existente
+- Você DEVE preservar a função calculateTotal
+- Você DEVE adicionar verificação para items vazio ou undefined
+- NÃO crie novos arquivos, apenas MODIFIQUE o arquivo existente"""
     
     response, result = send_chat_message(prompt)
     if not response:
@@ -715,7 +744,15 @@ IMPORTANTE: Use o formato ```create-file:userService.js para criar o arquivo."""
         return False
     
     # Refatorar
-    prompt = """Refatore o arquivo userService.js aplicando os princípios SOLID, especialmente Single Responsibility. Separe as responsabilidades em classes diferentes."""
+    prompt = """Refatore o arquivo userService.js que já existe no workspace aplicando os princípios SOLID, especialmente Single Responsibility.
+
+CRÍTICO:
+- O arquivo userService.js JÁ EXISTE no workspace
+- Você DEVE separar as responsabilidades em classes diferentes
+- Você PODE criar novos arquivos para separar responsabilidades (ex: UserValidator.js, UserRepository.js, EmailService.js, ReportService.js)
+- Use o formato ```create-file: para novos arquivos
+- Use o formato ```modify-file: para modificar userService.js
+- Mantenha a funcionalidade original, apenas organize melhor"""
     
     response, result = send_chat_message(prompt)
     if not response:
@@ -963,11 +1000,14 @@ def test_8_1_conversation_context():
     """Teste 8.1: Contexto de Conversa"""
     print_test("Teste 8.1: Contexto de conversa (múltiplas mensagens)")
     
+    # Resetar histórico para este teste
+    reset_conversation_history()
+    
     # Primeira mensagem: criar classe User
     prompt1 = """CRIE um arquivo user.js usando o formato create-file: com uma classe User que tem propriedades name e email.
 
 IMPORTANTE: Use o formato ```create-file:user.js para criar o arquivo."""
-    response1, _ = send_chat_message(prompt1)
+    response1, _ = send_chat_message(prompt1, use_history=True)
     if not response1:
         return False
     
@@ -978,14 +1018,31 @@ IMPORTANTE: Use o formato ```create-file:user.js para criar o arquivo."""
         print_error("user.js não foi criado na primeira mensagem")
         return False
     
-    # Segunda mensagem: adicionar método
-    prompt2 = "Agora adicione um método getFullName() na classe User que retorna o nome completo."
-    response2, _ = send_chat_message(prompt2)
+    print_success("user.js criado na primeira mensagem")
+    
+    # Segunda mensagem: adicionar método (deve lembrar do user.js criado)
+    prompt2 = """MODIFIQUE o arquivo user.js que criamos na mensagem anterior. Adicione um método getFullName() na classe User que retorna o nome completo (name + email).
+
+CRÍTICO:
+- O arquivo user.js JÁ EXISTE e foi criado na mensagem anterior
+- Você DEVE usar o formato ```modify-file:user.js (NÃO create-file)
+- Você DEVE incluir TODO o conteúdo do arquivo existente (a classe User com name e email)
+- Você DEVE adicionar o método getFullName() na classe User
+- NÃO crie novos arquivos, apenas MODIFIQUE o arquivo existente"""
+    response2, _ = send_chat_message(prompt2, use_history=True)
     if not response2:
+        print_error("Segunda mensagem falhou")
+        reset_conversation_history()
         return False
     
     print_info("Aguardando segunda mensagem...")
-    time.sleep(3)
+    time.sleep(5)
+    
+    # Verificar se modify-file foi usado
+    if "modify-file" in response2.lower():
+        print_success("Resposta contém modify-file")
+    else:
+        print_warning(f"Resposta pode não conter modify-file: {response2[:200]}")
     
     user_content = read_file_content("user.js")
     if not user_content:
@@ -995,6 +1052,8 @@ IMPORTANTE: Use o formato ```create-file:user.js para criar o arquivo."""
         print_success("Método getFullName adicionado")
     else:
         print_error("Método getFullName não foi adicionado")
+        print_info(f"Conteúdo atual de user.js: {user_content[:500]}")
+        reset_conversation_history()
         return False
     
     if "class User" in user_content:
@@ -1003,9 +1062,14 @@ IMPORTANTE: Use o formato ```create-file:user.js para criar o arquivo."""
         print_error("Classe User não encontrada")
         return False
     
-    # Terceira mensagem: criar service que usa User
-    prompt3 = "Crie um arquivo userService.js que importa e usa a classe User."
-    response3, _ = send_chat_message(prompt3)
+    # Terceira mensagem: criar service que usa User (deve lembrar do user.js)
+    prompt3 = """CRIE um arquivo userService.js usando o formato create-file: que importa e usa a classe User que criamos anteriormente.
+
+IMPORTANTE: 
+- Use o formato ```create-file:userService.js
+- Importe a classe User do arquivo user.js que criamos antes
+- Crie métodos que usam a classe User"""
+    response3, _ = send_chat_message(prompt3, use_history=True)
     if not response3:
         return False
     
@@ -1022,6 +1086,9 @@ IMPORTANTE: Use o formato ```create-file:user.js para criar o arquivo."""
             print_success("userService.js importa User corretamente")
         else:
             print_warning("userService.js pode não estar importando User corretamente")
+    
+    # Resetar histórico após o teste
+    reset_conversation_history()
     
     return True
 
@@ -1087,6 +1154,9 @@ def main():
     # Criar workspace
     Path(TEST_WORKSPACE).mkdir(parents=True, exist_ok=True)
     print_info(f"Workspace: {TEST_WORKSPACE}")
+    
+    # Resetar histórico de conversa
+    reset_conversation_history()
     
     # Executar testes
     results = []
