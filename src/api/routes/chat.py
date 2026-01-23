@@ -155,7 +155,7 @@ async def generate(
             if workspace_path:
                 system_prompt += f"\n\n=== CRITICAL WORKSPACE CONTEXT ==="
                 system_prompt += f"\nThe user has opened workspace: {workspace_path}"
-                system_prompt += "\nWhen they ask about 'this codebase', 'this project', 'esse codigo', 'esse projeto', or 'the code', you MUST refer to the workspace analysis provided in the context."
+                system_prompt += "\nWhen they ask about 'this codebase', 'this project', or 'the code', you MUST refer to the workspace analysis provided in the context."
                 system_prompt += "\nYou KNOW this codebase - analyze it, explain it, help them work with it!"
                 
                 # Add specific instructions for file creation
