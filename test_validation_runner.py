@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple
 # Importar TEST_WORKSPACE
 TEST_WORKSPACE = os.path.expanduser("~/test-validation-workspace")
 
-# Configurações
+# Configuration
 BASE_URL = "http://127.0.0.1:8080"
 TEST_WORKSPACE = os.path.expanduser("~/test-validation-workspace")
 
@@ -44,7 +44,7 @@ def print_test(msg):
     print(f"{Colors.CYAN}{Colors.BOLD}🧪 {msg}{Colors.RESET}")
 
 def check_server():
-    """Verifica se o servidor está rodando"""
+    """Check if server is running"""
     try:
         response = requests.get(f"{BASE_URL}/health", timeout=2)
         return response.status_code == 200
@@ -444,8 +444,8 @@ Create ALL folders with useful and professional files, not just empty folders.""
     if not response:
         return False
     
-    print_info("Aguardando processamento...")
-    time.sleep(5)  # Mais tempo para múltiplas pastas
+    print_info("Waiting for processing...")
+    time.sleep(5)  # More time for multiple folders
     
     # Verificar todas as pastas
     folders = [
@@ -504,8 +504,8 @@ def test_5_1_create_web_project():
     if not response:
         return False
     
-    print_info("Aguardando processamento...")
-    time.sleep(5)  # Mais tempo para projeto completo
+    print_info("Waiting for processing...")
+    time.sleep(5)  # More time for complete project
     
     # Verificar todos os arquivos
     files = ["index.html", "styles.css", "app.js", "README.md"]
@@ -679,7 +679,7 @@ CRITICAL:
     if not response:
         return False
     
-    print_info("Aguardando processamento...")
+    print_info("Waiting for processing...")
     time.sleep(5)
     
     # Check if file still exists
@@ -758,7 +758,7 @@ CRITICAL:
     if not response:
         return False
     
-    print_info("Aguardando processamento...")
+    print_info("Waiting for processing...")
     time.sleep(5)
     
     # Check if file was refactored (may have created multiple files)
@@ -802,7 +802,7 @@ IMPORTANT: Use multiple ```create-file: blocks to create ALL files in a single r
     if not response:
         return False
     
-    print_info("Aguardando processamento...")
+    print_info("Waiting for processing...")
     time.sleep(5)
     
     # Verificar arquivos
@@ -1134,7 +1134,7 @@ IMPORTANT: Use the format ```create-file:api.js to create the file."""
     if not response:
         return False
     
-    print_info("Aguardando processamento...")
+    print_info("Waiting for processing...")
     time.sleep(5)
     
     if not check_file_exists("api.js"):
