@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 """
-Test Validation Runner - Executa e valida testes do DuilioCode Studio
+Test Validation Runner - Executes and validates DuilioCode Studio tests
 """
 
 import os
 import sys
 import json
 import time
+import shutil
 import requests
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-# Importar TEST_WORKSPACE
+# Test workspace directory (safe to delete; used only by this runner)
 TEST_WORKSPACE = os.path.expanduser("~/test-validation-workspace")
 
 # Configuration
 BASE_URL = "http://127.0.0.1:8080"
 TEST_WORKSPACE = os.path.expanduser("~/test-validation-workspace")
 
-# Cores para output
+# Colors for output
 class Colors:
     GREEN = '\033[92m'
     RED = '\033[91m'
@@ -51,10 +52,10 @@ def check_server():
     except:
         return False
 
-# Global conversation history
+# Global conversation history (used only in context tests)
 _conversation_history: List[Dict] = []
 
-def send_chat_message(prompt: str, workspace_path: str = None, conversation_history: List[Dict] = None, use_history: bool = True) -> Tuple[str, Dict]:
+def send_chat_message(prompt: str, workspace_path: str = None, conversation_history: List[Dict] = None, use_history: bool = False) -> Tuple[str, Dict]:
     """Send message to chat and return response"""
     url = f"{BASE_URL}/api/chat"
     
@@ -76,7 +77,7 @@ def send_chat_message(prompt: str, workspace_path: str = None, conversation_hist
     }
     
     try:
-        response = requests.post(url, json=data, timeout=180)
+        response = requests.post(url, json=data, timeout=300)  # Increased timeout for complex projects
         if response.status_code == 200:
             result = response.json()
             content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -104,16 +105,25 @@ def reset_conversation_history():
     global _conversation_history
     _conversation_history = []
 
+def reset_test_workspace() -> None:
+    """
+    Reset the test workspace to a clean state.
+    This directory is dedicated to tests and is safe to delete.
+    """
+    if os.path.isdir(TEST_WORKSPACE):
+        shutil.rmtree(TEST_WORKSPACE)
+    Path(TEST_WORKSPACE).mkdir(parents=True, exist_ok=True)
+
 def check_file_exists(file_path: str, workspace: str = None) -> bool:
     """Check if file exists"""
     if not workspace:
         workspace = TEST_WORKSPACE
     
-    # Se path é absoluto, usar direto
+    # If path is absolute, use it directly
     if os.path.isabs(file_path):
         return os.path.exists(file_path)
     
-    # Se path é relativo, juntar com workspace
+    # If path is relative, join with workspace
     full_path = os.path.join(workspace, file_path)
     return os.path.exists(full_path)
 
@@ -1247,6 +1257,8 @@ IMPORTANT: Use multiple ```create-file: blocks to create ALL files in a single r
 def test_4_2_android_clean_architecture():
     """Test 4.2: Android Clean Architecture"""
     print_test("Test 4.2: Create Android app with Clean Architecture")
+
+    reset_test_workspace()
     
     prompt = """CREATE a complete Android app following Clean Architecture with ALL layers using the create-file: format.
 
@@ -1297,6 +1309,8 @@ CRITICAL: Create ALL files with COMPLETE, FUNCTIONAL code. Use multiple ```creat
 def test_5_3_express_api():
     """Test 5.3: Express REST API"""
     print_test("Test 5.3: Create Express REST API")
+
+    reset_test_workspace()
     
     prompt = """CREATE a complete Node.js + Express REST API with ALL files using the create-file: format.
 
@@ -1365,6 +1379,8 @@ CRITICAL:
 def test_9_1_solid_project():
     """Test 9.1: SOLID Principles Project"""
     print_test("Test 9.1: Create project following SOLID principles")
+
+    reset_test_workspace()
     
     prompt = """CREATE a complete Python project following ALL SOLID principles using the create-file: format.
 
@@ -1421,6 +1437,8 @@ CRITICAL:
 def test_9_2_clean_architecture():
     """Test 9.2: Clean Architecture Project"""
     print_test("Test 9.2: Create project with Clean Architecture")
+
+    reset_test_workspace()
     
     prompt = """CREATE a complete project following Clean Architecture with ALL layers using the create-file: format.
 
@@ -1440,7 +1458,9 @@ CRITICAL:
 - Create files in domain/, application/, infrastructure/, presentation/, frameworks/ directories
 - Each file must have COMPLETE, FUNCTIONAL code
 - README.md must explain Clean Architecture
-- Use multiple ```create-file: blocks in a single response"""
+- Use multiple ```create-file: blocks in a single response
+- Respond with ONLY ```create-file: blocks (no explanations)
+- Start your response immediately with: ```create-file:domain/entities/User.py"""
     
     response, result = send_chat_message(prompt)
     if not response:
@@ -1473,6 +1493,8 @@ CRITICAL:
 def test_p1_1_fastapi_project():
     """Test P1.1: FastAPI Project"""
     print_test("Test P1.1: Create complete FastAPI project")
+
+    reset_test_workspace()
     
     prompt = """CREATE a complete FastAPI REST API project with ALL files using the create-file: format.
 
