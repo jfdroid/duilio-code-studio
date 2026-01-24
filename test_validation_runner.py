@@ -1257,8 +1257,6 @@ IMPORTANT: Use multiple ```create-file: blocks to create ALL files in a single r
 def test_4_2_android_clean_architecture():
     """Test 4.2: Android Clean Architecture"""
     print_test("Test 4.2: Create Android app with Clean Architecture")
-
-    reset_test_workspace()
     
     prompt = """CREATE a complete Android app following Clean Architecture with ALL layers using the create-file: format.
 
@@ -1309,8 +1307,6 @@ CRITICAL: Create ALL files with COMPLETE, FUNCTIONAL code. Use multiple ```creat
 def test_5_3_express_api():
     """Test 5.3: Express REST API"""
     print_test("Test 5.3: Create Express REST API")
-
-    reset_test_workspace()
     
     prompt = """CREATE a complete Node.js + Express REST API with ALL files using the create-file: format.
 
@@ -1379,8 +1375,6 @@ CRITICAL:
 def test_9_1_solid_project():
     """Test 9.1: SOLID Principles Project"""
     print_test("Test 9.1: Create project following SOLID principles")
-
-    reset_test_workspace()
     
     prompt = """CREATE a complete Python project following ALL SOLID principles using the create-file: format.
 
@@ -1437,8 +1431,6 @@ CRITICAL:
 def test_9_2_clean_architecture():
     """Test 9.2: Clean Architecture Project"""
     print_test("Test 9.2: Create project with Clean Architecture")
-
-    reset_test_workspace()
     
     prompt = """CREATE a complete project following Clean Architecture with ALL layers using the create-file: format.
 
@@ -1493,8 +1485,6 @@ CRITICAL:
 def test_p1_1_fastapi_project():
     """Test P1.1: FastAPI Project"""
     print_test("Test P1.1: Create complete FastAPI project")
-
-    reset_test_workspace()
     
     prompt = """CREATE a complete FastAPI REST API project with ALL files using the create-file: format.
 
@@ -1583,8 +1573,8 @@ def main():
         sys.exit(1)
     print_success("Server is running")
     
-    # Create workspace
-    Path(TEST_WORKSPACE).mkdir(parents=True, exist_ok=True)
+    # Reset workspace to clean state
+    reset_test_workspace()
     print_info(f"Workspace: {TEST_WORKSPACE}")
     
     # Reset conversation history
