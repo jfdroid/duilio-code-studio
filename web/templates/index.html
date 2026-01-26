@@ -322,17 +322,26 @@
                 </div>
 
                 <div class="chat-input-area">
-                    <div class="chat-input-wrapper" data-form-type="other" autocomplete="off">
+                    <div class="chat-input-wrapper" 
+                         data-form-type="other" 
+                         autocomplete="off"
+                         data-browser-autofill="off"
+                         data-safari-autofill="off"
+                         data-icloud-autofill="off">
                         <textarea 
                             class="chat-textarea" 
                             id="chatInput" 
-                            name="chat-message"
                             placeholder="Ask me to create files, explain code, or anything..."
                             rows="1"
                             autocomplete="off"
                             data-form-type="other"
                             data-1p-ignore="true"
                             data-lpignore="true"
+                            data-browser-autofill="off"
+                            data-safari-autofill="off"
+                            data-icloud-autofill="off"
+                            role="textbox"
+                            aria-label="Chat message input"
                             spellcheck="true"></textarea>
                         <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
