@@ -5,7 +5,7 @@
 
 const Chat = {
     abortController: null,
-    mode: 'agent', // 'chat' or 'agent'
+    mode: 'chat', // 'chat' (simple) or 'agent' (complex with codebase)
 
     /**
      * Set chat mode
@@ -187,15 +187,13 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
             
             const fullContext = (finalSystemContext || '') + modeContext;
             
-            // Check if user wants simple mode (clean Ollama connection)
-            // For now, we'll use simple mode by default for testing
-            // TODO: Add UI toggle for simple vs complex mode
-            const useSimpleMode = true; // Change to false to use complex mode
-            
+            // MODE-BASED ENDPOINT SELECTION:
+            // - Chat mode → Simple endpoint (/api/chat/simple) - clean Ollama connection
+            // - Agent mode → Complex endpoint (/api/chat) - full features with codebase
             let response;
-            if (useSimpleMode) {
-                // SIMPLE MODE: Direct Ollama connection, no complex logic
-                console.log('[DuilioCode] Using SIMPLE mode - direct Ollama connection');
+            if (this.mode === 'chat') {
+                // CHAT MODE: Simple, direct Ollama connection - no complex logic
+                console.log('[DuilioCode] CHAT mode - using simple endpoint');
                 const messages = AppState.chat.messages.map(msg => ({
                     role: msg.role,
                     content: msg.content
@@ -206,14 +204,20 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
                 response = await API.chatSimple(messages, modelToUse, 0.7, false);
                 console.log('[DuilioCode] Simple API Response:', response);
             } else {
-                // COMPLEX MODE: Full features with codebase analysis
-                console.log('[DuilioCode] Calling API.generate with codebase context');
+                // AGENT MODE: Complex endpoint with full features
+                console.log('[DuilioCode] AGENT mode - using complex endpoint with codebase');
                 console.log('[DuilioCode] Workspace:', workspacePath);
                 console.log('[DuilioCode] Context length:', fullContext?.length || 0);
                 
-                // CRITICAL: Pass include_codebase to ensure backend analyzes the codebase
-                response = await API.generate(message, modelToUse, fullContext);
-                console.log('[DuilioCode] API Response:', response);
+                // Build messages for complex endpoint
+                const messages = AppState.chat.messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                }));
+                messages.push({ role: 'user', content: message });
+                
+                response = await API.chat(messages, modelToUse, false);
+                console.log('[DuilioCode] Complex API Response:', response);
             }
             
             // Update model selector to show which model was actually used
@@ -226,17 +230,18 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
             // Extract response text (handle both simple and complex response formats)
             let responseText;
             if (response.choices && response.choices[0] && response.choices[0].message) {
-                // Simple mode response format
+                // Both modes use choices[0].message.content format
                 responseText = response.choices[0].message.content;
             } else if (response.response) {
-                // Complex mode response format
+                // Fallback: old format
                 responseText = response.response;
             } else {
+                console.warn('[DuilioCode] Unexpected response format:', response);
                 responseText = JSON.stringify(response);
             }
             
-            // In Agent mode, process and execute actions (only in complex mode)
-            if (!useSimpleMode && this.mode === 'agent') {
+            // In Agent mode, process and execute actions from response
+            if (this.mode === 'agent') {
                 responseText = await this.processAgentActions(responseText);
             }
             
@@ -245,8 +250,8 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
                 ChatHistory.addMessage('assistant', responseText);
             }
             
-            // CRITICAL: Refresh explorer if actions were processed (only in complex mode)
-            if (!useSimpleMode && response.actions_processed && response.actions_result) {
+            // CRITICAL: Refresh explorer if actions were processed (Agent mode only)
+            if (this.mode === 'agent' && response.actions_processed && response.actions_result) {
                 if (response.actions_result.success_count > 0 || response.refresh_explorer) {
                     console.log('[DuilioCode] Refreshing explorer after actions');
                     if (typeof Workspace !== 'undefined') {
