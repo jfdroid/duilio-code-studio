@@ -17,45 +17,10 @@ from core.config import get_settings
 from core.exceptions import FileNotFoundError, FileOperationError
 
 
-# Language detection by extension
-LANGUAGE_MAP = {
-    ".py": "python",
-    ".js": "javascript",
-    ".ts": "typescript",
-    ".tsx": "tsx",
-    ".jsx": "jsx",
-    ".java": "java",
-    ".kt": "kotlin",
-    ".go": "go",
-    ".rs": "rust",
-    ".c": "c",
-    ".cpp": "cpp",
-    ".h": "c",
-    ".hpp": "cpp",
-    ".cs": "csharp",
-    ".rb": "ruby",
-    ".php": "php",
-    ".swift": "swift",
-    ".scala": "scala",
-    ".html": "html",
-    ".css": "css",
-    ".scss": "scss",
-    ".json": "json",
-    ".xml": "xml",
-    ".yaml": "yaml",
-    ".yml": "yaml",
-    ".md": "markdown",
-    ".sql": "sql",
-    ".sh": "bash",
-    ".bash": "bash",
-    ".zsh": "zsh",
-    ".dockerfile": "dockerfile",
-    ".toml": "toml",
-    ".ini": "ini",
-    ".cfg": "ini",
-}
+import sys
 
-
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 @dataclass
 class FileInfo:
     """Information about a file or directory."""
@@ -93,10 +58,13 @@ class FileService:
     - File search
     """
     
-    def __init__(self):
+    def __init__(self, ollama_service=None):
         self.settings = get_settings()
         self.max_file_size = self.settings.MAX_FILE_SIZE
         self.create_backups = self.settings.CREATE_BACKUPS
+        
+        from services.language_detector import get_language_detector
+        self.language_detector = get_language_detector(ollama_service)
     
     def _expand_path(self, path: str) -> Path:
         """Expand ~ and resolve path."""
@@ -106,7 +74,10 @@ class FileService:
     def _get_language(self, path: Path) -> Optional[str]:
         """Detect language from file extension."""
         ext = path.suffix.lower()
-        return LANGUAGE_MAP.get(ext)
+        lang_info = self.language_detector.detect_from_extension(ext)
+        if lang_info:
+            return lang_info.name.lower()
+        return None
     
     def _get_permissions(self, path: Path) -> str:
         """Get file permissions as string."""
@@ -508,9 +479,14 @@ class FileService:
 _file_service: Optional[FileService] = None
 
 
-def get_file_service() -> FileService:
-    """Get singleton file service instance."""
+def get_file_service(ollama_service=None) -> FileService:
+    """
+    Get singleton file service instance.
+    
+    Args:
+        ollama_service: Optional Ollama service for AI-powered features
+    """
     global _file_service
     if _file_service is None:
-        _file_service = FileService()
+        _file_service = FileService(ollama_service=ollama_service)
     return _file_service

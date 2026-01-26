@@ -54,7 +54,6 @@ class SimpleEmbedding:
     def _tokenize(self, text: str) -> List[str]:
         """Simple tokenization."""
         import re
-        # Convert to lowercase and split on non-alphanumeric
         tokens = re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', text.lower())
         return tokens
     
@@ -64,7 +63,6 @@ class SimpleEmbedding:
         total = len(tokens)
         for token in tokens:
             tf[token] = tf.get(token, 0) + 1
-        # Normalize
         for token in tf:
             tf[token] = tf[token] / total if total > 0 else 0
         return tf
@@ -81,7 +79,6 @@ class SimpleEmbedding:
                 if token not in self.vocabulary:
                     self.vocabulary[token] = len(self.vocabulary)
         
-        # Compute IDF
         for token, freq in doc_freq.items():
             self.idf[token] = math.log((self.doc_count + 1) / (freq + 1)) + 1
     
@@ -90,20 +87,16 @@ class SimpleEmbedding:
         tokens = self._tokenize(text)
         tf = self._compute_tf(tokens)
         
-        # Create sparse TF-IDF vector
         tfidf = {}
         for token, freq in tf.items():
             idf = self.idf.get(token, 1.0)
             tfidf[token] = freq * idf
         
-        # Convert to fixed-size vector using hashing trick
         embedding = [0.0] * self.dim
         for token, value in tfidf.items():
-            # Hash token to index
             idx = hash(token) % self.dim
             embedding[idx] += value
         
-        # Normalize
         norm = math.sqrt(sum(x * x for x in embedding))
         if norm > 0:
             embedding = [x / norm for x in embedding]
@@ -147,29 +140,25 @@ class RAGService:
         '.html', '.css', '.scss', '.sql'
     }
     
-    # Directories to skip
-    SKIP_DIRS = {
-        'node_modules', '__pycache__', '.git', '.svn',
-        'venv', '.venv', 'build', 'dist', 'target',
-        '.idea', '.vscode', 'coverage', '.next',
-        'vendor', '.cache', 'tmp', 'temp'
-    }
+    CHUNK_SIZE = 500
+    CHUNK_OVERLAP = 100
     
-    CHUNK_SIZE = 500  # Characters per chunk
-    CHUNK_OVERLAP = 100  # Overlap between chunks
-    
-    def __init__(self, workspace_path: Optional[str] = None, index_path: Optional[str] = None):
+    def __init__(self, workspace_path: Optional[str] = None, index_path: Optional[str] = None, ollama_service=None):
         """
         Initialize RAG service.
         
         Args:
             workspace_path: Path to the codebase
             index_path: Path to store the index
+            ollama_service: Optional Ollama service for AI-powered features
         """
         self.workspace_path = workspace_path
         self.index_path = index_path or (
             Path.home() / ".duilio" / "rag_index"
         )
+        
+        from services.file_intelligence import get_file_intelligence
+        self.file_intelligence = get_file_intelligence(ollama_service)
         
         self.embedding_model = SimpleEmbedding()
         self.documents: Dict[str, Document] = {}
@@ -184,7 +173,6 @@ class RAGService:
         """Split text into overlapping chunks."""
         chunks = []
         
-        # Split by lines first to preserve code structure
         lines = text.split('\n')
         current_chunk = []
         current_length = 0
@@ -209,7 +197,6 @@ class RAGService:
                     chunk_index=chunk_index
                 ))
                 
-                # Keep last few lines for overlap
                 overlap_lines = []
                 overlap_length = 0
                 for l in reversed(current_chunk):
@@ -222,7 +209,6 @@ class RAGService:
                 current_length = overlap_length
                 chunk_index += 1
         
-        # Add remaining content
         if current_chunk:
             chunk_text = '\n'.join(current_chunk)
             if chunk_text.strip():
@@ -248,7 +234,7 @@ class RAGService:
         def scan(dir_path: Path):
             try:
                 for item in dir_path.iterdir():
-                    if item.name in self.SKIP_DIRS or item.name.startswith('.'):
+                    if self.file_intelligence.should_skip_directory(item.name):
                         continue
                     if item.is_dir():
                         scan(item)
@@ -296,13 +282,11 @@ class RAGService:
                 content = file_path.read_text(encoding='utf-8', errors='ignore')
                 file_hash = self._compute_file_hash(content)
                 
-                # Skip if unchanged
                 rel_path = str(file_path.relative_to(index_path))
                 if not force and self.file_hashes.get(rel_path) == file_hash:
                     stats["skipped_files"] += 1
                     continue
                 
-                # Chunk the file
                 chunks = self._chunk_text(content, rel_path)
                 
                 for chunk in chunks:
@@ -319,11 +303,9 @@ class RAGService:
         
         stats["total_chunks"] = len(new_documents)
         
-        # Fit embedding model on all texts
         if all_texts:
             self.embedding_model.fit(all_texts)
             
-            # Generate embeddings
             for doc in new_documents:
                 doc.embedding = self.embedding_model.embed(doc.content)
                 self.documents[doc.id] = doc
@@ -353,23 +335,18 @@ class RAGService:
         if not self._initialized or not self.documents:
             return []
         
-        # Generate query embedding
         query_embedding = self.embedding_model.embed(query)
         
-        # Search
         results = []
         for doc in self.documents.values():
-            # Apply file filter
             if file_filter:
                 file_path = doc.metadata.get('file_path', '')
                 if not file_path.endswith(file_filter):
                     continue
             
-            # Compute similarity
             score = self.embedding_model.similarity(query_embedding, doc.embedding)
             
             if score >= min_score:
-                # Extract highlights (simple keyword matching)
                 query_terms = set(query.lower().split())
                 highlights = []
                 for line in doc.content.split('\n'):
@@ -380,10 +357,9 @@ class RAGService:
                 results.append(SearchResult(
                     document=doc,
                     score=score,
-                    highlights=highlights[:3]  # Top 3 matching lines
+                    highlights=highlights[:3]
                 ))
         
-        # Sort by score
         results.sort(key=lambda x: x.score, reverse=True)
         
         return results[:top_k]
@@ -421,7 +397,7 @@ class RAGService:
             chunk = header + doc.content + "\n"
             chunk_length = len(chunk)
             
-            if total_length + chunk_length > max_tokens * 4:  # Rough char to token estimate
+            if total_length + chunk_length > max_tokens * 4:
                 break
             
             context_parts.append(chunk)
@@ -445,7 +421,6 @@ class RAGService:
         try:
             path = Path(file_path)
             if not path.exists():
-                # Remove from index
                 for doc_id in list(self.documents.keys()):
                     if doc_id.startswith(file_path):
                         del self.documents[doc_id]
@@ -453,12 +428,10 @@ class RAGService:
             
             content = path.read_text(encoding='utf-8', errors='ignore')
             
-            # Remove old chunks
             for doc_id in list(self.documents.keys()):
                 if doc_id.startswith(file_path):
                     del self.documents[doc_id]
             
-            # Create new chunks
             chunks = self._chunk_text(content, file_path)
             for chunk in chunks:
                 chunk.embedding = self.embedding_model.embed(chunk.content)
@@ -474,7 +447,6 @@ class RAGService:
             index_dir = Path(self.index_path)
             index_dir.mkdir(parents=True, exist_ok=True)
             
-            # Save documents
             docs_data = []
             for doc in self.documents.values():
                 docs_data.append({
@@ -488,11 +460,9 @@ class RAGService:
             with open(index_dir / 'documents.json', 'w') as f:
                 json.dump(docs_data, f)
             
-            # Save file hashes
             with open(index_dir / 'file_hashes.json', 'w') as f:
                 json.dump(self.file_hashes, f)
             
-            # Save vocabulary
             with open(index_dir / 'vocabulary.json', 'w') as f:
                 json.dump({
                     'vocabulary': self.embedding_model.vocabulary,
@@ -509,7 +479,6 @@ class RAGService:
         try:
             index_dir = Path(self.index_path)
             
-            # Load documents
             docs_path = index_dir / 'documents.json'
             if docs_path.exists():
                 with open(docs_path) as f:
@@ -524,13 +493,11 @@ class RAGService:
                         )
                         self.documents[doc.id] = doc
             
-            # Load file hashes
             hashes_path = index_dir / 'file_hashes.json'
             if hashes_path.exists():
                 with open(hashes_path) as f:
                     self.file_hashes = json.load(f)
             
-            # Load vocabulary
             vocab_path = index_dir / 'vocabulary.json'
             if vocab_path.exists():
                 with open(vocab_path) as f:

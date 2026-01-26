@@ -35,6 +35,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Add parent directories to path for imports
 src_path = Path(__file__).parent.parent
@@ -50,11 +51,22 @@ from api.routes import (
     models_router,
 )
 from api.routes.tools import router as tools_router
+from api.routes.chat_simple import router as chat_simple_router
 
 # Import services for lifecycle management
 from services.ollama_service import get_ollama_service
 from core.config import get_settings
 from core.exceptions import DuilioException
+from core.logger import get_logger
+
+# Rate limiting (optional)
+try:
+    from middleware.rate_limiter import setup_rate_limiting
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    RATE_LIMITING_AVAILABLE = False
+    def setup_rate_limiting(app):
+        return app
 
 
 # === Application Lifecycle ===
@@ -69,25 +81,29 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     settings = get_settings()
-    print(f"[{settings.APP_NAME}] v{settings.APP_VERSION}")
-    print(f"[Config] Base dir: {settings.BASE_DIR}")
+    logger = get_logger()
+    
+    logger.info(f"{settings.APP_NAME} v{settings.APP_VERSION} starting")
+    logger.info(f"Base directory: {settings.BASE_DIR}")
     
     # Check Ollama
     ollama = get_ollama_service()
     status = await ollama.health_check()
     if status.get("status") == "running":
-        print(f"[Ollama] {status.get('models_count', 0)} models available")
+        models_count = status.get('models_count', 0)
+        logger.info(f"Ollama connected: {models_count} models available")
     else:
-        print("[Ollama] Offline - AI features unavailable")
+        logger.warning("Ollama offline - AI features unavailable")
     
-    print(f"[Server] http://{settings.HOST}:{settings.PORT}")
-    print(f"[Docs]   http://{settings.HOST}:{settings.PORT}/docs")
+    logger.info(f"Server starting on http://{settings.HOST}:{settings.PORT}")
+    logger.info(f"API docs available at http://{settings.HOST}:{settings.PORT}/docs")
     
     yield
     
     # Shutdown
+    logger = get_logger()
     await ollama.close()
-    print("[Server] Shutdown complete")
+    logger.info("Server shutdown complete")
 
 
 # === Application Factory ===
@@ -111,13 +127,35 @@ def create_app() -> FastAPI:
     )
     
     # === CORS ===
+    # Production: Restricted origins for security
+    # Development: Allow all origins for local testing
+    allowed_origins = ["*"] if settings.DEBUG else [
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
+        expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"]
     )
+    
+    # === Security Headers ===
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        """Add security headers to all responses."""
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # CSP can be added but may break some features
+        # response.headers["Content-Security-Policy"] = "default-src 'self'"
+        return response
     
     # === Exception Handlers ===
     
@@ -135,9 +173,20 @@ def create_app() -> FastAPI:
             content={"error": "Internal server error", "detail": str(exc)}
         )
     
+    # === Rate Limiting ===
+    if RATE_LIMITING_AVAILABLE:
+        try:
+            app = setup_rate_limiting(app)
+            logger = get_logger()
+            logger.info("Rate limiting enabled")
+        except Exception as e:
+            logger = get_logger()
+            logger.warning(f"Rate limiting setup failed: {e}")
+    
     # === Routes ===
     app.include_router(health_router)
-    app.include_router(chat_router)
+    app.include_router(chat_router)  # Complex chat with all features
+    app.include_router(chat_simple_router)  # Simple clean chat - direct Ollama connection
     app.include_router(files_router)
     app.include_router(workspace_router)
     app.include_router(models_router)

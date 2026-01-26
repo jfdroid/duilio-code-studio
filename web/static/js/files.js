@@ -9,7 +9,7 @@ const FileManager = {
      */
     async open(path) {
         console.log('[FileManager] ===== OPEN FILE CALLED =====');
-        console.log('[FileManager] Path:', path);
+        console.log('[FileManager] Original path:', path);
         console.log('[FileManager] Path type:', typeof path);
         console.log('[FileManager] API available:', typeof API !== 'undefined');
         
@@ -19,9 +19,26 @@ const FileManager = {
             return;
         }
         
+        // CRITICAL: Normalize path before opening
+        // Ensure absolute paths have leading slash
+        let normalizedPath = path;
+        if (typeof Utils !== 'undefined' && Utils.normalizeFilePath) {
+            normalizedPath = Utils.normalizeFilePath(path, AppState.workspace.currentPath);
+        } else {
+            // Fallback: Add leading slash if path looks absolute but is missing it
+            if (!normalizedPath.startsWith('/') && !normalizedPath.startsWith('~')) {
+                // Check if it looks like an absolute path (starts with Users/, home/, etc.)
+                if (/^(Users|home|var|tmp|opt|etc|root)\//.test(normalizedPath)) {
+                    normalizedPath = '/' + normalizedPath;
+                }
+            }
+        }
+        
+        console.log('[FileManager] Normalized path:', normalizedPath);
+        
         try {
-            console.log('[FileManager] Calling API.readFile...');
-            const data = await API.readFile(path);
+            console.log('[FileManager] Calling API.readFile with normalized path...');
+            const data = await API.readFile(normalizedPath);
             console.log('[FileManager] File loaded successfully:', data.path, 'Language:', data.language);
             console.log('[FileManager] Content length:', data.content?.length || 0);
             

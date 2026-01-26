@@ -187,13 +187,34 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
             
             const fullContext = (finalSystemContext || '') + modeContext;
             
-            console.log('[DuilioCode] Calling API.generate with codebase context');
-            console.log('[DuilioCode] Workspace:', workspacePath);
-            console.log('[DuilioCode] Context length:', fullContext?.length || 0);
+            // Check if user wants simple mode (clean Ollama connection)
+            // For now, we'll use simple mode by default for testing
+            // TODO: Add UI toggle for simple vs complex mode
+            const useSimpleMode = true; // Change to false to use complex mode
             
-            // CRITICAL: Pass include_codebase to ensure backend analyzes the codebase
-            const response = await API.generate(message, modelToUse, fullContext);
-            console.log('[DuilioCode] API Response:', response);
+            let response;
+            if (useSimpleMode) {
+                // SIMPLE MODE: Direct Ollama connection, no complex logic
+                console.log('[DuilioCode] Using SIMPLE mode - direct Ollama connection');
+                const messages = AppState.chat.messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                }));
+                // Add current user message
+                messages.push({ role: 'user', content: message });
+                
+                response = await API.chatSimple(messages, modelToUse, 0.7, false);
+                console.log('[DuilioCode] Simple API Response:', response);
+            } else {
+                // COMPLEX MODE: Full features with codebase analysis
+                console.log('[DuilioCode] Calling API.generate with codebase context');
+                console.log('[DuilioCode] Workspace:', workspacePath);
+                console.log('[DuilioCode] Context length:', fullContext?.length || 0);
+                
+                // CRITICAL: Pass include_codebase to ensure backend analyzes the codebase
+                response = await API.generate(message, modelToUse, fullContext);
+                console.log('[DuilioCode] API Response:', response);
+            }
             
             // Update model selector to show which model was actually used
             if (response.model && selectedModel === 'auto') {
@@ -202,15 +223,36 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
             
             this.hideTypingIndicator();
             
-            // In Agent mode, process and execute actions
-            let responseText = response.response;
-            if (this.mode === 'agent') {
-                responseText = await this.processAgentActions(response.response);
+            // Extract response text (handle both simple and complex response formats)
+            let responseText;
+            if (response.choices && response.choices[0] && response.choices[0].message) {
+                // Simple mode response format
+                responseText = response.choices[0].message.content;
+            } else if (response.response) {
+                // Complex mode response format
+                responseText = response.response;
+            } else {
+                responseText = JSON.stringify(response);
+            }
+            
+            // In Agent mode, process and execute actions (only in complex mode)
+            if (!useSimpleMode && this.mode === 'agent') {
+                responseText = await this.processAgentActions(responseText);
             }
             
             this.addMessage('assistant', responseText);
             if (typeof ChatHistory !== 'undefined') {
                 ChatHistory.addMessage('assistant', responseText);
+            }
+            
+            // CRITICAL: Refresh explorer if actions were processed (only in complex mode)
+            if (!useSimpleMode && response.actions_processed && response.actions_result) {
+                if (response.actions_result.success_count > 0 || response.refresh_explorer) {
+                    console.log('[DuilioCode] Refreshing explorer after actions');
+                    if (typeof Workspace !== 'undefined') {
+                        await Workspace.refresh();
+                    }
+                }
             }
             
         } catch (error) {
@@ -284,6 +326,62 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
         container.insertAdjacentHTML('beforeend', messageHtml);
         container.scrollTop = container.scrollHeight;
         
+        // CRITICAL: Attach event listeners AFTER DOM insertion
+        // Use setTimeout to ensure DOM is fully ready
+        setTimeout(() => {
+            const lastMessage = container.lastElementChild;
+            if (lastMessage) {
+                // File links - use event delegation for better reliability
+                const messageContent = lastMessage.querySelector('.message-content');
+                if (messageContent) {
+                    // Remove any existing listeners by cloning (clean slate)
+                    const fileLinks = messageContent.querySelectorAll('.file-link[data-file-path]');
+                    fileLinks.forEach(link => {
+                        // Remove old listeners by replacing the element
+                        const newLink = link.cloneNode(true);
+                        link.parentNode.replaceChild(newLink, link);
+                        
+                        // Add fresh event listener
+                        newLink.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const filePath = newLink.getAttribute('data-file-path');
+                            console.log('[Chat] File link clicked:', filePath);
+                            if (filePath) {
+                                Chat.openFileFromChat(filePath);
+                            }
+                        });
+                        
+                        // Ensure link is clickable
+                        newLink.style.cursor = 'pointer';
+                        newLink.style.textDecoration = 'underline';
+                    });
+                    
+                    // Code block headers
+                    const codeHeaders = messageContent.querySelectorAll('.code-block-header[data-file-path]');
+                    codeHeaders.forEach(header => {
+                        // Remove old listeners
+                        const newHeader = header.cloneNode(true);
+                        header.parentNode.replaceChild(newHeader, header);
+                        
+                        // Add fresh event listener
+                        newHeader.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const filePath = newHeader.getAttribute('data-file-path');
+                            console.log('[Chat] Code header clicked:', filePath);
+                            if (filePath) {
+                                Chat.openFileFromChat(filePath);
+                            }
+                        });
+                        
+                        // Ensure header is clickable
+                        newHeader.style.cursor = 'pointer';
+                    });
+                }
+            }
+        }, 0);
+        
         // Highlight code blocks (skip create-file and modify-file blocks)
         if (typeof hljs !== 'undefined') {
             container.querySelectorAll('pre code').forEach(block => {
@@ -318,12 +416,18 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
     formatMessage(content) {
         let formatted = content;
         
+        // CRITICAL: Make file paths clickable BEFORE markdown parsing
+        // This ensures paths are converted to links before marked.parse() processes them
+        formatted = this.makePathsClickable(formatted);
+        
         // Use marked for markdown if available
         if (typeof marked !== 'undefined') {
-            formatted = marked.parse(content);
+            formatted = marked.parse(formatted);
+            // After marked.parse, paths might be inside <p> tags, re-process them
+            formatted = this.makePathsClickable(formatted);
         } else {
             // Basic formatting
-            formatted = content
+            formatted = formatted
                 .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
                     return `<pre><code class="language-${lang}">${Utils.escapeHtml(code.trim())}</code><button class="apply-code-btn" onclick="Chat.applyCode(this)">Apply</button></pre>`;
                 })
@@ -336,10 +440,7 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
             formatted = ChatRenderers.processContent(formatted);
         }
         
-        // Make file paths clickable
-        formatted = this.makePathsClickable(formatted);
-        
-        // Add clickable headers to code blocks
+        // Add clickable headers to code blocks (after markdown processing)
         formatted = this.addCodeBlockHeaders(formatted);
         
         return formatted;
@@ -351,12 +452,34 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
      */
     makePathsClickable(html) {
         // Pattern to match file paths (not already in links)
+        // Updated to match paths even inside markdown paragraphs
         const pathPattern = /(?<!["'=])(\b(?:\.\/|\.\.\/|src\/|app\/|lib\/|components\/|services\/|utils\/|pages\/|api\/|tests?\/)?[\w\-./]+\.(js|jsx|ts|tsx|py|java|kt|go|rs|rb|c|cpp|h|hpp|css|scss|html|json|yaml|yml|md|txt|sh|sql))\b(?![^<]*>)/gi;
         
         return html.replace(pathPattern, (match, path) => {
             // Skip if it's a URL or already linked
             if (path.startsWith('http') || path.includes('://')) return match;
-            return `<a href="#" class="file-link" onclick="Chat.openFileFromChat('${path}'); return false;" title="Open ${path}">${path}</a>`;
+            
+            // CRITICAL: Check if this match is already inside a link tag
+            // Look backwards and forwards in the HTML string to see if we're inside <a>...</a>
+            const matchIndex = html.indexOf(match);
+            if (matchIndex !== -1) {
+                const beforeMatch = html.substring(0, matchIndex);
+                const afterMatch = html.substring(matchIndex + match.length);
+                
+                // Find the last <a> tag before this match
+                const lastATag = beforeMatch.lastIndexOf('<a ');
+                const lastATagClose = beforeMatch.lastIndexOf('</a>');
+                
+                // If there's an <a> tag before us and no closing </a> before us, we're inside a link
+                if (lastATag > lastATagClose) {
+                    return match; // Already inside a link, skip
+                }
+            }
+            
+            // Escape path for HTML attribute to prevent breaking
+            const escapedPath = Utils.escapeHtml(path);
+            // Use data attribute instead of inline onclick to avoid issues with special characters
+            return `<a href="#" class="file-link" data-file-path="${escapedPath}" title="Open ${escapedPath}" style="cursor: pointer; text-decoration: underline; color: #4a9eff;">${path}</a>`;
         });
     },
     
@@ -369,8 +492,10 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
         const codeBlockPattern = /<pre><code[^>]*>((?:\/\/|#|\/\*|\{\/\*)\s*([\w\-./]+\.(js|jsx|ts|tsx|py|java|kt|go|rs|rb|c|cpp|h|hpp|css|scss|html|json|yaml|yml|md))\s*(?:\*\/|\*\/\})?[\r\n])/gi;
         
         return html.replace(codeBlockPattern, (match, commentLine, filePath) => {
-            // Create clickable header
-            const header = `<div class="code-block-header" onclick="Chat.openFileFromChat('${filePath}')" title="Click to open ${filePath}">
+            // Escape path for HTML attribute
+            const escapedPath = Utils.escapeHtml(filePath);
+            // Create clickable header using data attribute instead of inline onclick
+            const header = `<div class="code-block-header" data-file-path="${escapedPath}" title="Click to open ${escapedPath}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                 </svg>
@@ -386,12 +511,24 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
      * Open file from chat link
      */
     openFileFromChat(path) {
-        // Normalize path
+        // Normalize path - use Utils.normalizeFilePath to avoid duplication
         let fullPath = path;
         
-        // If path doesn't start with /, prepend workspace path
-        if (!path.startsWith('/') && AppState.workspace.currentPath) {
-            fullPath = AppState.workspace.currentPath + '/' + path.replace(/^\.\//, '');
+        // Use Utils.normalizeFilePath if available (handles path normalization correctly)
+        if (typeof Utils !== 'undefined' && Utils.normalizeFilePath) {
+            fullPath = Utils.normalizeFilePath(path, AppState.workspace.currentPath);
+        } else {
+            // Fallback: only prepend workspace if path is relative
+            if (path && !path.startsWith('/') && !path.startsWith('~') && AppState.workspace.currentPath) {
+                // Remove leading ./ if present
+                const cleanPath = path.replace(/^\.\//, '');
+                // Check if path already contains workspace to avoid duplication
+                if (!cleanPath.startsWith(AppState.workspace.currentPath)) {
+                    fullPath = AppState.workspace.currentPath + '/' + cleanPath;
+                } else {
+                    fullPath = cleanPath;
+                }
+            }
         }
         
         console.log('[DuilioCode] Opening file from chat:', fullPath);
@@ -626,14 +763,7 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
                     <span class="message-sender">DuilioCode</span>
                 </div>
                 <div class="message-content">
-                    <p>Hello! I'm your local AI assistant. I can help you:</p>
-                    <ul>
-                        <li>Create entire projects and file structures</li>
-                        <li>Edit and refactor existing code</li>
-                        <li>Explain concepts and debug issues</li>
-                        <li>Generate scripts, pipelines, and configs</li>
-                    </ul>
-                    <p>Open a folder to get started, or just ask me anything!</p>
+                    <p>Hi! I'm DuilioCode, your local AI coding assistant. Ask me anything about your code, and I'll help you build, debug, or understand your projects.</p>
                 </div>
             </div>
         `;

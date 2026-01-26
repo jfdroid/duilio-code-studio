@@ -1,11 +1,11 @@
 """
 Relevance Scorer Service
 =========================
-Sistema de scoring de relevância usando múltiplos fatores e cache.
+Relevance scoring system using multiple factors and cache.
 
 BigO:
-- Score de arquivo: O(1) com cache
-- Ordenar por relevância: O(n log n)
+- File score: O(1) with cache
+- Sort by relevance: O(n log n)
 """
 
 from typing import Dict, List, Tuple, Optional
@@ -17,71 +17,57 @@ from functools import lru_cache
 
 class RelevanceScorer:
     """
-    Sistema de scoring de relevância usando múltiplos fatores.
+    Relevance scoring system using multiple factors.
     
-    Considera:
-    - Nome do arquivo (exact match)
-    - Similaridade de diretório
-    - Dependências relacionadas
-    - Prioridade do arquivo
-    - Recência de modificação
+    Considers:
+    - File name (exact match)
+    - Directory similarity
+    - Related dependencies
+    - File priority
+    - Modification recency
     """
     
-    # Arquivos prioritários (sempre alta relevância)
-    PRIORITY_FILES = {
-        'main.py', 'app.py', 'index.py', '__init__.py',
-        'main.js', 'index.js', 'app.js', 'main.ts', 'index.ts',
-        'package.json', 'requirements.txt', 'pyproject.toml',
-        'README.md', 'readme.md'
-    }
-    
-    # Padrões de arquivos importantes
-    IMPORTANT_PATTERNS = [
-        r'.*config.*',
-        r'.*setup.*',
-        r'.*init.*',
-        r'.*main.*',
-        r'.*app.*',
-        r'.*index.*'
-    ]
-    
-    def __init__(self, cache_size: int = 10000):
+    def __init__(self, cache_size: int = 10000, ollama_service=None):
         """
-        Inicializa scorer com cache.
+        Initialize scorer with cache.
         
         Args:
-            cache_size: Tamanho do cache LRU
+            cache_size: LRU cache size
+            ollama_service: Optional Ollama service for AI-powered features
         """
         self.cache_size = cache_size
         self._file_metadata: Dict[str, Dict] = {}
         self._directory_similarity_cache: Dict[Tuple[str, str], float] = {}
+        
+        from services.file_intelligence import get_file_intelligence
+        self.file_intelligence = get_file_intelligence(ollama_service)
     
     def _normalize_query(self, query: str) -> str:
-        """Normaliza query para comparação."""
+        """Normalize query for comparison."""
         return query.lower().strip()
     
     def _is_priority_file(self, file_path: str) -> bool:
-        """Verifica se arquivo é prioritário."""
-        filename = Path(file_path).name.lower()
-        return filename in self.PRIORITY_FILES
+        """Check if file is priority using intelligent detection."""
+        is_priority, _ = self.file_intelligence.is_priority_file(file_path)
+        return is_priority
     
     def _matches_important_pattern(self, file_path: str) -> bool:
-        """Verifica se arquivo corresponde a padrões importantes."""
-        filename = Path(file_path).name.lower()
-        return any(re.match(pattern, filename) for pattern in self.IMPORTANT_PATTERNS)
+        """Check if file matches important patterns using intelligent detection."""
+        is_config, _ = self.file_intelligence.is_config_file(file_path)
+        return is_config
     
     def _calculate_name_similarity(self, file_path: str, query: str) -> float:
         """
-        Calcula similaridade baseada no nome do arquivo.
+        Calculate similarity based on file name.
         
         Returns:
-            Score de 0.0 a 1.0
+            Score from 0.0 to 1.0
         """
         filename = Path(file_path).name.lower()
         query_lower = self._normalize_query(query)
         
         if not query_lower:
-            return 0.5  # Score neutro para query vazia
+            return 0.5  # Neutral score for empty query
         
         # Exact match
         if query_lower == filename:
@@ -105,8 +91,8 @@ class RelevanceScorer:
         if query_words.intersection(filename_words):
             return 0.5
         
-        # Levenshtein-like (simplificado)
-        # Contar caracteres em comum
+        # Levenshtein-like (simplified)
+        # Count common characters
         common_chars = set(query_lower) & set(filename)
         if common_chars:
             similarity = len(common_chars) / max(len(query_lower), len(filename))
@@ -121,10 +107,10 @@ class RelevanceScorer:
         directory_tree = None
     ) -> float:
         """
-        Calcula similaridade baseada no diretório.
+        Calculate similarity based on directory.
         
         Returns:
-            Score de 0.0 a 1.0
+            Score from 0.0 to 1.0
         """
         if not directory_tree:
             return 0.0
@@ -132,11 +118,9 @@ class RelevanceScorer:
         file_dir = str(Path(file_path).parent)
         query_lower = self._normalize_query(query)
         
-        # Verificar se query menciona diretório
         query_parts = query_lower.split()
         dir_parts = file_dir.split('/')
         
-        # Contar partes em comum
         common_parts = set(query_parts) & set(dir_parts)
         if common_parts:
             return len(common_parts) / max(len(query_parts), len(dir_parts)) * 0.5
@@ -150,24 +134,22 @@ class RelevanceScorer:
         dependency_graph = None
     ) -> float:
         """
-        Calcula similaridade baseada em dependências.
+        Calculate similarity based on dependencies.
         
         Returns:
-            Score de 0.0 a 1.0
+            Score from 0.0 to 1.0
         """
         if not dependency_graph:
             return 0.0
         
         query_lower = self._normalize_query(query)
         
-        # Buscar dependências
         try:
             deps = dependency_graph.get_dependencies(file_path, direct_only=True)
             dependents = dependency_graph.get_dependents(file_path, direct_only=True)
             
             all_related = deps + dependents
             
-            # Verificar se query menciona arquivos relacionados
             for related in all_related:
                 related_name = Path(related).name.lower()
                 if query_lower in related_name or related_name in query_lower:
@@ -187,39 +169,37 @@ class RelevanceScorer:
         directory_tree = None
     ) -> float:
         """
-        Calcula score de relevância de arquivo para query.
+        Calculate relevance score of file for query.
         
         Args:
-            file_path: Path do arquivo
-            query: Query de busca
-            dependency_graph: Grafo de dependências (opcional)
-            directory_tree: Árvore de diretórios (opcional)
+            file_path: File path
+            query: Search query
+            dependency_graph: Dependency graph (optional)
+            directory_tree: Directory tree (optional)
         
         Returns:
-            Score de 0.0 a 1.0
+            Score from 0.0 to 1.0
         """
         score = 0.0
         query_lower = self._normalize_query(query)
         
-        # 1. Nome do arquivo (40% do peso)
+        # 1. File name (40% weight)
         name_score = self._calculate_name_similarity(file_path, query)
         score += name_score * 0.4
         
-        # 2. Similaridade de diretório (30% do peso)
+        # 2. Directory similarity (30% weight)
         dir_score = self._calculate_directory_similarity(file_path, query, directory_tree)
         score += dir_score * 0.3
         
-        # 3. Dependências relacionadas (20% do peso)
+        # 3. Related dependencies (20% weight)
         dep_score = self._calculate_dependency_similarity(file_path, query, dependency_graph)
         score += dep_score * 0.2
         
-        # 4. Prioridade do arquivo (10% do peso)
         if self._is_priority_file(file_path):
             score += 0.1
         elif self._matches_important_pattern(file_path):
             score += 0.05
         
-        # Normalizar para 0.0-1.0
         return min(1.0, score)
     
     def rank_files(
@@ -231,17 +211,17 @@ class RelevanceScorer:
         limit: int = 10
     ) -> List[Tuple[str, float]]:
         """
-        Ordena arquivos por relevância.
+        Rank files by relevance.
         
         Args:
-            files: Lista de paths de arquivos
-            query: Query de busca
-            dependency_graph: Grafo de dependências (opcional)
-            directory_tree: Árvore de diretórios (opcional)
-            limit: Número máximo de resultados
+            files: List of file paths
+            query: Search query
+            dependency_graph: Dependency graph (optional)
+            directory_tree: Directory tree (optional)
+            limit: Maximum number of results
         
         Returns:
-            Lista de tuplas (file_path, score) ordenada por score
+            List of tuples (file_path, score) sorted by score
         """
         scored = [
             (
@@ -251,7 +231,6 @@ class RelevanceScorer:
             for f in files
         ]
         
-        # Ordenar por score (decrescente)
         scored.sort(key=lambda x: x[1], reverse=True)
         
         return scored[:limit]
@@ -266,23 +245,23 @@ class RelevanceScorer:
         min_score: float = 0.1
     ) -> List[str]:
         """
-        Retorna top N arquivos acima do score mínimo.
+        Return top N files above minimum score.
         
         Args:
-            files: Lista de paths
-            query: Query de busca
-            dependency_graph: Grafo de dependências (opcional)
-            directory_tree: Árvore de diretórios (opcional)
-            limit: Número máximo
-            min_score: Score mínimo
+            files: List of paths
+            query: Search query
+            dependency_graph: Dependency graph (optional)
+            directory_tree: Directory tree (optional)
+            limit: Maximum number
+            min_score: Minimum score
         
         Returns:
-            Lista de paths
+            List of paths
         """
         ranked = self.rank_files(files, query, dependency_graph, directory_tree, limit * 2)
         return [f for f, score in ranked if score >= min_score][:limit]
     
     def clear_cache(self):
-        """Limpa cache do scorer."""
+        """Clear scorer cache."""
         self.score_file.cache_clear()
         self._directory_similarity_cache.clear()

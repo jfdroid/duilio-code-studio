@@ -58,90 +58,28 @@ class CodebaseAnalyzer:
     - Smart file prioritization
     """
     
-    # Language mapping by extension
-    LANGUAGE_MAP = {
-        '.py': 'Python',
-        '.js': 'JavaScript',
-        '.ts': 'TypeScript',
-        '.tsx': 'TypeScript React',
-        '.jsx': 'JavaScript React',
-        '.kt': 'Kotlin',
-        '.java': 'Java',
-        '.go': 'Go',
-        '.rs': 'Rust',
-        '.rb': 'Ruby',
-        '.php': 'PHP',
-        '.swift': 'Swift',
-        '.cpp': 'C++',
-        '.c': 'C',
-        '.h': 'C Header',
-        '.cs': 'C#',
-        '.vue': 'Vue',
-        '.svelte': 'Svelte',
-        '.html': 'HTML',
-        '.css': 'CSS',
-        '.scss': 'SCSS',
-        '.sql': 'SQL',
-        '.sh': 'Shell',
-        '.bash': 'Bash',
-        '.yml': 'YAML',
-        '.yaml': 'YAML',
-        '.json': 'JSON',
-        '.md': 'Markdown',
-        '.xml': 'XML',
-        '.toml': 'TOML',
-        '.ini': 'INI',
-        '.env': 'Environment',
-    }
-    
-    # Priority files to always include
-    PRIORITY_FILES = [
-        'main.py', 'app.py', 'index.py', '__init__.py',
-        'index.js', 'index.ts', 'app.js', 'app.ts', 'main.js', 'main.ts',
-        'Main.kt', 'App.kt', 'MainActivity.kt',
-        'main.go', 'main.rs',
-        'package.json', 'requirements.txt', 'pyproject.toml', 'setup.py',
-        'build.gradle', 'build.gradle.kts', 'pom.xml',
-        'Cargo.toml', 'go.mod',
-        'tsconfig.json', 'vite.config.js', 'webpack.config.js',
-        'README.md', 'readme.md', 'README',
-        'Dockerfile', 'docker-compose.yml', 'docker-compose.yaml',
-        '.env.example', '.env.sample',
-        'Makefile', 'CMakeLists.txt',
-    ]
-    
-    # Config file patterns
-    CONFIG_PATTERNS = [
-        'config', 'settings', 'conf', '.env', '.config',
-        'package.json', 'requirements', 'pyproject', 'setup.py',
-    ]
-    
-    # Directories to skip
-    SKIP_DIRS = {
-        'node_modules', '__pycache__', '.git', '.svn', '.hg',
-        'venv', '.venv', 'env', '.env', 'virtualenv',
-        'build', 'dist', 'target', 'out', 'bin', 'obj',
-        '.idea', '.vscode', '.cursor', '.next', '.nuxt',
-        'coverage', '.coverage', 'htmlcov',
-        'eggs', '*.egg-info', '.eggs',
-        '.pytest_cache', '.mypy_cache', '.tox',
-        'vendor', 'bower_components',
-        '.terraform', '.serverless',
-    }
-    
-    # Maximum file size to read (500KB)
     MAX_FILE_SIZE = 500 * 1024
-    
-    # Maximum content to include per file (5KB for context)
+    MAX_FILE_SIZE = 500 * 1024
     MAX_CONTENT_PER_FILE = 5 * 1024
     
-    def __init__(self, root_path: str):
-        """Initialize analyzer with root path."""
+    def __init__(self, root_path: str, ollama_service=None):
+        """
+        Initialize analyzer with root path.
+        
+        Args:
+            root_path: Root path of codebase
+            ollama_service: Optional Ollama service for AI-powered detection
+        """
         self.root_path = Path(root_path).resolve()
         self._files: List[FileAnalysis] = []
         self._tree_lines: List[str] = []
         
-        # Import optimized structures (optional, to not break compatibility)
+        from services.language_detector import get_language_detector
+        self.language_detector = get_language_detector(ollama_service)
+        
+        from services.file_intelligence import get_file_intelligence
+        self.file_intelligence = get_file_intelligence(ollama_service)
+        
         try:
             from services.directory_tree import DirectoryTree
             from services.dependency_graph import FileDependencyGraph
@@ -149,22 +87,24 @@ class CodebaseAnalyzer:
             
             self.directory_tree = DirectoryTree(str(self.root_path))
             self.dependency_graph = FileDependencyGraph()
-            self.relevance_scorer = RelevanceScorer()
+            self.relevance_scorer = RelevanceScorer(ollama_service=ollama_service)
             self._use_optimized_structures = True
         except ImportError:
-            # Fallback if structures are not available
             self.directory_tree = None
             self.dependency_graph = None
             self.relevance_scorer = None
             self._use_optimized_structures = False
         
     def _should_skip_dir(self, name: str) -> bool:
-        """Check if directory should be skipped."""
-        return name in self.SKIP_DIRS or name.startswith('.')
+        """Check if directory should be skipped using intelligent detection."""
+        return self.file_intelligence.should_skip_directory(name)
     
     def _get_language(self, extension: str) -> str:
-        """Get language from extension."""
-        return self.LANGUAGE_MAP.get(extension.lower(), 'Unknown')
+        """Get language from extension using generic detector."""
+        lang_info = self.language_detector.detect_from_extension(extension)
+        if lang_info:
+            return lang_info.name
+        return 'Unknown'
     
     def _is_binary(self, path: Path) -> bool:
         """Check if file is binary."""
@@ -177,73 +117,18 @@ class CodebaseAnalyzer:
             return True
         return False
     
-    def _extract_python_info(self, content: str) -> Dict[str, List[str]]:
-        """Extract Python file information."""
-        result = {'imports': [], 'classes': [], 'functions': [], 'exports': []}
-        
-        # Find imports
-        import_patterns = [
-            r'^import\s+([\w\.]+)',
-            r'^from\s+([\w\.]+)\s+import',
-        ]
-        for pattern in import_patterns:
-            result['imports'].extend(re.findall(pattern, content, re.MULTILINE))
-        
-        # Find classes
-        result['classes'] = re.findall(r'^class\s+(\w+)', content, re.MULTILINE)
-        
-        # Find functions
-        result['functions'] = re.findall(r'^def\s+(\w+)', content, re.MULTILINE)
-        
-        # Exports (all public classes/functions)
-        result['exports'] = [n for n in result['classes'] + result['functions'] if not n.startswith('_')]
-        
-        return result
-    
-    def _extract_js_ts_info(self, content: str) -> Dict[str, List[str]]:
-        """Extract JavaScript/TypeScript file information."""
-        result = {'imports': [], 'classes': [], 'functions': [], 'exports': []}
-        
-        # Find imports
-        result['imports'] = re.findall(r'import\s+.*?from\s+[\'"]([^\'"]+)[\'"]', content)
-        result['imports'].extend(re.findall(r'require\s*\(\s*[\'"]([^\'"]+)[\'"]', content))
-        
-        # Find classes
-        result['classes'] = re.findall(r'class\s+(\w+)', content)
-        
-        # Find functions
-        result['functions'] = re.findall(r'(?:function|const|let|var)\s+(\w+)\s*(?:=\s*(?:async\s*)?\(|=\s*function|\()', content)
-        
-        # Find exports
-        result['exports'] = re.findall(r'export\s+(?:default\s+)?(?:class|function|const|let|var|interface|type)\s+(\w+)', content)
-        
-        return result
-    
-    def _extract_kotlin_java_info(self, content: str) -> Dict[str, List[str]]:
-        """Extract Kotlin/Java file information."""
-        result = {'imports': [], 'classes': [], 'functions': [], 'exports': []}
-        
-        # Find imports
-        result['imports'] = re.findall(r'import\s+([\w\.]+)', content)
-        
-        # Find classes
-        result['classes'] = re.findall(r'(?:class|interface|object|enum)\s+(\w+)', content)
-        
-        # Find functions
-        result['functions'] = re.findall(r'fun\s+(\w+)', content)  # Kotlin
-        result['functions'].extend(re.findall(r'(?:public|private|protected)?\s*(?:static\s+)?\w+\s+(\w+)\s*\(', content))  # Java
-        
-        return result
-    
     def _extract_file_info(self, content: str, language: str) -> Dict[str, List[str]]:
-        """Extract file information based on language."""
-        if language == 'Python':
-            return self._extract_python_info(content)
-        elif language in ('JavaScript', 'TypeScript', 'JavaScript React', 'TypeScript React'):
-            return self._extract_js_ts_info(content)
-        elif language in ('Kotlin', 'Java'):
-            return self._extract_kotlin_java_info(content)
-        return {'imports': [], 'classes': [], 'functions': [], 'exports': []}
+        """Extract file information generically using language detector."""
+        # Use language detector's generic extraction methods
+        structure = self.language_detector.extract_structure(content)
+        imports = self.language_detector.extract_imports(content, language)
+        
+        return {
+            'imports': imports,
+            'classes': structure.get('classes', []),
+            'functions': structure.get('functions', []),
+            'exports': structure.get('exports', [])
+        }
     
     def _generate_file_summary(self, analysis: FileAnalysis) -> str:
         """Generate a brief summary of the file."""
@@ -349,55 +234,56 @@ class CodebaseAnalyzer:
             return None
     
     def _find_entry_points(self) -> List[str]:
-        """Find likely entry points in the codebase."""
+        """Find likely entry points using intelligent detection."""
         entry_points = []
         
         for f in self._files:
-            name = Path(f.path).name.lower()
-            
-            # Check for main patterns
-            if name in ('main.py', 'app.py', 'index.py', 'main.js', 'index.js', 'main.ts', 'index.ts', 'main.go', 'main.rs'):
-                entry_points.append(f.relative_path)
-            
-            # Check for main function
-            if 'main' in f.functions or '__main__' in f.content:
+            # Use FileIntelligence to detect entry points
+            is_entry, confidence = self.file_intelligence.is_entry_point(f.path, f.content)
+            if is_entry and confidence > 0.6:
                 if f.relative_path not in entry_points:
                     entry_points.append(f.relative_path)
         
         return entry_points[:5]
     
     def _analyze_dependencies(self) -> Dict[str, List[str]]:
-        """Analyze project dependencies."""
+        """
+        Analyze project dependencies using intelligent detection.
+        
+        Uses FileIntelligence to detect dependency files instead of hardcoded names.
+        """
         deps = {}
         
         for f in self._files:
-            name = Path(f.path).name.lower()
+            classification = self.file_intelligence.classify_file(f.path, f.content)
             
-            if name == 'package.json':
+            if classification.is_config:
+                name = Path(f.path).name.lower()
+                
                 try:
-                    import json
-                    data = json.loads(Path(f.path).read_text())
-                    deps['npm'] = list(data.get('dependencies', {}).keys())[:20]
-                    deps['npm_dev'] = list(data.get('devDependencies', {}).keys())[:10]
-                except:
-                    pass
+                    content = Path(f.path).read_text(encoding='utf-8', errors='ignore')
                     
-            elif name == 'requirements.txt':
-                try:
-                    content = Path(f.path).read_text()
-                    deps['pip'] = [
-                        line.split('==')[0].split('>=')[0].split('<=')[0].strip()
-                        for line in content.splitlines()
-                        if line.strip() and not line.startswith('#')
-                    ][:20]
-                except:
-                    pass
+                    if name.endswith('.json'):
+                        try:
+                            import json
+                            data = json.loads(content)
+                            if 'dependencies' in data:
+                                deps['npm'] = list(data.get('dependencies', {}).keys())[:20]
+                            if 'devDependencies' in data:
+                                deps['npm_dev'] = list(data.get('devDependencies', {}).keys())[:10]
+                        except:
+                            pass
                     
-            elif name == 'pyproject.toml':
-                try:
-                    content = Path(f.path).read_text()
-                    # Simple extraction
-                    deps['python_project'] = re.findall(r'"([^"]+)"', content)[:20]
+                    elif any(indicator in name for indicator in ['requirements', 'dependencies', 'packages']):
+                        deps['pip'] = [
+                            line.split('==')[0].split('>=')[0].split('<=')[0].split('~=')[0].strip()
+                            for line in content.splitlines()
+                            if line.strip() and not line.startswith('#') and not line.startswith('-')
+                        ][:20]
+                    
+                    elif name.endswith('.toml'):
+                        deps['toml_project'] = re.findall(r'["\']([^"\']+)["\']', content)[:20]
+                        
                 except:
                     pass
         
@@ -407,12 +293,10 @@ class CodebaseAnalyzer:
         """Generate a summary of the codebase structure."""
         parts = []
         
-        # Language breakdown
         sorted_langs = sorted(languages.items(), key=lambda x: -x[1])
         lang_str = ", ".join([f"{lang}: {count} files" for lang, count in sorted_langs[:5]])
         parts.append(f"Languages: {lang_str}")
         
-        # Find main directories
         dirs = set()
         for f in self._files:
             parts_list = f.relative_path.split('/')
@@ -446,7 +330,6 @@ class CodebaseAnalyzer:
         if not self.root_path.exists():
             raise ValueError(f"Path does not exist: {self.root_path}")
         
-        # Tentar obter do cache se habilitado
         if use_cache:
             try:
                 from services.cache_service import get_cache_service
@@ -461,10 +344,8 @@ class CodebaseAnalyzer:
                 if cached_result is not None:
                     return cached_result
             except Exception:
-                # Se cache falhar, continuar sem cache
                 pass
         
-        # Collect all files (O(n))
         all_files: List[Path] = []
         languages: Dict[str, int] = defaultdict(int)
         total_lines = 0
@@ -479,7 +360,6 @@ class CodebaseAnalyzer:
                     if item.is_dir():
                         if not self._should_skip_dir(item.name):
                             collect_files(item, depth + 1)
-                            # Adicionar ao DirectoryTree se disponível
                             if self._use_optimized_structures and self.directory_tree:
                                 self.directory_tree.add_path(str(item))
                     elif item.is_file():
@@ -489,7 +369,6 @@ class CodebaseAnalyzer:
                             lang = self._get_language(ext)
                             if lang != 'Unknown':
                                 languages[lang] += 1
-                            # Adicionar ao DirectoryTree se disponível
                             if self._use_optimized_structures and self.directory_tree:
                                 self.directory_tree.add_path(str(item))
             except:
@@ -497,41 +376,40 @@ class CodebaseAnalyzer:
         
         collect_files(self.root_path)
         
-        # Build file tree (usar DirectoryTree se disponível, senão método antigo)
         if self._use_optimized_structures and self.directory_tree:
-            # Usar DirectoryTree para gerar tree string
             all_paths = self.directory_tree.get_all_paths(include_files=True)
             file_tree = f"{self.root_path.name}/\n" + "\n".join(all_paths[:100])
         else:
-            # Fallback para método antigo
             self._tree_lines = [f"{self.root_path.name}/"]
             self._build_tree(self.root_path)
             file_tree = "\n".join(self._tree_lines)
         
-        # Prioritize files
         priority_files = []
         other_files = []
         config_files = []
         
         for f in all_files:
-            name = f.name.lower()
-            
-            # Check if priority file
-            is_priority = any(pf.lower() == name for pf in self.PRIORITY_FILES)
-            is_config = any(cp in name for cp in self.CONFIG_PATTERNS)
-            
-            if is_priority:
-                priority_files.append(f)
-            elif is_config:
-                config_files.append(f)
-            else:
+            try:
+                content = None
+                try:
+                    if f.stat().st_size < 10000:
+                        content = f.read_text(encoding='utf-8', errors='ignore')[:500]
+                except:
+                    pass
+                
+                classification = self.file_intelligence.classify_file(str(f), content)
+                
+                if classification.is_priority:
+                    priority_files.append(f)
+                elif classification.is_config:
+                    config_files.append(f)
+                else:
+                    other_files.append(f)
+            except:
                 other_files.append(f)
         
-        # Se há query e RelevanceScorer disponível, usar para priorizar
         if query and self._use_optimized_structures and self.relevance_scorer:
-            # Converter Path para string para scoring
             all_file_paths = [str(f) for f in all_files]
-            # Rankear arquivos por relevância
             ranked = self.relevance_scorer.rank_files(
                 all_file_paths,
                 query=query,
@@ -539,11 +417,9 @@ class CodebaseAnalyzer:
                 directory_tree=self.directory_tree,
                 limit=max_files
             )
-            # Reordenar other_files baseado no score
             ranked_paths = {path: score for path, score in ranked}
             other_files.sort(key=lambda f: ranked_paths.get(str(f), 0.0), reverse=True)
         
-        # Analyze priority files first
         files_to_analyze = priority_files + config_files + other_files[:max_files - len(priority_files) - len(config_files)]
         
         main_analyses = []
@@ -555,7 +431,6 @@ class CodebaseAnalyzer:
                 self._files.append(analysis)
                 total_lines += analysis.lines
                 
-                # Adicionar ao grafo de dependências se disponível
                 if self._use_optimized_structures and self.dependency_graph:
                     self.dependency_graph.add_file(
                         file_path=str(f),
@@ -586,7 +461,6 @@ class CodebaseAnalyzer:
             dependencies=self._analyze_dependencies(),
         )
         
-        # Armazenar no cache se habilitado
         if use_cache:
             try:
                 from services.cache_service import get_cache_service
@@ -597,9 +471,8 @@ class CodebaseAnalyzer:
                     max_files,
                     query
                 )
-                cache.set(cache_key, result, ttl=3600)  # Cache por 1 hora
+                cache.set(cache_key, result, ttl=3600)
             except Exception:
-                # Se cache falhar, continuar sem cache
                 pass
         
         return result
@@ -617,26 +490,21 @@ class CodebaseAnalyzer:
         """
         parts = []
         
-        # Header
         parts.append(f"=== CODEBASE ANALYSIS: {Path(analysis.root_path).name} ===\n")
         
-        # Overview
         parts.append(f"📁 Total Files: {analysis.total_files}")
         parts.append(f"📝 Total Lines: {analysis.total_lines}")
         parts.append(f"📊 {analysis.structure_summary}\n")
         
-        # Entry points
         if analysis.entry_points:
             parts.append(f"🚀 Entry Points: {', '.join(analysis.entry_points)}\n")
         
-        # Dependencies
         if analysis.dependencies:
             for pkg_type, deps in analysis.dependencies.items():
                 if deps:
                     parts.append(f"📦 {pkg_type}: {', '.join(deps[:10])}")
             parts.append("")
         
-        # File tree (truncated)
         tree_lines = analysis.file_tree.split('\n')[:50]
         parts.append("📂 FILE STRUCTURE:")
         parts.append("```")
@@ -645,12 +513,9 @@ class CodebaseAnalyzer:
             parts.append("... (truncated)")
         parts.append("```\n")
         
-        # Main files with content
-        # Se há query, usar RelevanceScorer para priorizar arquivos relevantes
         files_to_show = analysis.main_files + analysis.config_files
         
         if query and self._use_optimized_structures and self.relevance_scorer:
-            # Rankear arquivos por relevância à query
             file_paths = [f.path for f in files_to_show]
             ranked = self.relevance_scorer.rank_files(
                 file_paths,
@@ -659,7 +524,6 @@ class CodebaseAnalyzer:
                 directory_tree=self.directory_tree,
                 limit=len(files_to_show)
             )
-            # Reordenar baseado no score
             ranked_dict = {path: score for path, score in ranked}
             files_to_show.sort(key=lambda f: ranked_dict.get(f.path, 0.0), reverse=True)
         
@@ -675,22 +539,19 @@ class CodebaseAnalyzer:
             file_section += f"Language: {f.language} | Lines: {f.lines}\n"
             file_section += f"Summary: {f.summary}\n"
             
-            # Adicionar informações de dependências se disponível
             if self._use_optimized_structures and self.dependency_graph:
                 deps = self.dependency_graph.get_dependencies(f.path, direct_only=True)
                 if deps:
                     dep_names = [Path(d).name for d in deps[:5]]
                     file_section += f"Dependencies: {', '.join(dep_names)}\n"
             
-            # Add content for important files - increase limit for reference files
-            if f.content and len(f.content) < 5000:  # Increased from 3000 to show more content
+            if f.content and len(f.content) < 5000:
                 file_section += f"```{f.extension[1:]}\n{f.content}\n```\n"
             
             if current_length + len(file_section) < max_length:
                 parts.append(file_section)
                 current_length += len(file_section)
         
-        # Add note about using files as reference
         if current_length < max_length:
             parts.append("\n💡 TIP: When creating new files, use the files above as REFERENCE and TEMPLATE.")
             parts.append("Match their structure, imports, exports, and coding style exactly.")
@@ -699,17 +560,18 @@ class CodebaseAnalyzer:
 
 
 # Helper function for quick analysis
-def analyze_codebase(path: str, max_files: int = 100) -> str:
+def analyze_codebase(path: str, max_files: int = 100, ollama_service=None) -> str:
     """
     Quick helper to analyze codebase and get AI context.
     
     Args:
         path: Root path of codebase
         max_files: Maximum files to analyze
+        ollama_service: Optional Ollama service for AI-powered analysis
         
     Returns:
         Formatted context string
     """
-    analyzer = CodebaseAnalyzer(path)
+    analyzer = CodebaseAnalyzer(path, ollama_service=ollama_service)
     analysis = analyzer.analyze(max_files)
     return analyzer.get_context_for_ai(analysis)

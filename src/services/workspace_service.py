@@ -15,6 +15,10 @@ from core.config import get_settings
 from core.exceptions import WorkspaceError
 
 
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 @dataclass
 class WorkspaceState:
     """Current workspace state."""
@@ -89,21 +93,12 @@ class WorkspaceService:
         return True, None
     
     def _detect_languages(self, path: Path) -> List[str]:
-        """Detect programming languages used in workspace."""
-        extension_map = {
-            ".py": "Python",
-            ".js": "JavaScript",
-            ".ts": "TypeScript",
-            ".kt": "Kotlin",
-            ".java": "Java",
-            ".go": "Go",
-            ".rs": "Rust",
-            ".rb": "Ruby",
-            ".php": "PHP",
-            ".swift": "Swift",
-            ".cpp": "C++",
-            ".c": "C",
-        }
+        """Detect programming languages using intelligent detection."""
+        from services.language_detector import get_language_detector
+        from services.file_intelligence import get_file_intelligence
+        
+        language_detector = get_language_detector()
+        file_intelligence = get_file_intelligence()
         
         found = set()
         count = 0
@@ -117,7 +112,8 @@ class WorkspaceService:
                 for item in dir_path.iterdir():
                     if item.name.startswith('.'):
                         continue
-                    if item.name in {'node_modules', '__pycache__', 'venv', '.venv', 'build', 'dist'}:
+                    # Use FileIntelligence to check if should skip
+                    if file_intelligence.should_skip_directory(item.name):
                         continue
                     
                     if item.is_dir():
@@ -125,16 +121,21 @@ class WorkspaceService:
                     elif item.is_file():
                         count += 1
                         ext = item.suffix.lower()
-                        if ext in extension_map:
-                            found.add(extension_map[ext])
+                        # Use LanguageDetector for intelligent detection
+                        lang_info = language_detector.detect_from_extension(ext)
+                        if lang_info and lang_info.name != 'Unknown':
+                            found.add(lang_info.name)
             except:
                 pass
-        
+            
         scan(path)
         return sorted(list(found))
     
     def _count_files(self, path: Path) -> int:
-        """Count files in workspace."""
+        """Count files in workspace using intelligent directory skipping."""
+        from services.file_intelligence import get_file_intelligence
+        file_intelligence = get_file_intelligence()
+        
         count = 0
         
         def scan(dir_path: Path, depth: int = 0):
@@ -146,7 +147,8 @@ class WorkspaceService:
                 for item in dir_path.iterdir():
                     if item.name.startswith('.'):
                         continue
-                    if item.name in {'node_modules', '__pycache__', 'venv', '.venv'}:
+                    # Use FileIntelligence to check if should skip
+                    if file_intelligence.should_skip_directory(item.name):
                         continue
                     
                     if item.is_dir():
@@ -155,7 +157,7 @@ class WorkspaceService:
                         count += 1
             except:
                 pass
-        
+            
         scan(path)
         return count
     
@@ -275,13 +277,15 @@ class WorkspaceService:
                 return []
             
             items = []
-            skip_dirs = {'node_modules', '__pycache__', '.git', 'venv', '.venv', 'build', 'dist'}
+            from services.file_intelligence import get_file_intelligence
+            file_intelligence = get_file_intelligence()
             
             try:
                 for item in sorted(dir_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
                     if item.name.startswith('.'):
                         continue
-                    if item.name in skip_dirs:
+                    # Use FileIntelligence to check if should skip
+                    if file_intelligence.should_skip_directory(item.name):
                         continue
                     
                     entry = {

@@ -1,12 +1,12 @@
 """
 Conversation Memory Service
 ============================
-Memória de conversa com estrutura eficiente para manter contexto.
+Conversation memory with efficient structure to maintain context.
 
 BigO:
-- Adicionar: O(1)
-- Buscar: O(n) linear, O(log n) com índice
-- Limpar: O(1)
+- Add: O(1)
+- Search: O(n) linear, O(log n) with index
+- Clear: O(1)
 """
 
 from typing import Dict, List, Set, Optional
@@ -18,7 +18,7 @@ from pathlib import Path
 
 @dataclass
 class FileCreationRecord:
-    """Registro de criação de arquivo."""
+    """File creation record."""
     path: str
     content_preview: str
     timestamp: datetime
@@ -34,7 +34,7 @@ class FileCreationRecord:
 
 @dataclass
 class FileModificationRecord:
-    """Registro de modificação de arquivo."""
+    """File modification record."""
     path: str
     modification_type: str  # 'added', 'modified', 'deleted'
     timestamp: datetime
@@ -48,18 +48,18 @@ class FileModificationRecord:
 
 class ConversationMemory:
     """
-    Memória de conversa com estrutura eficiente.
+    Conversation memory with efficient structure.
     
-    Mantém histórico de arquivos criados/modificados e decisões
-    arquiteturais para referência em mensagens futuras.
+    Maintains history of created/modified files and architectural
+    decisions for reference in future messages.
     """
     
     def __init__(self, max_size: int = 100):
         """
-        Inicializa memória de conversa.
+        Initialize conversation memory.
         
         Args:
-            max_size: Tamanho máximo de registros (usa deque com maxlen)
+            max_size: Maximum size of records (uses deque with maxlen)
         """
         self.created_files: deque = deque(maxlen=max_size)
         self.modified_files: deque = deque(maxlen=max_size)
@@ -75,13 +75,13 @@ class ConversationMemory:
         metadata: Dict = None
     ):
         """
-        Registra criação de arquivo.
+        Record file creation.
         
         Args:
-            path: Path do arquivo criado
-            content: Conteúdo do arquivo
-            dependencies: Lista de dependências
-            metadata: Metadados opcionais
+            path: Path of created file
+            content: File content
+            dependencies: List of dependencies
+            metadata: Optional metadata
         """
         record = FileCreationRecord(
             path=path,
@@ -101,13 +101,13 @@ class ConversationMemory:
         metadata: Dict = None
     ):
         """
-        Registra modificação de arquivo.
+        Record file modification.
         
         Args:
-            path: Path do arquivo modificado
-            modification_type: Tipo de modificação
-            preview: Preview das mudanças
-            metadata: Metadados opcionais
+            path: Path of modified file
+            modification_type: Type of modification
+            preview: Preview of changes
+            metadata: Optional metadata
         """
         record = FileModificationRecord(
             path=path,
@@ -120,11 +120,11 @@ class ConversationMemory:
     
     def record_architectural_decision(self, decision: str, context: Dict = None):
         """
-        Registra decisão arquitetural.
+        Record architectural decision.
         
         Args:
-            decision: Descrição da decisão
-            context: Contexto adicional
+            decision: Description of the decision
+            context: Additional context
         """
         self.architectural_decisions.append({
             'decision': decision,
@@ -133,15 +133,15 @@ class ConversationMemory:
         })
     
     def get_file_record(self, path: str) -> Optional[FileCreationRecord]:
-        """Retorna registro de arquivo se existir."""
+        """Return file record if exists."""
         return self.file_index.get(path)
     
     def get_context_summary(self) -> str:
         """
-        Retorna resumo eficiente do contexto da conversa.
+        Return efficient summary of conversation context.
         
         Returns:
-            String formatada com resumo
+            Formatted string with summary
         """
         parts = []
         
@@ -168,11 +168,11 @@ class ConversationMemory:
         return "\n".join(parts)
     
     def get_recent_files(self, limit: int = 10) -> List[str]:
-        """Retorna lista de arquivos criados recentemente."""
+        """Return list of recently created files."""
         return [record.path for record in list(self.created_files)[-limit:]]
     
     def clear(self):
-        """Limpa toda a memória."""
+        """Clear all memory."""
         self.created_files.clear()
         self.modified_files.clear()
         self.file_index.clear()

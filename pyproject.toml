@@ -1,26 +1,10 @@
-[project]
-name = "local-ai-studio"
-version = "1.0.0"
-description = "100% local AI for chat and image generation - No restrictions"
-readme = "README.md"
-requires-python = ">=3.10"
-license = {text = "MIT"}
-authors = [
-    {name = "Jefferson Silva"}
-]
-keywords = ["ai", "llm", "stable-diffusion", "ollama", "local"]
-
-[project.scripts]
-local-ai = "src.api.main:main"
-local-ai-cli = "src.chat.cli:main"
-
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*", "config*"]
+include = ["src/*", "components/*"]
 
 [tool.black]
 line-length = 100

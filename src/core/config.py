@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     CREATE_BACKUPS: bool = True
     
+    # === Logging ===
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: Optional[Path] = None  # If None, logs only to console
+    LOG_JSON: bool = True  # Use structured JSON logging
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Set derived paths

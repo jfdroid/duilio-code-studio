@@ -167,14 +167,7 @@ const ChatHistory = {
                         <span class="message-sender">DuilioCode</span>
                     </div>
                     <div class="message-content">
-                        <p>Hello! I'm your local AI assistant. I can help you:</p>
-                        <ul>
-                            <li>Create entire projects and file structures</li>
-                            <li>Edit and refactor existing code</li>
-                            <li>Explain concepts and debug issues</li>
-                            <li>Generate scripts, pipelines, and configs</li>
-                        </ul>
-                        <p>Open a folder to get started, or just ask me anything!</p>
+                        <p>Hi! I'm DuilioCode, your local AI coding assistant. Ask me anything about your code, and I'll help you build, debug, or understand your projects.</p>
                     </div>
                 </div>
             `;
@@ -198,6 +191,29 @@ const ChatHistory = {
         }).join('');
 
         container.scrollTop = container.scrollHeight;
+        
+        // Attach event listeners to file links (using data attributes)
+        container.querySelectorAll('.file-link[data-file-path]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const filePath = link.getAttribute('data-file-path');
+                if (filePath && typeof Chat !== 'undefined' && Chat.openFileFromChat) {
+                    Chat.openFileFromChat(filePath);
+                }
+            });
+        });
+        
+        // Code block headers
+        container.querySelectorAll('.code-block-header[data-file-path]').forEach(header => {
+            header.addEventListener('click', (e) => {
+                e.preventDefault();
+                const filePath = header.getAttribute('data-file-path');
+                if (filePath && typeof Chat !== 'undefined' && Chat.openFileFromChat) {
+                    Chat.openFileFromChat(filePath);
+                }
+            });
+            header.style.cursor = 'pointer';
+        });
 
         // Highlight code blocks (skip create-file and modify-file blocks)
         if (typeof hljs !== 'undefined') {
@@ -235,14 +251,7 @@ const ChatHistory = {
                     <span class="message-sender">DuilioCode</span>
                 </div>
                 <div class="message-content">
-                    <p>Hello! I'm your local AI assistant. I can help you:</p>
-                    <ul>
-                        <li>Create entire projects and file structures</li>
-                        <li>Edit and refactor existing code</li>
-                        <li>Explain concepts and debug issues</li>
-                        <li>Generate scripts, pipelines, and configs</li>
-                    </ul>
-                    <p>Open a folder to get started, or just ask me anything!</p>
+                    <p>Hi! I'm DuilioCode, your local AI coding assistant. Ask me anything about your code, and I'll help you build, debug, or understand your projects.</p>
                 </div>
             </div>
         `;
@@ -254,16 +263,30 @@ const ChatHistory = {
      * Format message content (markdown-like)
      */
     formatMessage(content) {
+        let formatted = content;
+        
         if (typeof marked !== 'undefined') {
-            return marked.parse(content);
+            formatted = marked.parse(content);
+        } else {
+            formatted = content
+                .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                    return `<pre><code class="language-${lang}">${this.escapeHtml(code.trim())}</code><button class="apply-code-btn" onclick="Chat.applyCode(this)">Apply</button></pre>`;
+                })
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
         }
-
-        return content
-            .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                return `<pre><code class="language-${lang}">${this.escapeHtml(code.trim())}</code><button class="apply-code-btn" onclick="Chat.applyCode(this)">Apply</button></pre>`;
-            })
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
-            .replace(/\n/g, '<br>');
+        
+        // Make file paths clickable (same as Chat.formatMessage)
+        if (typeof Chat !== 'undefined' && Chat.makePathsClickable) {
+            formatted = Chat.makePathsClickable(formatted);
+        }
+        
+        // Add clickable headers to code blocks
+        if (typeof Chat !== 'undefined' && Chat.addCodeBlockHeaders) {
+            formatted = Chat.addCodeBlockHeaders(formatted);
+        }
+        
+        return formatted;
     },
 
     /**

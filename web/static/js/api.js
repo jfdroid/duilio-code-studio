@@ -112,6 +112,19 @@ const API = {
     },
     
     /**
+     * Simple chat - direct connection to Ollama/Qwen (CLEAN MODE)
+     * No complex logic, just prompt → response
+     */
+    async chatSimple(messages, model = null, temperature = 0.7, stream = false) {
+        return this.post('/api/chat/simple', {
+            messages,
+            model,
+            temperature,
+            stream
+        });
+    },
+    
+    /**
      * Analyze a codebase structure and content
      */
     async analyzeCodebase(path, maxFiles = 100) {

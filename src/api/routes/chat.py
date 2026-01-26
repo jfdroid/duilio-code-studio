@@ -7,9 +7,11 @@ user preference learning, and few-shot example matching.
 """
 
 import time
+import re
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from pydantic import BaseModel, Field
 
 from services.ollama_service import OllamaService, get_ollama_service
@@ -18,8 +20,14 @@ from services.codebase_analyzer import CodebaseAnalyzer, analyze_codebase
 from services.prompt_classifier import PromptClassifier, classify_prompt
 from services.user_preferences import UserPreferencesService, get_user_preferences_service
 from services.prompt_examples import PromptExamplesService, get_prompt_examples_service
+from services.file_service import FileService
+from core.logger import get_logger
 
 
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 router = APIRouter(prefix="/api", tags=["Chat"])
 
 
@@ -56,8 +64,16 @@ class AnalyzeCodebaseRequest(BaseModel):
 _codebase_cache: Dict[str, str] = {}
 
 
-def get_codebase_context(path: str, force_refresh: bool = False, query: str = "") -> str:
-    """Get or generate codebase context with caching."""
+def get_codebase_context(path: str, force_refresh: bool = False, query: str = "", ollama_service=None) -> str:
+    """
+    Get or generate codebase context with caching.
+    
+    Args:
+        path: Codebase path
+        force_refresh: Force refresh cache
+        query: Query for relevance scoring
+        ollama_service: Optional Ollama service for AI-powered analysis
+    """
     global _codebase_cache
     
     cache_key = f"{path}:{query}"
@@ -66,8 +82,11 @@ def get_codebase_context(path: str, force_refresh: bool = False, query: str = ""
     
     try:
         from services.codebase_analyzer import CodebaseAnalyzer
-        analyzer = CodebaseAnalyzer(path)
-        analysis = analyzer.analyze(max_files=100)
+        analyzer = CodebaseAnalyzer(path, ollama_service=ollama_service)
+        # IMPORTANT:
+        # - Chat needs fresh context so the model can accurately MODIFY recently created/edited files.
+        # - Passing `query` into analysis enables relevance scoring.
+        analysis = analyzer.analyze(max_files=100, query=query, use_cache=not force_refresh)
         context = analyzer.get_context_for_ai(analysis, max_length=8000, query=query)
         _codebase_cache[cache_key] = context
         return context
@@ -75,9 +94,22 @@ def get_codebase_context(path: str, force_refresh: bool = False, query: str = ""
         return f"[Error analyzing codebase: {str(e)}]"
 
 
+# === Rate Limiting ===
+try:
+    from middleware.rate_limiter import limiter, rate_limit_decorator
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    RATE_LIMITING_AVAILABLE = False
+    # Dummy decorator if rate limiting not available
+    def rate_limit_decorator(limit: str = None):
+        def decorator(func):
+            return func
+        return decorator
+
 # === Endpoints ===
 
 @router.post("/generate")
+@rate_limit_decorator("20/minute")  # Code generation - lower limit
 async def generate(
     request: GenerateRequest,
     ollama: OllamaService = Depends(get_ollama_service),
@@ -85,6 +117,7 @@ async def generate(
     user_prefs: UserPreferencesService = Depends(get_user_preferences_service),
     examples: PromptExamplesService = Depends(get_prompt_examples_service)
 ) -> Dict[str, Any]:
+    logger = get_logger()
     """
     Generate code or text response with FULL INTELLIGENCE.
     
@@ -108,31 +141,211 @@ async def generate(
             [m.get("name", m) if isinstance(m, dict) else m for m in models]
         )
         
-        # === 3. BUILD COMPREHENSIVE CONTEXT ===
+        # === 3. DETECT FILE INTENT USING AI ===
+        read_file_intent = False
+        file_to_read = None
+        
+        # Get workspace path first for file search
+        # CRITICAL: Always use explorer path if request.workspace_path is not provided
+        workspace_path = request.workspace_path
+        if not workspace_path:
+            project_context = workspace.get_project_context()
+            if project_context.get("has_workspace"):
+                workspace_path = project_context.get("root_path")
+                logger.info(
+                    f"Using explorer path: {workspace_path}",
+                    workspace_path=workspace_path
+                )
+        
+        # Use AI-powered intent detection instead of hardcoded patterns
+        from services.intent_detector import get_intent_detector
+        intent_detector = get_intent_detector(ollama)
+        
+        try:
+            intent_result = await intent_detector.detect_file_intent(
+                request.prompt,
+                workspace_path
+            )
+            
+            logger.debug(
+                f"AI Intent Detection: {intent_result}",
+                workspace_path=workspace_path,
+                context={"intent_result": intent_result}
+            )
+            
+            if intent_result["intent"] == "read":
+                read_file_intent = True
+                file_to_read = intent_result.get("file_name")
+                if file_to_read:
+                    file_to_read = file_to_read.strip('.,!?;:')
+                logger.info(
+                    f"Detected READ intent for file: {file_to_read}",
+                    workspace_path=workspace_path,
+                    file_path=file_to_read,
+                    context={"confidence": intent_result.get('confidence', 0.0)}
+                )
+        except Exception as e:
+            logger.error(
+                f"Error in AI intent detection: {e}",
+                workspace_path=workspace_path,
+                context={"error": str(e)}
+            )
+            # Fallback: don't set read_file_intent if AI detection fails
+        
+        # === 4. READ FILE IF REQUESTED ===
+        file_content_context = None
+        if read_file_intent and file_to_read and workspace_path:
+            try:
+                file_service = FileService()
+                
+                logger.info(
+                    f"Detected file reading intent for: '{file_to_read}'",
+                    workspace_path=workspace_path,
+                    file_path=file_to_read
+                )
+                
+                # Try to find the file in workspace
+                workspace_path_obj = Path(workspace_path)
+                
+                # Build list of possible paths to check
+                possible_paths = []
+                
+                # 1. Direct match (if file_to_read already has extension)
+                possible_paths.append(workspace_path_obj / file_to_read)
+                
+                # 2. Add common extensions if no extension in file_to_read
+                if '.' not in file_to_read:
+                    for ext in ['.txt', '.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.kt', '.go', '.rs', '.rb', '.json', '.html', '.css', '.md']:
+                        possible_paths.append(workspace_path_obj / f"{file_to_read}{ext}")
+                
+                # 3. Check if file_to_read is already a full path
+                if '/' in file_to_read or file_to_read.startswith('/'):
+                    possible_paths.insert(0, Path(file_to_read))
+                
+                # 4. Also check in current directory if workspace_path is Desktop
+                if 'Desktop' in str(workspace_path):
+                    possible_paths.append(Path(workspace_path) / file_to_read)
+                    if '.' not in file_to_read:
+                        possible_paths.append(Path(workspace_path) / f"{file_to_read}.txt")
+                
+                file_found = None
+                for path in possible_paths:
+                    try:
+                        if path.exists() and path.is_file():
+                            file_found = path
+                            logger.info(
+                                f"Found file at: {file_found}",
+                                workspace_path=workspace_path,
+                                file_path=str(file_found)
+                            )
+                            break
+                    except Exception:
+                        continue
+                
+                if file_found:
+                    try:
+                        file_content = file_service.read_file(str(file_found))
+                        file_content_context = f"\n\n=== FILE CONTENT: {file_found.name} ===\n{file_content.content}\n=== END OF FILE ===\n"
+                        logger.info(
+                            f"Successfully read file {file_found}",
+                            workspace_path=workspace_path,
+                            file_path=str(file_found),
+                            context={"content_length": len(file_content.content)}
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Error reading file {file_found}: {e}",
+                            workspace_path=workspace_path,
+                            file_path=str(file_found),
+                            context={"error": str(e)}
+                        )
+                else:
+                    # Try to search in workspace tree using get_file_tree
+                    try:
+                        from services.workspace_service import get_workspace_service
+                        ws_service = get_workspace_service()
+                        tree = ws_service.get_file_tree(workspace_path, max_depth=5)
+                        
+                        # Search for file in tree (case-insensitive)
+                        def find_file_in_tree(node, filename):
+                            node_name = node.get('name', '').lower()
+                            filename_lower = filename.lower()
+                            node_type = node.get('type', '')
+                            
+                            # Exact match or starts with filename
+                            if (node_name == filename_lower or node_name.startswith(filename_lower)) and node_type == 'file':
+                                return node.get('path')
+                            
+                            # Recursive search in children
+                            for child in node.get('children', []):
+                                result = find_file_in_tree(child, filename)
+                                if result:
+                                    return result
+                            return None
+                        
+                        file_path = find_file_in_tree(tree, file_to_read)
+                        if file_path:
+                            file_content = file_service.read_file(file_path)
+                            file_content_context = f"\n\n=== FILE CONTENT: {Path(file_path).name} ===\n{file_content.content}\n=== END OF FILE ===\n"
+                            logger.info(
+                                f"Found and read file {file_path} via tree search",
+                                workspace_path=workspace_path,
+                                file_path=file_path
+                            )
+                        else:
+                            logger.warning(
+                                f"File '{file_to_read}' not found in workspace",
+                                workspace_path=workspace_path,
+                                file_path=file_to_read
+                            )
+                            # Even if not found, read_file_intent is already True, so system will know it's a read request
+                    except Exception as e:
+                        logger.error(
+                            f"Error searching for file in tree: {e}",
+                            workspace_path=workspace_path,
+                            file_path=file_to_read,
+                            context={"error": str(e)}
+                        )
+            except Exception as e:
+                logger.error(
+                    f"Error in file reading detection: {e}",
+                    workspace_path=workspace_path,
+                    file_path=file_to_read,
+                    context={"error": str(e)}
+                )
+        
+        # === 5. BUILD COMPREHENSIVE CONTEXT ===
         context_parts = []
+        
+        # Add file content if file was read
+        if file_content_context:
+            context_parts.append(file_content_context)
         
         # Add user-provided context
         if request.context:
             context_parts.append(request.context)
         
-        # Get workspace info
-        workspace_path = request.workspace_path
-        project_context = workspace.get_project_context()
-        
-        if not workspace_path and project_context.get("has_workspace"):
-            workspace_path = project_context.get("root_path")
-        
-        # === 4. ANALYZE CODEBASE (THE KEY FEATURE!) ===
+        # === 6. ANALYZE CODEBASE (THE KEY FEATURE!) ===
+        # CRITICAL: Always use workspace_path (which is explorer path) for codebase analysis
         if workspace_path and request.include_codebase:
             try:
-                codebase_context = get_codebase_context(workspace_path)
+                # Ensure we're using the explorer path for codebase analysis
+                codebase_context = get_codebase_context(workspace_path, ollama_service=ollama)
                 context_parts.append(codebase_context)
-                print(f"[DuilioCode] Loaded codebase context: {len(codebase_context)} chars from {workspace_path}")
+                logger.info(
+                    f"Loaded codebase context: {len(codebase_context)} chars",
+                    workspace_path=workspace_path,
+                    context={"context_length": len(codebase_context)}
+                )
             except Exception as e:
-                print(f"[DuilioCode] Codebase analysis error: {e}")
+                logger.error(
+                    f"Codebase analysis error: {e}",
+                    workspace_path=workspace_path,
+                    context={"error": str(e)}
+                )
                 context_parts.append(f"[Workspace: {workspace_path}]")
         
-        # === 5. ADD FEW-SHOT EXAMPLES ===
+        # === 7. ADD FEW-SHOT EXAMPLES ===
         few_shot = examples.get_few_shot_context(
             request.prompt,
             classification.category.value
@@ -146,7 +359,7 @@ async def generate(
         # Combine context
         full_context = "\n\n".join(context_parts) if context_parts else None
         
-        # === 6. BUILD ENHANCED SYSTEM PROMPT ===
+        # === 8. BUILD ENHANCED SYSTEM PROMPT ===
         system_prompt = request.system_prompt
         if not system_prompt:
             base_system = ollama.CODE_SYSTEM_PROMPT if classification.is_code_related else ollama.GENERAL_SYSTEM_PROMPT
@@ -158,13 +371,84 @@ async def generate(
                 system_prompt += "\nWhen they ask about 'this codebase', 'this project', or 'the code', you MUST refer to the workspace analysis provided in the context."
                 system_prompt += "\nYou KNOW this codebase - analyze it, explain it, help them work with it!"
                 
-                # Add specific instructions for file creation
-                if request.include_codebase:
+                # CRITICAL: Distinguish between READ and CREATE file intents
+                if read_file_intent and file_content_context:
+                    system_prompt += "\n\n=== FILE READING DETECTED ==="
+                    system_prompt += f"\nThe user wants to READ the file '{file_to_read}', NOT create it."
+                    system_prompt += "\nThe file content is provided in the context above."
+                    system_prompt += "\nDO NOT use create-file: format. Simply explain what is written in the file."
+                    system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
+                elif request.include_codebase:
+                    # Detect project intention
+                    from services.project_detector import get_project_detector
+                    project_detector = get_project_detector(ollama)
+                    project_intention = await project_detector.detect_project_intention(
+                        request.prompt, workspace_path
+                    )
+                    
+                    # Add specific instructions for file creation
                     system_prompt += "\n\n=== FILE CREATION INSTRUCTIONS ==="
                     system_prompt += "\n\nCRITICAL: You MUST use this EXACT format to create files:"
                     system_prompt += "\n```create-file:path/to/file.ext"
                     system_prompt += "\n[file content here]"
                     system_prompt += "\n```"
+                    
+                    if project_intention.get("needs_directory", False):
+                        project_name = project_intention.get("project_name", "new-project")
+                        project_type = project_intention.get("project_type", "general")
+                        
+                        system_prompt += f"\n\n🎯 PROJECT CREATION DETECTED: User wants to create a {project_type} project."
+                        system_prompt += f"\nCRITICAL PROJECT DIRECTORY RULE:"
+                        system_prompt += f"\n1. FIRST create the project directory: ```create-directory:{project_name}```"
+                        system_prompt += f"\n2. THEN create ALL files INSIDE this directory: ```create-file:{project_name}/package.json```"
+                        system_prompt += f"\n3. ALL files must be created inside {project_name}/ directory"
+                        system_prompt += f"\n4. Example: ```create-file:{project_name}/src/index.js``` NOT ```create-file:src/index.js```"
+                        system_prompt += f"\n5. This keeps the project isolated and organized"
+                        system_prompt += f"\n6. DO NOT create files in workspace root - they must be inside {project_name}/"
+                        
+                        # Add project-type-specific instructions
+                        if project_type == "android":
+                            system_prompt += f"\n\n📱 ANDROID PROJECT REQUIREMENTS:"
+                            system_prompt += f"\n- MUST create build.gradle (project level)"
+                            system_prompt += f"\n- MUST create settings.gradle"
+                            system_prompt += f"\n- MUST create app/build.gradle"
+                            system_prompt += f"\n- MUST create app/src/main/AndroidManifest.xml"
+                            system_prompt += f"\n- MUST create Kotlin/Java source files in app/src/main/java/"
+                            system_prompt += f"\n- MUST create MainActivity.kt or MainActivity.java"
+                            system_prompt += f"\n- If API mock requested: MUST create API service/mock files"
+                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
+                        
+                        elif project_type == "react":
+                            system_prompt += f"\n\n⚛️ REACT PROJECT REQUIREMENTS:"
+                            system_prompt += f"\n- MUST create package.json with React dependencies"
+                            system_prompt += f"\n- MUST create public/index.html"
+                            system_prompt += f"\n- MUST create src/index.js or src/index.jsx"
+                            system_prompt += f"\n- MUST create src/App.jsx or src/App.js"
+                            system_prompt += f"\n- MUST create React components (JSX/TSX files)"
+                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
+                        
+                        elif project_type == "node":
+                            system_prompt += f"\n\n📦 NODE.JS PROJECT REQUIREMENTS:"
+                            system_prompt += f"\n- MUST create package.json"
+                            system_prompt += f"\n- MUST create index.js or server.js"
+                            system_prompt += f"\n- MUST create complete project structure"
+                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
+                    
+                    system_prompt += "\n\nMANDATORY RULES - FOLLOW EXACTLY:"
+                    system_prompt += "\n1. ALWAYS use ```create-file: (three backticks + create-file:)"
+                    system_prompt += "\n2. NEVER use ```bash, ```sh, or any other language tag for file actions"
+                    system_prompt += "\n3. NEVER write 'create-file:' as plain text or in explanations"
+                    system_prompt += "\n4. START your response IMMEDIATELY with ```create-file: blocks - NO explanations first"
+                    system_prompt += "\n5. DO NOT write 'Vamos criar...' or any introduction before create-file blocks"
+                    system_prompt += "\n6. You can add explanations AFTER all create-file blocks are done"
+                    system_prompt += "\n\nEXAMPLE CORRECT FORMAT:"
+                    system_prompt += "\n```create-file:teste.txt"
+                    system_prompt += "\nHello World"
+                    system_prompt += "\n```"
+                    system_prompt += "\n\nEXAMPLE WRONG FORMAT (DO NOT DO THIS):"
+                    system_prompt += "\n\"Vamos criar o arquivo...\" [WRONG - explanation first]"
+                    system_prompt += "\n```bash [WRONG - don't use bash]"
+                    system_prompt += "\ncreate-file:teste.txt [WRONG - inside bash block]"
                     system_prompt += "\n\nYou can create MULTIPLE files in ONE response by using multiple ```create-file: blocks."
                     system_prompt += "\n\nThe codebase analysis in the context shows you:"
                     system_prompt += "\n- The complete project structure and file tree"
@@ -201,43 +485,128 @@ async def generate(
             if intent:
                 system_prompt += f"\n\n=== DETECTED INTENT ===\n{intent}"
         
-        # === 7. SELECT MODEL (Smart Selection) ===
+        # === 9. SELECT MODEL (Smart Selection) ===
         model = request.model
         if model is None:
             # Prefer user's learned preference, then classification
             model = preferred_model or classification.recommended_model
         
-        print(f"[DuilioCode] Generating with model: {model}, category: {classification.category.value}")
+        logger.info(
+            f"Generating with model: {model}, category: {classification.category.value}",
+            workspace_path=workspace_path,
+            context={"model": model, "category": classification.category.value}
+        )
         
-        # === 8. GENERATE RESPONSE ===
+        # === 10. ADJUST TEMPERATURE FOR FILE CREATION ===
+        # Lower temperature for file creation tasks to ensure consistent format
+        # BUT: Don't adjust if user wants to READ a file
+        adjusted_temperature = request.temperature
+        if not read_file_intent and classification.is_code_related and any(keyword in request.prompt.lower() for keyword in ['criar', 'create', 'arquivo', 'file', 'projeto', 'project']):
+            # Use lower temperature for file creation (more deterministic)
+            adjusted_temperature = min(request.temperature, 0.3)
+            logger.debug(
+                f"Adjusted temperature to {adjusted_temperature} for file creation task",
+                workspace_path=workspace_path,
+                context={"original_temperature": request.temperature, "adjusted_temperature": adjusted_temperature}
+            )
+        
+        # === 11. GENERATE RESPONSE ===
         result = await ollama.generate(
             prompt=request.prompt,
             model=model,
             system_prompt=system_prompt,
             context=full_context,
-            temperature=request.temperature,
+            temperature=adjusted_temperature,
             max_tokens=request.max_tokens,
             auto_select_model=False  # We already selected
         )
         
-        # === 8.5. PROCESS AGENT ACTIONS (if present) ===
-        response_content = result.response
+        # === 11.5. INITIALIZE RESPONSE CONTENT SAFELY ===
+        # Initialize response_content safely before using it
+        if not result or not hasattr(result, 'response') or not result.response:
+            logger.error(
+                "Invalid response from Ollama",
+                workspace_path=workspace_path,
+                context={"result": str(result) if result else "None"}
+            )
+            response_content = "I apologize, but I encountered an error generating a response. Please try again."
+        else:
+            response_content = result.response
+        
+        # === 12. VALIDATE AND PROCESS AGENT ACTIONS ===
+        # CRITICAL: If user wanted to READ a file, don't process create-file actions
+        if read_file_intent:
+            logger.info(
+                "File reading intent detected - skipping action processing",
+                workspace_path=workspace_path,
+                file_path=file_to_read
+            )
+            # Remove any create-file actions that might have been generated incorrectly
+            if 'create-file:' in response_content:
+                logger.warning(
+                    "AI generated create-file for a READ request. Removing it.",
+                    workspace_path=workspace_path,
+                    file_path=file_to_read
+                )
+                # Remove create-file blocks
+                response_content = re.sub(r'```create-file:[^\n]+\n[\s\S]*?```', '', response_content)
+                response_content = re.sub(r'create-file:[^\n]+', '', response_content)
+        
+        original_response = response_content  # Save original for analysis
         actions_processed = False
         actions_result = None
         
-        # Check if response contains agent actions (create-file, modify-file, run-command)
-        if 'create-file:' in response_content or 'modify-file:' in response_content or 'run-command' in response_content:
+        # Check if response contains agent actions (create-file, modify-file, run-command, delete-file, delete-directory)
+        if any(action in response_content for action in ['create-file:', 'modify-file:', 'delete-file:', 'delete-directory:', 'run-command']):
+            # Validate format before processing
+            has_correct_format = '```create-file:' in original_response or '```modify-file:' in original_response
+            has_wrong_format = ('```bash' in original_response or '```sh' in original_response) and 'create-file:' in original_response
+            has_text_before = original_response.strip().startswith(('Vamos', 'Vou', 'Let', 'I will', 'Criando', 'Creating'))
+            
+            logger.debug(
+                "Format validation",
+                workspace_path=workspace_path,
+                context={
+                    "has_correct_format": has_correct_format,
+                    "has_wrong_format": has_wrong_format,
+                    "has_text_before": has_text_before
+                }
+            )
+            
+            if has_wrong_format or (has_text_before and not has_correct_format):
+                logger.warning(
+                    "AI used incorrect format. Attempting to process anyway...",
+                    workspace_path=workspace_path,
+                    context={"has_wrong_format": has_wrong_format, "has_text_before": has_text_before}
+                )
+            
             from services.action_processor import get_action_processor
-            processor = get_action_processor()
+            processor = get_action_processor(ollama_service=ollama)
             actions_result = await processor.process_actions(
                 response_content,
                 workspace_path
             )
             response_content = actions_result['processed_text']
             actions_processed = True
-            print(f"[DuilioCode] Processed {actions_result['total_actions']} actions: {actions_result['success_count']} success, {actions_result['error_count']} errors")
+            logger.info(
+                f"Processed {actions_result['total_actions']} actions: {actions_result['success_count']} success, {actions_result['error_count']} errors",
+                workspace_path=workspace_path,
+                context={
+                    "total_actions": actions_result['total_actions'],
+                    "success_count": actions_result['success_count'],
+                    "error_count": actions_result['error_count']
+                }
+            )
         
-        # === 9. RECORD USAGE FOR LEARNING ===
+            # If format was wrong but we still processed, log for improvement
+            if has_wrong_format and actions_result.get('success_count', 0) == 0:
+                logger.error(
+                    "Wrong format prevented action processing. Consider improving prompt.",
+                    workspace_path=workspace_path,
+                    context={"has_wrong_format": has_wrong_format, "success_count": actions_result.get('success_count', 0)}
+                )
+        
+        # === 13. RECORD USAGE FOR LEARNING ===
         response_time = time.time() - start_time
         user_prefs.record_model_usage(
             model=result.model,
@@ -252,8 +621,15 @@ async def generate(
             if lang in ('python', 'javascript', 'typescript', 'kotlin', 'java', 'go', 'rust'):
                 user_prefs.record_language_detected(lang)
         
+        # Add refresh flag if actions were processed successfully
+        refresh_explorer = False
+        if actions_processed and actions_result:
+            if actions_result.get('success_count', 0) > 0:
+                refresh_explorer = True
+        
         return {
             "response": response_content,
+            "original_response": original_response if actions_processed else None,  # Include original for analysis
             "model": result.model,
             "done": result.done,
             "total_duration": result.total_duration,
@@ -272,7 +648,8 @@ async def generate(
                 "has_codebase_context": workspace_path is not None and request.include_codebase
             },
             "actions_processed": actions_processed,
-            "actions_result": actions_result
+            "actions_result": actions_result,
+            "refresh_explorer": refresh_explorer
         }
         
     except Exception as e:
@@ -287,6 +664,7 @@ async def generate(
 
 
 @router.post("/chat")
+@rate_limit_decorator("30/minute")  # Chat endpoint - moderate limit
 async def chat(
     request: ChatRequest,
     ollama: OllamaService = Depends(get_ollama_service),
@@ -301,6 +679,8 @@ async def chat(
     - Smart model selection
     - Streaming support
     """
+    logger = get_logger()
+    
     try:
         # Convert messages to prompt
         messages = request.messages
@@ -324,21 +704,253 @@ async def chat(
         models = await ollama.list_models()
         classification = classify_prompt(last_user_message, models)
         
-        # Build context with codebase if workspace provided
-        context_parts = []
+        # === DETECT FILE INTENT USING AI ===
+        read_file_intent = False
+        file_to_read = None
+        file_content_context = None
         
+        # Get workspace path first
+        # CRITICAL: Always use explorer path if request.workspace_path is not provided
         workspace_path = request.workspace_path
         if not workspace_path:
             project_context = workspace.get_project_context()
             if project_context.get("has_workspace"):
                 workspace_path = project_context.get("root_path")
+                logger.info(
+                    f"Using explorer path: {workspace_path}",
+                    workspace_path=workspace_path
+                )
+        
+        # Use AI-powered intent detection instead of hardcoded patterns
+        from services.intent_detector import get_intent_detector
+        intent_detector = get_intent_detector(ollama)
+        
+        try:
+            intent_result = await intent_detector.detect_file_intent(
+                last_user_message,
+                workspace_path
+            )
+            
+            logger.debug(
+                f"AI Intent Detection: {intent_result}",
+                workspace_path=workspace_path,
+                context={"intent_result": intent_result}
+            )
+            
+            if intent_result["intent"] == "read":
+                read_file_intent = True
+                file_to_read = intent_result.get("file_name")
+                if file_to_read:
+                    file_to_read = file_to_read.strip('.,!?;:')
+                logger.info(
+                    f"Detected READ intent for file: {file_to_read}",
+                    workspace_path=workspace_path,
+                    file_path=file_to_read,
+                    context={"confidence": intent_result.get('confidence', 0.0)}
+                )
+        except Exception as e:
+            logger.error(
+                f"Error in AI intent detection: {e}",
+                workspace_path=workspace_path,
+                context={"error": str(e)}
+            )
+            # Fallback: don't set read_file_intent if AI detection fails
+            
+        # === READ FILE IF REQUESTED ===
+        if read_file_intent and file_to_read and workspace_path:
+            try:
+                file_service = FileService()
+                
+                logger.info(
+                    f"Detected file reading intent for: '{file_to_read}'",
+                    workspace_path=workspace_path,
+                    file_path=file_to_read
+                )
+                
+                workspace_path_obj = Path(workspace_path)
+                possible_paths = []
+                
+                # 1. Direct match
+                possible_paths.append(workspace_path_obj / file_to_read)
+                
+                # 2. Add extensions if no extension
+                if '.' not in file_to_read:
+                    for ext in ['.txt', '.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.kt', '.go', '.rs', '.rb', '.json', '.html', '.css', '.md']:
+                        possible_paths.append(workspace_path_obj / f"{file_to_read}{ext}")
+                
+                # 3. Full path check
+                if '/' in file_to_read or file_to_read.startswith('/'):
+                    possible_paths.insert(0, Path(file_to_read))
+                
+                file_found = None
+                for path in possible_paths:
+                    try:
+                        if path.exists() and path.is_file():
+                            file_found = path
+                            logger.info(
+                                f"Found file at: {file_found}",
+                                workspace_path=workspace_path,
+                                file_path=str(file_found)
+                            )
+                            break
+                    except Exception:
+                        continue
+                
+                if file_found:
+                    try:
+                        file_content = file_service.read_file(str(file_found))
+                        file_content_context = f"\n\n=== FILE CONTENT: {file_found.name} ===\n{file_content.content}\n=== END OF FILE ===\n"
+                        logger.info(
+                            f"Successfully read file {file_found}",
+                            workspace_path=workspace_path,
+                            file_path=str(file_found),
+                            context={"content_length": len(file_content.content)}
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Error reading file {file_found}: {e}",
+                            workspace_path=workspace_path,
+                            file_path=str(file_found),
+                            context={"error": str(e)}
+                        )
+                else:
+                    # Search in workspace tree using get_file_tree
+                    try:
+                        from services.workspace_service import get_workspace_service
+                        ws_service = get_workspace_service()
+                        tree = ws_service.get_file_tree(workspace_path, max_depth=5)
+                        
+                        def find_file_in_tree(node, filename):
+                            node_name = node.get('name', '').lower()
+                            filename_lower = filename.lower()
+                            node_type = node.get('type', '')
+                            
+                            if (node_name == filename_lower or node_name.startswith(filename_lower)) and node_type == 'file':
+                                return node.get('path')
+                            
+                            for child in node.get('children', []):
+                                result = find_file_in_tree(child, filename)
+                                if result:
+                                    return result
+                            return None
+                        
+                        file_path = find_file_in_tree(tree, file_to_read)
+                        if file_path:
+                            file_content = file_service.read_file(file_path)
+                            file_content_context = f"\n\n=== FILE CONTENT: {Path(file_path).name} ===\n{file_content.content}\n=== END OF FILE ===\n"
+                            logger.info(
+                                f"Found and read file {file_path} via tree search",
+                                workspace_path=workspace_path,
+                                file_path=file_path
+                            )
+                        else:
+                            logger.warning(
+                                f"File '{file_to_read}' not found in workspace",
+                                workspace_path=workspace_path,
+                                file_path=file_to_read
+                            )
+                            # Even if not found, read_file_intent is already True, so system will know it's a read request
+                    except Exception as e:
+                        logger.error(
+                            f"Error searching for file in tree: {e}",
+                            workspace_path=workspace_path,
+                            file_path=file_to_read,
+                            context={"error": str(e)}
+                        )
+            except Exception as e:
+                logger.error(
+                    f"Error in file reading: {e}",
+                    workspace_path=workspace_path,
+                    file_path=file_to_read,
+                    context={"error": str(e)}
+                )
+        
+        # Build context with codebase if workspace provided
+        context_parts = []
+        
+        # Add file content FIRST if file was read
+        if file_content_context:
+            context_parts.append(file_content_context)
+        
+        # Detect if user is asking about listing/counting files
+        list_files_intent = False
+        list_keywords = ['quantos arquivos', 'how many files', 'listar arquivos', 'list files', 
+                        'arquivos no codebase', 'files in codebase', 'todos os arquivos', 'all files',
+                        'diga cada arquivo', 'tell me each file', 'nome e tipo', 'name and type']
+        if any(keyword in last_user_message.lower() for keyword in list_keywords):
+            list_files_intent = True
+            logger.info(
+                "Detected file listing intent",
+                workspace_path=workspace_path,
+                context={"message": last_user_message}
+            )
         
         if workspace_path:
+            # If user wants to list files, get file tree
+            if list_files_intent:
+                try:
+                    from services.workspace_service import get_workspace_service
+                    ws_service = get_workspace_service()
+                    file_tree = ws_service.get_file_tree(workspace_path, max_depth=10)
+                    
+                    def collect_files(node, file_list=None, prefix=""):
+                        if file_list is None:
+                            file_list = []
+                        current_path = prefix + node.get('name', '')
+                        if node.get('type') == 'file':
+                            ext = node.get('extension', '')
+                            file_type = ext[1:] if ext else 'no extension'
+                            file_list.append({
+                                'name': node.get('name', ''),
+                                'path': current_path,
+                                'type': file_type
+                            })
+                        for child in node.get('children', []):
+                            collect_files(child, file_list, current_path + '/')
+                        return file_list
+                    
+                    all_files = collect_files(file_tree)
+                    file_count = len(all_files)
+                    
+                    files_list_text = f"\n=== FILE LISTING FOR WORKSPACE: {workspace_path} ===\n"
+                    files_list_text += f"Total files: {file_count}\n\n"
+                    files_list_text += "Files in codebase:\n"
+                    for f in all_files[:200]:  # Limit to 200 files to avoid token overflow
+                        files_list_text += f"- {f['path']} (type: {f['type']})\n"
+                    if len(all_files) > 200:
+                        files_list_text += f"\n... and {len(all_files) - 200} more files\n"
+                    files_list_text += "=== END OF FILE LISTING ===\n"
+                    
+                    context_parts.insert(0, files_list_text)  # Add at beginning for priority
+                    logger.info(
+                        f"Added file listing context: {file_count} files",
+                        workspace_path=workspace_path,
+                        context={"file_count": file_count}
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Error generating file list: {e}",
+                        workspace_path=workspace_path,
+                        context={"error": str(e)}
+                    )
+            
             try:
-                # Passar última mensagem do usuário como query para relevance scoring
-                codebase_context = get_codebase_context(workspace_path, query=last_user_message)
+                # CRITICAL: Always use workspace_path (which is explorer path) for codebase analysis
+                # Pass last user message as query for relevance scoring
+                # Force refresh for chat so workspace edits are reflected immediately in context.
+                codebase_context = get_codebase_context(workspace_path, force_refresh=True, query=last_user_message, ollama_service=ollama)
                 context_parts.append(codebase_context)
-            except:
+                logger.info(
+                    f"Loaded codebase context: {len(codebase_context)} chars",
+                    workspace_path=workspace_path,
+                    context={"context_length": len(codebase_context)}
+                )
+            except Exception as e:
+                logger.error(
+                    f"Codebase analysis error: {e}",
+                    workspace_path=workspace_path,
+                    context={"error": str(e)}
+                )
                 pass
         
         # Build system prompt
@@ -346,55 +958,98 @@ async def chat(
             base_system = ollama.CODE_SYSTEM_PROMPT if classification.is_code_related else ollama.GENERAL_SYSTEM_PROMPT
             system_prompt = f"{base_system}\n\n{classification.system_prompt_modifier}"
             
+            # Add file listing instructions if user asked about files
+            if list_files_intent:
+                system_prompt += "\n\n=== FILE LISTING REQUEST DETECTED ==="
+                system_prompt += "\nThe user wants to know about files in the codebase."
+                system_prompt += "\nA complete file listing has been provided in the context above."
+                system_prompt += "\nUse that information to answer the user's question accurately."
+                system_prompt += "\nList each file with its name and type/extension."
+                system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
+            
             if workspace_path:
-                system_prompt += f"\n\nActive workspace: {workspace_path}"
-                system_prompt += "\nRefer to the codebase analysis when answering questions about 'this project' or 'the code'."
-                system_prompt += "\n\n=== FILE CREATION FORMAT ==="
-                system_prompt += "\nCRITICAL: When creating files, use this EXACT format:"
-                system_prompt += "\n```create-file:path/to/file.ext"
-                system_prompt += "\n[file content]"
-                system_prompt += "\n```"
-                system_prompt += "\n\n=== FILE MODIFICATION FORMAT ==="
-                system_prompt += "\nCRITICAL: When MODIFYING existing files, use this EXACT format:"
-                system_prompt += "\n```modify-file:path/to/file.ext"
-                system_prompt += "\n[COMPLETE file content with your changes]"
-                system_prompt += "\n```"
-                system_prompt += "\n\nCRITICAL RULES FOR MODIFY-FILE:"
-                system_prompt += "\n1. When user provides CURRENT FILE CONTENT in their message, you MUST use that EXACT content as the base"
-                system_prompt += "\n2. Copy ALL lines from the current file content EXACTLY as shown"
-                system_prompt += "\n3. Add your changes (new functions, methods, fixes) in the appropriate place"
-                system_prompt += "\n4. DO NOT rewrite the file - only add/modify what was requested"
-                system_prompt += "\n5. If adding a method to a class, place it INSIDE the class, after existing methods"
-                system_prompt += "\n6. If adding a function, place it after existing functions"
-                system_prompt += "\n7. Maintain ALL imports, exports, and structure"
-                system_prompt += "\n8. The output must be the COMPLETE file with ALL original content PLUS your changes"
-                system_prompt += "\n\nIMPORTANT: When modifying files:"
-                system_prompt += "\n- Include ALL existing code that should be preserved"
-                system_prompt += "\n- Only change what was requested"
-                system_prompt += "\n- Maintain the same structure, imports, and style"
-                system_prompt += "\n- If adding a function/method, include it in the appropriate place in the file"
-                system_prompt += "\n- If user shows current file content, use it EXACTLY as the base"
-                system_prompt += "\n\nYou can create MULTIPLE files in ONE response using multiple ```create-file: blocks."
-                system_prompt += "\nFor workspace files, use RELATIVE paths. For external files, use ABSOLUTE paths."
-                system_prompt += "\n\nCRITICAL: When user asks to create MULTIPLE FOLDERS/DIRECTORIES or PROJECT STRUCTURE:"
-                system_prompt += "\n- Create COMPLETE, PROFESSIONAL, PRODUCTION-READY structures!"
-                system_prompt += "\n- NEVER create empty folders - ALWAYS include useful, functional files"
-                system_prompt += "\n- For React projects: Create index.js with proper exports in each folder"
-                system_prompt += "\n- For hooks: Create useExample.js with complete, working hook AND index.js"
-                system_prompt += "\n- For utils: Create index.js with multiple utility functions (formatDate, debounce, etc.)"
-                system_prompt += "\n- For services: Create api.js with complete API service AND index.js"
-                system_prompt += "\n- For public: Create index.html with complete HTML5 structure"
-                system_prompt += "\n- ALWAYS create meaningful, production-ready files with best practices"
-                system_prompt += "\n- Include proper imports, exports, error handling, and documentation"
-                system_prompt += "\n- DO NOT skip any folder - create ALL folders with COMPLETE, PROFESSIONAL content"
-                system_prompt += "\n- QUALITY IS PARAMOUNT: Every file must be production-ready and well-structured"
-                system_prompt += "\n\n=== CONVERSATION CONTEXT ==="
-                system_prompt += "\nCRITICAL: You have access to the FULL conversation history above."
-                system_prompt += "\n- When user refers to 'the file we created', 'that file', or 'previous message', look at the conversation history"
-                system_prompt += "\n- Remember ALL files created in previous messages in this conversation"
-                system_prompt += "\n- When modifying files, you MUST include the COMPLETE file content from the conversation history or codebase context"
-                system_prompt += "\n- If you see a file was created in a previous message, use modify-file to update it, NOT create-file"
-                system_prompt += "\n- Always preserve existing code when modifying files - include ALL original content plus your changes"
+                # CRITICAL: Distinguish between READ and CREATE file intents
+                if read_file_intent and file_content_context:
+                    system_prompt += "\n\n=== FILE READING DETECTED ==="
+                    system_prompt += f"\nThe user wants to READ the file '{file_to_read}', NOT create it."
+                    system_prompt += "\nThe file content is provided in the context above."
+                    system_prompt += "\nDO NOT use create-file: format. Simply explain what is written in the file."
+                    system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
+                    system_prompt += "\nIf the file content is empty or the file doesn't exist, say so clearly."
+                elif read_file_intent and not file_content_context:
+                    system_prompt += "\n\n=== FILE READING DETECTED (FILE NOT FOUND) ==="
+                    system_prompt += f"\nThe user wants to READ the file '{file_to_read}', but the file was not found."
+                    system_prompt += "\nDO NOT try to create the file. Simply inform the user that the file was not found."
+                    system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
+                else:
+                    # Normal file creation instructions
+                    from services.path_intelligence import PathIntelligence
+                    from services.project_detector import get_project_detector
+                    
+                    # Detect if user wants external project
+                    is_external, external_path = PathIntelligence.detect_external_project_intention(
+                        last_user_message, workspace_path
+                    )
+                    
+                    # Detect if user wants to create a project that needs its own directory
+                    project_detector = get_project_detector(ollama)
+                    project_intention = await project_detector.detect_project_intention(
+                        last_user_message, workspace_path
+                    )
+                    
+                    system_prompt += f"\n\nActive workspace: {workspace_path}"
+                    
+                    if project_intention.get("needs_directory", False):
+                        project_name = project_intention.get("project_name", "new-project")
+                        project_type = project_intention.get("project_type", "general")
+                        
+                        system_prompt += f"\n\n🎯 PROJECT CREATION DETECTED: User wants to create a {project_type} project."
+                        system_prompt += f"\nCRITICAL: You MUST create a directory for this project FIRST."
+                        system_prompt += f"\n1. FIRST create the project directory: ```create-directory:{project_name}```"
+                        system_prompt += f"\n2. THEN create ALL files INSIDE this directory: ```create-file:{project_name}/package.json```"
+                        system_prompt += f"\n3. ALL files must be created inside {project_name}/ directory"
+                        system_prompt += f"\n4. Example: ```create-file:{project_name}/src/index.js``` NOT ```create-file:src/index.js```"
+                        system_prompt += f"\n5. This keeps the project isolated and organized"
+                        
+                        # Add project-type-specific instructions
+                        if project_type == "android":
+                            system_prompt += f"\n\n📱 ANDROID PROJECT REQUIREMENTS:"
+                            system_prompt += f"\n- MUST create build.gradle (project level)"
+                            system_prompt += f"\n- MUST create settings.gradle"
+                            system_prompt += f"\n- MUST create app/build.gradle"
+                            system_prompt += f"\n- MUST create app/src/main/AndroidManifest.xml"
+                            system_prompt += f"\n- MUST create Kotlin/Java source files in app/src/main/java/"
+                            system_prompt += f"\n- MUST create MainActivity.kt or MainActivity.java"
+                            system_prompt += f"\n- If API mock requested: MUST create API service/mock files"
+                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
+                        
+                        elif project_type == "react":
+                            system_prompt += f"\n\n⚛️ REACT PROJECT REQUIREMENTS:"
+                            system_prompt += f"\n- MUST create package.json with React dependencies"
+                            system_prompt += f"\n- MUST create public/index.html"
+                            system_prompt += f"\n- MUST create src/index.js or src/index.jsx"
+                            system_prompt += f"\n- MUST create src/App.jsx or src/App.js"
+                            system_prompt += f"\n- MUST create React components (JSX/TSX files)"
+                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
+                        
+                        elif project_type == "node":
+                            system_prompt += f"\n\n📦 NODE.JS PROJECT REQUIREMENTS:"
+                            system_prompt += f"\n- MUST create package.json"
+                            system_prompt += f"\n- MUST create index.js or server.js"
+                            system_prompt += f"\n- MUST create complete project structure"
+                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
+                    
+                    if is_external and external_path:
+                        system_prompt += f"\n\n⚠️ EXTERNAL PROJECT DETECTED: User wants to create project outside workspace."
+                        system_prompt += f"\nSuggested path: {external_path}"
+                        system_prompt += f"\nUse ABSOLUTE paths for all files in this project."
+                    
+                    system_prompt += "\nRefer to codebase analysis when answering about 'this project'."
+                    system_prompt += "\n\nCRITICAL FILE FORMAT RULES:"
+                    system_prompt += "\n- ALWAYS use ```create-file: (three backticks + create-file:)"
+                    system_prompt += "\n- NEVER use ```bash, ```sh, or any other language tag for file actions"
+                    system_prompt += "\n- START your response DIRECTLY with ```create-file: blocks when creating files"
+                    system_prompt += "\n- DELETE FILES: Use ```delete-file:path or ```delete-directory:path format."
         
         # Add context to prompt
         full_prompt = ""
@@ -432,20 +1087,53 @@ async def chat(
         )
         
         # Process agent actions if in agent mode (detected by presence of create-file, modify-file, etc)
-        response_content = result.response
+        # Initialize response_content safely
+        if not result or not hasattr(result, 'response') or not result.response:
+            logger.error(
+                "Invalid response from Ollama",
+                workspace_path=workspace_path,
+                context={"result": str(result) if result else "None"}
+            )
+            response_content = "I apologize, but I encountered an error generating a response. Please try again."
+        else:
+            response_content = result.response
+        
         actions_processed = False
         actions_result = None
         
-        # Check if response contains agent actions
-        if 'create-file:' in response_content or 'modify-file:' in response_content:
-            from services.action_processor import get_action_processor
-            processor = get_action_processor()
-            actions_result = await processor.process_actions(
-                response_content,
-                workspace_path
+        # CRITICAL: If user wanted to READ a file, don't process create-file actions
+        if read_file_intent:
+            logger.info(
+                "File reading intent detected - skipping action processing",
+                workspace_path=workspace_path,
+                file_path=file_to_read
             )
-            response_content = actions_result['processed_text']
-            actions_processed = True
+            # Remove any create-file actions that might have been generated incorrectly
+            if 'create-file:' in response_content:
+                logger.warning(
+                    "AI generated create-file for a READ request. Removing it.",
+                    workspace_path=workspace_path,
+                    file_path=file_to_read
+                )
+                response_content = re.sub(r'```create-file:[^\n]+\n[\s\S]*?```', '', response_content)
+                response_content = re.sub(r'create-file:[^\n]+', '', response_content)
+        else:
+            # Check if response contains agent actions
+            if any(action in response_content for action in ['create-file:', 'modify-file:', 'delete-file:', 'delete-directory:', 'run-command']):
+                from services.action_processor import get_action_processor
+                processor = get_action_processor(ollama_service=ollama)
+                actions_result = await processor.process_actions(
+                    response_content,
+                    workspace_path
+                )
+                response_content = actions_result['processed_text']
+                actions_processed = True
+        
+        # Add refresh flag if actions were processed successfully
+        refresh_explorer = False
+        if actions_processed and actions_result:
+            if actions_result.get('success_count', 0) > 0:
+                refresh_explorer = True
         
         return {
             "choices": [{
@@ -454,13 +1142,15 @@ async def chat(
                     "content": response_content
                 }
             }],
-            "model": result.model,
+            "model": model,
+            "usage": result.usage if hasattr(result, 'usage') else {},
+            "actions_result": actions_result if actions_processed else None,
+            "actions_processed": actions_processed,
+            "refresh_explorer": refresh_explorer,
             "classification": {
                 "category": classification.category.value,
                 "is_code_related": classification.is_code_related
-            },
-            "actions_processed": actions_processed,
-            "actions_result": actions_result
+            }
         }
         
     except Exception as e:
@@ -541,7 +1231,14 @@ async def analyze_codebase_endpoint(
         if not os.path.exists(path):
             raise HTTPException(status_code=404, detail=f"Path not found: {request.path}")
         
-        analyzer = CodebaseAnalyzer(path)
+        # Try to get ollama service for AI-powered analysis
+        try:
+            from services.ollama_service import get_ollama_service
+            ollama_service = get_ollama_service()
+        except:
+            ollama_service = None
+        
+        analyzer = CodebaseAnalyzer(path, ollama_service=ollama_service)
         analysis = analyzer.analyze(max_files=request.max_files)
         
         # Get AI-ready context
@@ -593,7 +1290,14 @@ async def get_codebase_context_endpoint(
         if not os.path.exists(expanded_path):
             raise HTTPException(status_code=404, detail=f"Path not found: {path}")
         
-        context = get_codebase_context(expanded_path, force_refresh=refresh)
+        # Try to get ollama service
+        try:
+            from services.ollama_service import get_ollama_service
+            ollama_service = get_ollama_service()
+        except:
+            ollama_service = None
+        
+        context = get_codebase_context(expanded_path, force_refresh=refresh, ollama_service=ollama_service)
         
         return {
             "path": path,

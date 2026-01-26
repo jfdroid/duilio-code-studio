@@ -15,6 +15,10 @@ from services.file_service import FileService, get_file_service
 from core.exceptions import WorkspaceError
 
 
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 router = APIRouter(prefix="/api/workspace", tags=["Workspace"])
 
 

@@ -14,7 +14,8 @@ from loguru import logger
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config.settings import settings
+from core.config import get_settings
+settings = get_settings()
 
 
 class OllamaClient:

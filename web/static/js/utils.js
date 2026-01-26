@@ -114,6 +114,25 @@ const Utils = {
         // Trim whitespace
         filePath = filePath.trim();
         
+        // CRITICAL: Check if path looks like an absolute path (starts with /Users, /home, /var, etc.)
+        // but is missing the leading slash
+        const absolutePathPatterns = [
+            /^Users\//,
+            /^home\//,
+            /^var\//,
+            /^tmp\//,
+            /^opt\//,
+            /^etc\//,
+            /^root\//,
+            /^[A-Z]:\\/,  // Windows drive letter
+        ];
+        
+        const looksLikeAbsolute = absolutePathPatterns.some(pattern => pattern.test(filePath));
+        if (looksLikeAbsolute && !filePath.startsWith('/')) {
+            // This is an absolute path missing the leading slash
+            filePath = '/' + filePath;
+        }
+        
         // If no workspace, return path as-is (or make absolute if starts with /)
         if (!workspacePath) {
             return filePath.startsWith('/') ? filePath : `/${filePath}`;
@@ -125,6 +144,13 @@ const Utils = {
         
         // Remove leading ./ from filePath
         let cleanPath = filePath.replace(/^\.\//, '');
+        
+        // CRITICAL: If path starts with /Users, /home, etc., it's an absolute path
+        // Use it as-is (don't try to join with workspace)
+        if (cleanPath.startsWith('/')) {
+            // Already absolute path - normalize slashes and return
+            return cleanPath.replace(/\/+/g, '/');
+        }
         
         // CRITICAL: Check if path already contains workspace (avoid duplication)
         // Check multiple variations to catch all cases
@@ -177,6 +203,11 @@ const Utils = {
                 // Normalize slashes
                 normalized = normalized.replace(/\/+/g, '/');
                 
+                // CRITICAL: Ensure it starts with /
+                if (!normalized.startsWith('/')) {
+                    normalized = '/' + normalized;
+                }
+                
                 return normalized;
             }
         }
@@ -188,14 +219,17 @@ const Utils = {
             if (!cleanPath.startsWith(normalizedWorkspace)) {
                 // This is an absolute path outside the workspace (e.g., /Users/username/Desktop/file.txt)
                 // Return as-is - user explicitly requested this location
-                return cleanPath;
+                return cleanPath.replace(/\/+/g, '/');
             }
             // If it starts with workspace but wasn't caught above, use as-is
-            return cleanPath;
+            return cleanPath.replace(/\/+/g, '/');
         }
         
         // Relative path - join with workspace
-        return `${normalizedWorkspace}/${cleanPath}`.replace(/\/+/g, '/');
+        const result = `${normalizedWorkspace}/${cleanPath}`.replace(/\/+/g, '/');
+        
+        // CRITICAL: Ensure result always starts with /
+        return result.startsWith('/') ? result : '/' + result;
     },
     
     /**

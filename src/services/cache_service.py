@@ -70,13 +70,13 @@ class CacheService:
     
     def get(self, key: str) -> Optional[Any]:
         """
-        Obtém valor do cache.
+        Get value from cache.
         
         Args:
-            key: Chave do cache
+            key: Cache key
             
         Returns:
-            Valor armazenado ou None se não encontrado/expirado
+            Stored value or None if not found/expired
         """
         try:
             return self.cache.get(key, default=None)
@@ -85,15 +85,15 @@ class CacheService:
     
     def set(self, key: str, value: Any, ttl: int = None) -> bool:
         """
-        Armazena valor no cache.
+        Store value in cache.
         
         Args:
-            key: Chave do cache
-            value: Valor a armazenar
-            ttl: Tempo de vida em segundos (None = usar default)
+            key: Cache key
+            value: Value to store
+            ttl: Time to live in seconds (None = use default)
             
         Returns:
-            True se armazenado com sucesso
+            True if stored successfully
         """
         try:
             ttl = ttl or self.default_ttl
@@ -104,13 +104,13 @@ class CacheService:
     
     def delete(self, key: str) -> bool:
         """
-        Remove entrada do cache.
+        Remove entry from cache.
         
         Args:
-            key: Chave do cache
+            key: Cache key
             
         Returns:
-            True se removido com sucesso
+            True if removed successfully
         """
         try:
             return self.cache.delete(key)
@@ -119,13 +119,13 @@ class CacheService:
     
     def clear(self, prefix: str = None) -> int:
         """
-        Limpa cache.
+        Clear cache.
         
         Args:
-            prefix: Se fornecido, limpa apenas chaves com prefixo
+            prefix: If provided, clear only keys with prefix
             
         Returns:
-            Número de entradas removidas
+            Number of entries removed
         """
         if prefix:
             # Limpar apenas chaves com prefixo
@@ -143,15 +143,15 @@ class CacheService:
     
     def get_or_set(self, key: str, factory: callable, ttl: int = None) -> Any:
         """
-        Obtém valor do cache ou executa factory e armazena.
+        Get value from cache or execute factory and store.
         
         Args:
-            key: Chave do cache
-            factory: Função que retorna valor se não encontrado
-            ttl: Tempo de vida em segundos
+            key: Cache key
+            factory: Function that returns value if not found
+            ttl: Time to live in seconds
             
         Returns:
-            Valor do cache ou resultado da factory
+            Cache value or factory result
         """
         value = self.get(key)
         if value is not None:
@@ -164,10 +164,10 @@ class CacheService:
     
     def stats(self) -> Dict[str, Any]:
         """
-        Retorna estatísticas do cache.
+        Return cache statistics.
         
         Returns:
-            Dict com estatísticas
+            Dict with statistics
         """
         try:
             volume = self.cache.volume()
@@ -199,11 +199,11 @@ def get_cache_service() -> CacheService:
 
 def cached(prefix: str = "cache", ttl: int = None):
     """
-    Decorator para cachear resultado de função.
+    Decorator to cache function result.
     
     Args:
-        prefix: Prefixo para chave de cache
-        ttl: Tempo de vida em segundos
+        prefix: Prefix for cache key
+        ttl: Time to live in seconds
         
     Example:
         @cached(prefix="codebase_analysis", ttl=3600)
