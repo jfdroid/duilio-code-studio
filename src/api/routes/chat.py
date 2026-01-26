@@ -988,6 +988,38 @@ async def chat(
             base_system = ollama.CODE_SYSTEM_PROMPT if classification.is_code_related else ollama.GENERAL_SYSTEM_PROMPT
             system_prompt = f"{base_system}\n\n{classification.system_prompt_modifier}"
             
+            # === AGENT MODE: Add system information ===
+            # In Agent mode, provide system/machine information for local context
+            # This allows the AI to answer questions about the user's machine, OS, hardware, etc.
+            try:
+                from services.system_info import get_system_info_service
+                system_info_service = get_system_info_service()
+                system_info_text = system_info_service.get_formatted_prompt()
+                
+                system_prompt += "\n\n=== AGENT MODE: LOCAL MACHINE ACCESS ==="
+                system_prompt += f"\n{system_info_text}"
+                system_prompt += "\n\nCRITICAL: You have DIRECT ACCESS to the user's local machine information above."
+                system_prompt += "\nYou CAN and SHOULD answer questions about:"
+                system_prompt += "\n- Operating system and version"
+                system_prompt += "\n- CPU and hardware specifications"
+                system_prompt += "\n- Memory/RAM information"
+                system_prompt += "\n- User name and home directory"
+                system_prompt += "\n- Hostname and system details"
+                system_prompt += "\n- Any other system/machine-related questions"
+                system_prompt += "\n\nDO NOT say you cannot see or access this information - YOU HAVE IT!"
+                system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
+                
+                logger.info(
+                    "Added system information to Agent mode prompt",
+                    workspace_path=workspace_path
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Could not add system information: {e}",
+                    workspace_path=workspace_path,
+                    context={"error": str(e)}
+                )
+            
             # Add file listing instructions if user asked about files
             if list_files_intent:
                 system_prompt += "\n\n=== FILE LISTING REQUEST DETECTED ==="
