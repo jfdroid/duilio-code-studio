@@ -36,7 +36,7 @@ router = APIRouter(prefix="/api", tags=["Chat"])
 class GenerateRequest(BaseModel):
     """Request for code/text generation."""
     prompt: str = Field(..., description="The prompt")
-    model: Optional[str] = Field(default=None, description="Model to use (None for auto-selection)")
+    model: str = Field(..., description="Model to use (required)")
     system_prompt: Optional[str] = None
     context: Optional[str] = None
     workspace_path: Optional[str] = Field(default=None, description="Path to analyze for context")
@@ -48,7 +48,7 @@ class GenerateRequest(BaseModel):
 class ChatRequest(BaseModel):
     """Request for chat completion."""
     messages: list = Field(..., description="Message history")
-    model: Optional[str] = Field(default=None, description="Model to use (None for auto)")
+    model: str = Field(..., description="Model to use (required)")
     workspace_path: Optional[str] = Field(default=None, description="Workspace path for context")
     temperature: float = Field(default=0.7)
     stream: bool = Field(default=False)
@@ -485,11 +485,13 @@ async def generate(
             if intent:
                 system_prompt += f"\n\n=== DETECTED INTENT ===\n{intent}"
         
-        # === 9. SELECT MODEL (Smart Selection) ===
+        # === 9. SELECT MODEL (Required - no auto selection) ===
         model = request.model
-        if model is None:
-            # Prefer user's learned preference, then classification
-            model = preferred_model or classification.recommended_model
+        if model is None or model == "":
+            raise HTTPException(
+                status_code=400,
+                detail="Model is required. Please specify a model name."
+            )
         
         logger.info(
             f"Generating with model: {model}, category: {classification.category.value}",
@@ -1057,10 +1059,13 @@ async def chat(
             full_prompt = "\n\n".join(context_parts) + "\n\n---\n\n"
         full_prompt += "\n".join(prompt_parts) + "\nAssistant:"
         
-        # Select model
+        # Select model (required - no auto selection)
         model = request.model
-        if model is None:
-            model = classification.recommended_model
+        if model is None or model == "":
+            raise HTTPException(
+                status_code=400,
+                detail="Model is required. Please specify a model name."
+            )
         
         if request.stream:
             async def stream_generator():

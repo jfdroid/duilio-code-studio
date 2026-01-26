@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/chat", tags=["Chat"])
 class SimpleChatRequest(BaseModel):
     """Simple chat request - just messages."""
     messages: List[Dict[str, str]] = Field(..., description="Conversation messages")
-    model: Optional[str] = Field(default=None, description="Model to use (None for default)")
+    model: str = Field(..., description="Model to use (required)")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Temperature for generation")
     stream: bool = Field(default=False, description="Stream response")
 
@@ -82,15 +82,8 @@ async def chat_simple(
         # Simple prompt: just join the conversation
         full_prompt = "\n".join(prompt_parts) + "\nAssistant:"
         
-        # Select model
+        # Model is required (validated by Pydantic)
         model = request.model
-        if model is None:
-            # Get default model from Ollama
-            models = await ollama.list_models()
-            if models:
-                model = models[0].get("name", "qwen2.5-coder:14b")
-            else:
-                model = "qwen2.5-coder:14b"
         
         # Stream if requested
         if request.stream:

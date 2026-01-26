@@ -18,12 +18,17 @@ async def test_chat_mode():
     print("="*60)
     
     async with httpx.AsyncClient(timeout=30.0) as client:
+        # Get available models first
+        models_response = await client.get(f"{BASE_URL}/api/models")
+        models_data = models_response.json()
+        available_model = models_data.get('models', [{}])[0].get('name', 'qwen2.5-coder:14b')
+        
         # Test simple question
         payload = {
             "messages": [
                 {"role": "user", "content": "Olá! Quantos arquivos você vê?"}
             ],
-            "model": None,
+            "model": available_model,
             "temperature": 0.7,
             "stream": False
         }
@@ -57,12 +62,17 @@ async def test_agent_mode():
     print("="*60)
     
     async with httpx.AsyncClient(timeout=30.0) as client:
+        # Get available models first
+        models_response = await client.get(f"{BASE_URL}/api/models")
+        models_data = models_response.json()
+        available_model = models_data.get('models', [{}])[0].get('name', 'qwen2.5-coder:14b')
+        
         # Test with workspace path
         payload = {
             "messages": [
                 {"role": "user", "content": "Quantos arquivos tem no codebase? Liste cada um com nome e tipo."}
             ],
-            "model": None,
+            "model": available_model,
             "temperature": 0.7,
             "stream": False,
             "workspace_path": None  # Will use default from workspace service

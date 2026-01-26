@@ -109,9 +109,12 @@ const Chat = {
             
             const finalSystemContext = systemContext || null;
             
-            // Use smart model selection (pass null to let backend decide) or specific model
+            // Get selected model (required - no auto selection)
             const selectedModel = document.getElementById('modelSelect')?.value;
-            const modelToUse = (selectedModel === 'auto' || !selectedModel) ? null : selectedModel;
+            if (!selectedModel) {
+                throw new Error('No model selected. Please select a model first.');
+            }
+            const modelToUse = selectedModel;
             
             // Add mode to context with CRITICAL instructions for file creation
             const modeContext = this.mode === 'agent' 
@@ -220,9 +223,9 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
                 console.log('[DuilioCode] Complex API Response:', response);
             }
             
-            // Update model selector to show which model was actually used
-            if (response.model && selectedModel === 'auto') {
-                console.log(`[DuilioCode] Auto-selected model: ${response.model}`);
+            // Log which model was used
+            if (response.model) {
+                console.log(`[DuilioCode] Using model: ${response.model}`);
             }
             
             this.hideTypingIndicator();
