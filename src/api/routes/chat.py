@@ -722,6 +722,21 @@ async def chat(
                     f"Using explorer path: {workspace_path}",
                     workspace_path=workspace_path
                 )
+            else:
+                # Try to get current workspace state
+                workspace_state = workspace.get_current()
+                if workspace_state and workspace_state.path:
+                    workspace_path = workspace_state.path
+                    logger.info(
+                        f"Using workspace state path: {workspace_path}",
+                        workspace_path=workspace_path
+                    )
+        
+        logger.info(
+            f"Workspace path for chat: {workspace_path}",
+            workspace_path=workspace_path,
+            context={"request_workspace": request.workspace_path, "final_workspace": workspace_path}
+        )
         
         # Use AI-powered intent detection instead of hardcoded patterns
         from services.intent_detector import get_intent_detector
@@ -876,15 +891,28 @@ async def chat(
         
         # Detect if user is asking about listing/counting files
         list_files_intent = False
-        list_keywords = ['quantos arquivos', 'how many files', 'listar arquivos', 'list files', 
-                        'arquivos no codebase', 'files in codebase', 'todos os arquivos', 'all files',
-                        'diga cada arquivo', 'tell me each file', 'nome e tipo', 'name and type']
-        if any(keyword in last_user_message.lower() for keyword in list_keywords):
+        list_keywords = [
+            'quantos arquivos', 'how many files', 
+            'listar arquivos', 'list files', 
+            'arquivos no codebase', 'files in codebase', 
+            'todos os arquivos', 'all files',
+            'diga cada arquivo', 'tell me each file', 
+            'nome e tipo', 'name and type',
+            'quantos arquivos voce ve', 'quantos arquivos você vê',
+            'quantos arquivos voce ve?', 'quantos arquivos você vê?',
+            'quantos arquivos vc ve', 'quantos arquivos vc vê',
+            'arquivos que voce ve', 'arquivos que você vê',
+            'arquivos que vc ve', 'arquivos que vc vê',
+            'voce ve arquivos', 'você vê arquivos',
+            'vc ve arquivos', 'vc vê arquivos'
+        ]
+        message_lower = last_user_message.lower()
+        if any(keyword in message_lower for keyword in list_keywords):
             list_files_intent = True
             logger.info(
                 "Detected file listing intent",
                 workspace_path=workspace_path,
-                context={"message": last_user_message}
+                context={"message": last_user_message, "detected_keywords": [k for k in list_keywords if k in message_lower]}
             )
         
         if workspace_path:
@@ -965,9 +993,12 @@ async def chat(
                 system_prompt += "\n\n=== FILE LISTING REQUEST DETECTED ==="
                 system_prompt += "\nThe user wants to know about files in the codebase."
                 system_prompt += "\nA complete file listing has been provided in the context above."
-                system_prompt += "\nUse that information to answer the user's question accurately."
+                system_prompt += "\nCRITICAL: You MUST use that information to answer the user's question accurately."
+                system_prompt += "\nDO NOT say you cannot see files - you have access to the file listing in the context!"
                 system_prompt += "\nList each file with its name and type/extension."
                 system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
+                if workspace_path:
+                    system_prompt += f"\nWorkspace path: {workspace_path}"
             
             if workspace_path:
                 # CRITICAL: Distinguish between READ and CREATE file intents
