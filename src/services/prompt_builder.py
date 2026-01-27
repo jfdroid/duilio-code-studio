@@ -29,20 +29,25 @@ class PromptBuilder:
     - Clear context structure
     """
     
-    BASE_SYSTEM_PROMPT = """You are DuilioCode. You have access to the user's files.
+    BASE_SYSTEM_PROMPT = """You are DuilioCode. You have DIRECT ACCESS to the user's files and folders.
 
-When asked about files:
-- Check the FILE LISTING in context above
-- List the ACTUAL files from that listing
-- Never say you cannot see files
-- Never invent paths like "/path/to/directory"
-- Use ONLY the file names from the context
+CRITICAL - YOU CAN SEE FILES AND FOLDERS:
+- A FILE LISTING is provided in the context above
+- This listing shows REAL files and folders on the user's computer
+- When asked about files/folders, use the FILE LISTING to answer
+- NEVER say "I don't have access" or "I cannot see" - YOU CAN!
+- NEVER suggest terminal commands - just use the FILE LISTING
 
-When user asks "why", "por que", "pq", "como", "explain", "explique", "motivo", "razão":
-- EXPLAIN your reasoning and decisions
-- Show HOW you arrived at the answer
-- Reference the FILE LISTING or context you used
-- Be clear about your process"""
+When asked about files or folders:
+- Check the FILE LISTING section in context above
+- Read the "Total Folders" and "Total Files" counts
+- List the ACTUAL files/folders from that listing
+- Use ONLY the numbers and names from the FILE LISTING
+
+When user asks "why", "por que", "pq", "como", "explain", "explique":
+- EXPLAIN: Reference the FILE LISTING section
+- SHOW: "I see X because the FILE LISTING shows Total Files: X"
+- CLARIFY: Explain your process using the context"""
 
     @staticmethod
     def build_crud_prompt(operation: OperationType, context: Dict[str, Any]) -> str:
@@ -109,20 +114,20 @@ When user asks "why", "por que", "pq", "como", "explain", "explique", "motivo", 
     @staticmethod
     def _build_list_prompt(context: Dict[str, Any]) -> str:
         """Build LIST operation prompt."""
-        prompt = "\nLIST OPERATION:"
+        prompt = "\nLIST OPERATION - YOU CAN SEE FILES AND FOLDERS:"
         prompt += "\n1. Find 'FILE LISTING' section in context above"
-        prompt += "\n2. Read the 'Total Folders' and 'Total Files' counts from that section"
-        prompt += "\n3. Answer with those EXACT numbers: 'Total: X arquivos e Y pastas'"
-        prompt += "\n4. If asked to list files, show the files from the FILES: section"
-        prompt += "\n5. Use ONLY the numbers and names from the FILE LISTING context"
-        prompt += "\n\nWHEN USER ASKS WHY/HOW (por que, pq, como, explain):"
-        prompt += "\n- EXPLAIN: 'I see X files because I counted them from the FILE LISTING section above'"
-        prompt += "\n- SHOW: Reference the exact section: 'In the FILE LISTING, it shows Total Files: X'"
-        prompt += "\n- CLARIFY: Explain if it's a sample listing vs total count"
-        prompt += "\n\nCRITICAL:"
-        prompt += "\n- The FILE LISTING shows the REAL counts - use them!"
-        prompt += "\n- Never invent numbers or paths"
-        prompt += "\n- Never say you cannot see - the listing is in context!"
+        prompt += "\n2. Read 'Total Folders: X' and 'Total Files: Y' from that section"
+        prompt += "\n3. Answer: 'Sim, consigo ver. Total: X arquivos e Y pastas'"
+        prompt += "\n4. If asked to list, show items from FOLDERS: and FILES: sections"
+        prompt += "\n5. Use ONLY the numbers and names from FILE LISTING"
+        prompt += "\n\nABSOLUTELY FORBIDDEN:"
+        prompt += "\n- DO NOT say 'I don't have access' or 'I cannot see'"
+        prompt += "\n- DO NOT suggest terminal commands (ls, grep, etc.)"
+        prompt += "\n- DO NOT say 'navigate to directory' or 'use command'"
+        prompt += "\n- The FILE LISTING IS YOUR ACCESS - use it!"
+        prompt += "\n\nWHEN USER ASKS WHY/HOW:"
+        prompt += "\n- EXPLAIN: 'I see X because FILE LISTING shows Total Files: X'"
+        prompt += "\n- REFERENCE: 'In the FILE LISTING section above, it shows...'"
         return prompt
     
     @staticmethod
@@ -133,12 +138,12 @@ When user asks "why", "por que", "pq", "como", "explain", "explique", "motivo", 
         if system_info:
             prompt += f"\n\nSystem: {system_info}"
         
-        prompt += "\n\nAGENT MODE:"
-        prompt += "\n- File listing is in context above"
-        prompt += "\n- When asked about files, LIST them from the context"
-        prompt += "\n- When user asks WHY/HOW/EXPLAIN, provide detailed reasoning"
-        prompt += "\n- Explain your decisions: reference the FILE LISTING, show your process"
-        prompt += "\n- Balance: direct answers for simple questions, explanations when asked"
+        prompt += "\n\nAGENT MODE - YOU HAVE ACCESS:"
+        prompt += "\n- A FILE LISTING is in context above - it shows REAL files and folders"
+        prompt += "\n- When asked about files/folders, answer using the FILE LISTING"
+        prompt += "\n- NEVER say you don't have access or cannot see - YOU CAN!"
+        prompt += "\n- NEVER suggest terminal commands - use the FILE LISTING instead"
+        prompt += "\n- When user asks WHY/HOW, explain using the FILE LISTING as reference"
         
         return prompt
     
@@ -155,25 +160,37 @@ When user asks "why", "por que", "pq", "como", "explain", "explique", "motivo", 
         files_count = total_files if total_files is not None else len(files)
         folders_count = total_folders if total_folders is not None else len(folders)
         
-        context = f"\nFILE LISTING: {workspace_path}\n"
-        context += f"Total Folders: {folders_count}, Total Files: {files_count}\n"
+        context = f"\n{'='*70}\n"
+        context += f"FILE LISTING: {workspace_path}\n"
+        context += f"{'='*70}\n"
+        context += f"\nTOTALS (use these exact numbers when asked):\n"
+        context += f"  Total Folders: {folders_count}\n"
+        context += f"  Total Files: {files_count}\n"
         if total_files is not None and total_files > len(files):
-            context += f"(Showing first {len(files)} files in listing below)\n"
-        context += "\n"
+            context += f"\nNote: Showing first {len(files)} files and {len(folders)} folders in listing below\n"
+        context += f"\n{'='*70}\n"
         
         if folders:
-            context += "FOLDERS:\n"
+            context += "\nFOLDERS (these are real folders you can see):\n"
             for folder in folders[:50]:
                 context += f"  {folder.get('path', folder.get('name', ''))}\n"
             if len(folders) > 50:
-                context += f"  ... {len(folders) - 50} more\n"
+                context += f"  ... {len(folders) - 50} more folders\n"
+        else:
+            context += "\nFOLDERS: (none listed)\n"
         
         if files:
-            context += "\nFILES:\n"
+            context += "\nFILES (these are real files you can see):\n"
             for file in files[:150]:
                 context += f"  {file.get('path', file.get('name', ''))}\n"
             if len(files) > 150:
-                context += f"  ... {len(files) - 150} more\n"
+                context += f"  ... {len(files) - 150} more files\n"
+        else:
+            context += "\nFILES: (none listed)\n"
+        
+        context += f"\n{'='*70}\n"
+        context += "CRITICAL: These are REAL files and folders. When asked, use these numbers and names.\n"
+        context += f"{'='*70}\n"
         
         return context
     

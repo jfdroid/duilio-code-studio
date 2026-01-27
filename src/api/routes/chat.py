@@ -1014,6 +1014,16 @@ async def chat(
             'voce ve os arquivos', 'você vê os arquivos',
             'vc ve os arquivos', 'vc vê os arquivos',
             
+            # Folder visibility questions
+            'voce consegue ver as pastas', 'você consegue ver as pastas',
+            'vc consegue ver as pastas', 'vc consegue ver as pastas',
+            'quantas pastas existem', 'how many folders exist',
+            'quantas pastas voce ve', 'quantas pastas você vê',
+            'quantas pastas vc ve', 'quantas pastas vc vê',
+            'voce ve pastas', 'você vê pastas',
+            'vc ve pastas', 'vc vê pastas',
+            'consegue ver pastas', 'can you see folders',
+            
             # Can you see questions (consegue ver / can you see)
             'consegue ver os arquivos', 'can you see the files',
             'consegue ver arquivos', 'can you see files',
