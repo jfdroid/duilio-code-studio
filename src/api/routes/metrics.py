@@ -16,6 +16,12 @@ if str(src_path) not in sys.path:
 
 from core.metrics import MetricsCollector, get_metrics_collector as _get_metrics_collector
 
+
+def get_metrics_collector() -> MetricsCollector:
+    """Get metrics collector instance."""
+    return _get_metrics_collector()
+
+
 router = APIRouter(prefix="/api/metrics", tags=["Metrics"])
 
 
