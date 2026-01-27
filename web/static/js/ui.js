@@ -67,16 +67,22 @@ const UI = {
             
             if (select && data.models && data.models.length > 0) {
                 // Add all available models (no AUTO option)
-                // Select first model by default
-                let options = data.models.map((m, index) => 
-                    `<option value="${m.name}" ${index === 0 ? 'selected' : ''}>${m.name}</option>`
+                // Don't select by default - let Chat.setDefaultModelForMode() handle it
+                let options = data.models.map((m) => 
+                    `<option value="${m.name}">${m.name}</option>`
                 ).join('');
                 
                 select.innerHTML = options;
                 
-                // Set first model as current
-                if (data.models[0]) {
-                    AppState.chat.currentModel = data.models[0].name;
+                // Set default model based on current mode
+                if (typeof Chat !== 'undefined' && Chat.mode) {
+                    Chat.setDefaultModelForMode(Chat.mode);
+                } else {
+                    // Fallback: select first model if Chat not initialized
+                    if (data.models[0]) {
+                        select.value = data.models[0].name;
+                        AppState.chat.currentModel = data.models[0].name;
+                    }
                 }
             }
         } catch (error) {

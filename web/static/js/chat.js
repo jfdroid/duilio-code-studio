@@ -20,6 +20,62 @@ const Chat = {
             this.mode = 'chat';
             console.log('[DuilioCode] Initialized mode: chat (from HTML)');
         }
+        
+        // Set default model for initial mode
+        // Wait a bit for models to load
+        setTimeout(() => {
+            this.setDefaultModelForMode(this.mode);
+        }, 500);
+    },
+
+    /**
+     * Set default model based on mode
+     */
+    setDefaultModelForMode(mode) {
+        const modelSelect = document.getElementById('modelSelect');
+        if (!modelSelect) return;
+        
+        // Get available models
+        const availableModels = Array.from(modelSelect.options).map(opt => opt.value);
+        
+        if (mode === 'chat') {
+            // Chat mode: Try to find Llama model
+            const llamaModel = availableModels.find(m => 
+                m.toLowerCase().includes('llama') || 
+                m.toLowerCase().includes('llama2') ||
+                m.toLowerCase().includes('llama3')
+            );
+            
+            if (llamaModel) {
+                modelSelect.value = llamaModel;
+                AppState.chat.currentModel = llamaModel;
+                console.log('[DuilioCode] Chat mode: Set default model to', llamaModel);
+            } else {
+                console.warn('[DuilioCode] Chat mode: Llama model not found, keeping current selection');
+            }
+        } else {
+            // Agent mode: Try to find Qwen 7B
+            const qwen7bModel = availableModels.find(m => 
+                m.toLowerCase().includes('qwen') && 
+                (m.toLowerCase().includes('7b') || m.toLowerCase().includes('7-b'))
+            );
+            
+            if (qwen7bModel) {
+                modelSelect.value = qwen7bModel;
+                AppState.chat.currentModel = qwen7bModel;
+                console.log('[DuilioCode] Agent mode: Set default model to', qwen7bModel);
+            } else {
+                // Fallback to any Qwen model
+                const qwenModel = availableModels.find(m => m.toLowerCase().includes('qwen'));
+                if (qwenModel) {
+                    modelSelect.value = qwenModel;
+                    AppState.chat.currentModel = qwenModel;
+                    console.log('[DuilioCode] Agent mode: Set default model to', qwenModel, '(7B not found)');
+                } else {
+                    console.warn('[DuilioCode] Agent mode: Qwen model not found, keeping current selection');
+                }
+            }
+        }
     },
 
     /**
@@ -45,6 +101,9 @@ const Chat = {
                 ? 'Ask me to create files, run commands, modify code...'
                 : 'Ask me anything, I\'ll explain and suggest...';
         }
+        
+        // Set default model based on mode
+        this.setDefaultModelForMode(mode);
         
         // === CHAT MODE: Centered Layout (like Gemini/DeepSeek) ===
         // Center chat and hide all IDE elements in Chat mode
