@@ -1297,13 +1297,30 @@ async def chat(
                 elif list_files_intent or seeing_created_intent:
                     operation = OperationType.LIST
                 
-                # Detect explanation request
-                explanation_keywords = [
-                    'por que', 'porque', 'pq', 'why', 'como', 'how',
-                    'explain', 'explique', 'motivo', 'razão', 'reason',
-                    'decisão', 'decision', 'por qual', 'qual o motivo'
-                ]
-                explanation_intent = any(kw in last_user_message.lower() for kw in explanation_keywords)
+                # === LINGUISTIC ANALYSIS: Focus on verbs and connectors ===
+                from services.linguistic_analyzer import get_linguistic_analyzer
+                linguistic_analyzer = get_linguistic_analyzer()
+                linguistic_analysis = linguistic_analyzer.analyze(last_user_message)
+                
+                # Build structured context from linguistic analysis
+                linguistic_context = linguistic_analyzer.build_structured_context(linguistic_analysis)
+                
+                # Use linguistic analysis for explanation detection (more intelligent)
+                explanation_intent = linguistic_analysis.requires_explanation
+                
+                logger.info(
+                    f"Linguistic analysis: verb={linguistic_analysis.main_verb}, "
+                    f"category={linguistic_analysis.verb_category}, "
+                    f"intent={linguistic_analysis.intent}, "
+                    f"requires_explanation={explanation_intent}",
+                    workspace_path=workspace_path,
+                    context={
+                        "main_verb": linguistic_analysis.main_verb,
+                        "verb_category": linguistic_analysis.verb_category.value if linguistic_analysis.verb_category else None,
+                        "intent": linguistic_analysis.intent,
+                        "confidence": linguistic_analysis.confidence
+                    }
+                )
                 
                 # Add linguistic analysis context to system prompt
                 if linguistic_context:
