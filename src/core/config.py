@@ -1,21 +1,28 @@
 """
 Configuration Settings
 ======================
-Centralized configuration using Pydantic Settings.
+Comprehensive centralized configuration using Pydantic Settings.
 Supports environment variables and .env files.
+
+Expanded from original config.py to include all application settings.
 """
 
 import os
 from pathlib import Path
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, List
+from pydantic import Field, validator
 
-from pydantic_settings import BaseSettings
+try:
+    from pydantic_settings import BaseSettings
+except ImportError:
+    # Fallback for older pydantic versions
+    from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
     """
-    Application settings with environment variable support.
+    Comprehensive application settings with environment variable support.
     
     All settings can be overridden via environment variables
     or a .env file in the project root.
@@ -28,8 +35,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # === Server ===
-    HOST: str = "127.0.0.1"
-    PORT: int = 8080
+    HOST: str = Field(default="127.0.0.1", description="Server host")
+    PORT: int = Field(default=8080, description="Server port")
+    RELOAD: bool = Field(default=False, description="Auto-reload on code changes")
     
     # === Paths ===
     BASE_DIR: Path = Path(__file__).parent.parent.parent
@@ -39,23 +47,58 @@ class Settings(BaseSettings):
     DATA_DIR: Optional[Path] = None  # For user preferences, conversation history, etc.
     
     # === Ollama ===
-    OLLAMA_HOST: str = "http://localhost:11434"
-    OLLAMA_TIMEOUT: float = 300.0  # 5 minutes for large models
-    DEFAULT_MODEL: str = "qwen2.5-coder:14b"
-    FALLBACK_MODEL: str = "qwen2.5-coder:7b"
+    OLLAMA_HOST: str = Field(default="http://localhost:11434", description="Ollama API base URL")
+    OLLAMA_TIMEOUT: float = Field(default=300.0, description="Ollama request timeout (seconds)")
+    DEFAULT_MODEL: str = Field(default="qwen2.5-coder:14b", description="Default Ollama model")
+    FALLBACK_MODEL: str = Field(default="qwen2.5-coder:7b", description="Fallback Ollama model")
     
     # === AI Generation ===
-    MAX_TOKENS: int = 4096
-    TEMPERATURE: float = 0.7
+    MAX_TOKENS: int = Field(default=4096, ge=1, le=32768, description="Maximum tokens for generation")
+    TEMPERATURE: float = Field(default=0.7, ge=0.0, le=2.0, description="Default temperature")
+    FILE_LISTING_TEMPERATURE: float = Field(default=0.2, ge=0.0, le=2.0, description="Temperature for file listing")
     
     # === File Operations ===
-    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
-    CREATE_BACKUPS: bool = True
+    MAX_FILE_SIZE: int = Field(default=10 * 1024 * 1024, description="Maximum file size (bytes)")
+    CREATE_BACKUPS: bool = Field(default=True, description="Create backups before file operations")
+    FILE_OPERATIONS_ENABLED: bool = Field(default=True, description="Enable file operations")
+    
+    # === Cache Configuration ===
+    CACHE_DIR: str = Field(default=".cache/duiliocode", description="Cache directory")
+    CACHE_DEFAULT_TTL: int = Field(default=3600, description="Default cache TTL (seconds)")
+    CACHE_SIZE_LIMIT_MB: int = Field(default=500, description="Cache size limit (MB)")
+    
+    # === Workspace Configuration ===
+    WORKSPACE_MAX_DEPTH: int = Field(default=15, description="Maximum workspace traversal depth")
+    WORKSPACE_MAX_FILES: int = Field(default=50000, description="Maximum files to scan")
+    
+    # === Codebase Analysis ===
+    CODEBASE_MAX_FILES: int = Field(default=100, description="Maximum files to analyze")
+    CODEBASE_MAX_CONTEXT_LENGTH: int = Field(default=8000, description="Maximum context length")
+    
+    # === Rate Limiting ===
+    RATE_LIMIT_ENABLED: bool = Field(default=True, description="Enable rate limiting")
+    RATE_LIMIT_CHAT: str = Field(default="30/minute", description="Chat endpoint rate limit")
+    RATE_LIMIT_GENERATE: str = Field(default="20/minute", description="Generate endpoint rate limit")
     
     # === Logging ===
-    LOG_LEVEL: str = "INFO"
-    LOG_FILE: Optional[Path] = None  # If None, logs only to console
-    LOG_JSON: bool = True  # Use structured JSON logging
+    LOG_LEVEL: str = Field(default="INFO", description="Logging level")
+    LOG_FILE: Optional[Path] = Field(default=None, description="Log file path (None = console only)")
+    LOG_JSON: bool = Field(default=True, description="Use structured JSON logging")
+    
+    # === Security ===
+    CORS_ORIGINS: List[str] = Field(default=["*"], description="CORS allowed origins")
+    CORS_ALLOW_CREDENTIALS: bool = Field(default=True, description="Allow CORS credentials")
+    
+    # === Performance ===
+    MAX_CONCURRENT_REQUESTS: int = Field(default=100, description="Maximum concurrent requests")
+    REQUEST_TIMEOUT: int = Field(default=300, description="Request timeout (seconds)")
+    
+    @validator("CORS_ORIGINS", pre=True)
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from string or list."""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",")]
+        return v
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -71,6 +114,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"
+        case_sensitive = False
 
 
 @lru_cache()
