@@ -1264,6 +1264,14 @@ async def chat(
                 # === CRUD OPERATIONS - Use PromptBuilder ===
                 from services.prompt_builder import PromptBuilder, OperationType
                 
+                # Detect explanation request
+                explanation_keywords = [
+                    'por que', 'porque', 'pq', 'why', 'como', 'how',
+                    'explain', 'explique', 'motivo', 'razão', 'reason',
+                    'decisão', 'decision', 'por qual', 'qual o motivo'
+                ]
+                explanation_intent = any(kw in last_user_message.lower() for kw in explanation_keywords)
+                
                 # Determine operation type
                 operation = None
                 if read_file_intent:
@@ -1278,6 +1286,14 @@ async def chat(
                     operation = OperationType.DELETE
                 elif list_files_intent or seeing_created_intent:
                     operation = OperationType.LIST
+                
+                # Add explanation instructions if user asked for reasoning
+                if explanation_intent:
+                    system_prompt += "\n\nEXPLANATION REQUEST DETECTED:"
+                    system_prompt += "\n- User asked WHY/HOW/EXPLAIN - provide detailed reasoning"
+                    system_prompt += "\n- Explain your process: how you arrived at the answer"
+                    system_prompt += "\n- Reference the FILE LISTING or context you used"
+                    system_prompt += "\n- Be clear and specific about your reasoning"
                 
                 # Detect project intention for CREATE operations
                 crud_context = {}

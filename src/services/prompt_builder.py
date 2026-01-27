@@ -36,7 +36,13 @@ When asked about files:
 - List the ACTUAL files from that listing
 - Never say you cannot see files
 - Never invent paths like "/path/to/directory"
-- Use ONLY the file names from the context"""
+- Use ONLY the file names from the context
+
+When user asks "why", "por que", "pq", "como", "explain", "explique", "motivo", "razão":
+- EXPLAIN your reasoning and decisions
+- Show HOW you arrived at the answer
+- Reference the FILE LISTING or context you used
+- Be clear about your process"""
 
     @staticmethod
     def build_crud_prompt(operation: OperationType, context: Dict[str, Any]) -> str:
@@ -60,51 +66,63 @@ When asked about files:
     @staticmethod
     def _build_create_prompt(context: Dict[str, Any]) -> str:
         """Build CREATE operation prompt."""
-        prompt = "\nCREATE: Use ```create-file:path/to/file.ext format."
-        prompt += "\nStart response with create-file blocks, no explanations first."
+        prompt = "\nCREATE:"
+        prompt += "\n- Use ```create-file:path/to/file.ext format"
+        prompt += "\n- Start response with create-file blocks immediately"
+        prompt += "\n- No explanations before the create-file blocks"
         
         if context.get("project_type"):
-            prompt += f"\nProject type: {context['project_type']}"
-            prompt += f"\nCreate directory first: ```create-directory:{context.get('project_name', 'project')}```"
-            prompt += f"\nThen create files inside: ```create-file:{context.get('project_name', 'project')}/file.ext```"
+            project_name = context.get('project_name', 'project')
+            prompt += f"\n- Project: {context['project_type']}"
+            prompt += f"\n- Create directory: ```create-directory:{project_name}```"
+            prompt += f"\n- Then files: ```create-file:{project_name}/file.ext```"
         
         return prompt
     
     @staticmethod
     def _build_read_prompt(context: Dict[str, Any]) -> str:
         """Build READ operation prompt."""
-        prompt = "\nREAD: File content is in context above."
-        prompt += "\nExplain what is written in the file."
-        prompt += "\nDo NOT use create-file or modify-file formats."
+        prompt = "\nREAD:"
+        prompt += "\n- File content is in context above"
+        prompt += "\n- Explain what is written in the file"
+        prompt += "\n- Do NOT use create-file or modify-file formats"
         return prompt
     
     @staticmethod
     def _build_update_prompt(context: Dict[str, Any]) -> str:
         """Build UPDATE operation prompt."""
-        prompt = "\nUPDATE: Use ```modify-file:path/to/file.ext format."
-        prompt += "\nRead file content from context, then show complete modified content."
+        prompt = "\nUPDATE:"
+        prompt += "\n- Use ```modify-file:path/to/file.ext format"
+        prompt += "\n- Read file content from context first"
+        prompt += "\n- Show complete modified content (not just changes)"
         return prompt
     
     @staticmethod
     def _build_delete_prompt(context: Dict[str, Any]) -> str:
         """Build DELETE operation prompt."""
-        prompt = "\nDELETE: Use ```delete-file:path or ```delete-directory:path format."
-        prompt += "\nOnly delete if user explicitly requests it."
+        prompt = "\nDELETE:"
+        prompt += "\n- Use ```delete-file:path or ```delete-directory:path format"
+        prompt += "\n- Only delete if user explicitly requests it"
+        prompt += "\n- Be careful with deletions"
         return prompt
     
     @staticmethod
     def _build_list_prompt(context: Dict[str, Any]) -> str:
         """Build LIST operation prompt."""
-        prompt = "\nLIST:"
-        prompt += "\n1. Find the FILE LISTING section in context above"
-        prompt += "\n2. Answer: 'Sim, estou vendo...' or 'Yes, I can see...'"
-        prompt += "\n3. List the ACTUAL folders and files from that listing"
-        prompt += "\n4. Show count: 'Total: X arquivos e Y pastas'"
-        prompt += "\n5. Use EXACT names from the listing, nothing else"
-        prompt += "\n\nDO NOT:"
-        prompt += "\n- Invent paths like '/path/to/directory'"
-        prompt += "\n- Say you cannot see files"
-        prompt += "\n- Explain commands or how to list"
+        prompt = "\nLIST OPERATION:"
+        prompt += "\n1. Find 'FILE LISTING' section in context above"
+        prompt += "\n2. Read the 'Total Folders' and 'Total Files' counts from that section"
+        prompt += "\n3. Answer with those EXACT numbers: 'Total: X arquivos e Y pastas'"
+        prompt += "\n4. If asked to list files, show the files from the FILES: section"
+        prompt += "\n5. Use ONLY the numbers and names from the FILE LISTING context"
+        prompt += "\n\nWHEN USER ASKS WHY/HOW (por que, pq, como, explain):"
+        prompt += "\n- EXPLAIN: 'I see X files because I counted them from the FILE LISTING section above'"
+        prompt += "\n- SHOW: Reference the exact section: 'In the FILE LISTING, it shows Total Files: X'"
+        prompt += "\n- CLARIFY: Explain if it's a sample listing vs total count"
+        prompt += "\n\nCRITICAL:"
+        prompt += "\n- The FILE LISTING shows the REAL counts - use them!"
+        prompt += "\n- Never invent numbers or paths"
+        prompt += "\n- Never say you cannot see - the listing is in context!"
         return prompt
     
     @staticmethod
@@ -118,7 +136,9 @@ When asked about files:
         prompt += "\n\nAGENT MODE:"
         prompt += "\n- File listing is in context above"
         prompt += "\n- When asked about files, LIST them from the context"
-        prompt += "\n- Answer directly, no explanations"
+        prompt += "\n- When user asks WHY/HOW/EXPLAIN, provide detailed reasoning"
+        prompt += "\n- Explain your decisions: reference the FILE LISTING, show your process"
+        prompt += "\n- Balance: direct answers for simple questions, explanations when asked"
         
         return prompt
     
