@@ -26,6 +26,10 @@ from core.logger import get_logger
 from core.validators import WorkspacePathValidator, ModelNameValidator, TemperatureValidator, MaxTokensValidator
 from core.exceptions import ValidationError
 from fastapi import HTTPException
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .chat_router import GenerateRequest
 
 
 class GenerateHandler:
@@ -36,7 +40,7 @@ class GenerateHandler:
     
     async def handle(
         self,
-        request,
+        request: "GenerateRequest",
         ollama: OllamaService,
         workspace: WorkspaceService,
         user_prefs: UserPreferencesService,

@@ -19,10 +19,16 @@ if str(src_path) not in sys.path:
 from .chat_handler import ChatHandler
 from .generate_handler import GenerateHandler
 from .codebase_endpoints import CodebaseEndpoints
-from services.ollama_service import OllamaService, get_ollama_service
-from services.workspace_service import WorkspaceService, get_workspace_service
-from services.user_preferences import UserPreferencesService, get_user_preferences_service
-from services.prompt_examples import PromptExamplesService, get_prompt_examples_service
+from services.ollama_service import OllamaService
+from services.workspace_service import WorkspaceService
+from services.user_preferences import UserPreferencesService
+from services.prompt_examples import PromptExamplesService
+from core.container import (
+    get_ollama_service,
+    get_workspace_service,
+    get_user_preferences_service,
+    get_prompt_examples_service
+)
 from core.logger import get_logger
 
 # Rate limiting

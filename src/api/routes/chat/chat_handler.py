@@ -31,7 +31,11 @@ from core.validators import ModelNameValidator, TemperatureValidator
 from core.exceptions import ValidationError
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
+from typing import TYPE_CHECKING
 from .context_builder import get_codebase_context
+
+if TYPE_CHECKING:
+    from .chat_router import ChatRequest
 
 
 class ChatHandler:
@@ -42,7 +46,7 @@ class ChatHandler:
     
     async def handle(
         self,
-        request,
+        request: "ChatRequest",
         ollama: OllamaService,
         workspace: WorkspaceService
     ) -> Dict[str, Any]:
