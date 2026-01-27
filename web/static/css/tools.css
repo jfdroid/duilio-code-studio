@@ -71,6 +71,17 @@
     order: 999; /* Ensure it's always last */
 }
 
+/* Chat Mode: Centered Layout */
+.main-content-wrapper.chat-mode-centered .chat-panel {
+    width: 100% !important;
+    max-width: 900px !important;
+    min-width: auto !important;
+    margin: 0 auto !important;
+    order: 0 !important;
+    border-left: none;
+    border-right: none;
+}
+
 
 /* ==================== Mermaid Diagrams ==================== */
 

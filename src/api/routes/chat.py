@@ -502,6 +502,7 @@ async def generate(
         # === 10. ADJUST TEMPERATURE FOR FILE CREATION ===
         # Lower temperature for file creation tasks to ensure consistent format
         # BUT: Don't adjust if user wants to READ a file
+        # NOTE: list_files_intent will be checked later after detection
         adjusted_temperature = request.temperature
         if not read_file_intent and classification.is_code_related and any(keyword in request.prompt.lower() for keyword in ['criar', 'create', 'arquivo', 'file', 'projeto', 'project']):
             # Use lower temperature for file creation (more deterministic)
@@ -683,6 +684,9 @@ async def chat(
     """
     logger = get_logger()
     
+    # Initialize adjusted_temperature early to avoid "referenced before assignment" errors
+    adjusted_temperature = request.temperature
+    
     try:
         # Convert messages to prompt
         messages = request.messages
@@ -735,8 +739,30 @@ async def chat(
         logger.info(
             f"Workspace path for chat: {workspace_path}",
             workspace_path=workspace_path,
-            context={"request_workspace": request.workspace_path, "final_workspace": workspace_path}
+            context={
+                "request_workspace": request.workspace_path, 
+                "final_workspace": workspace_path,
+                "has_workspace": bool(workspace_path),
+                "message": last_user_message[:100]
+            }
         )
+        
+        # DEBUG: Log if workspace_path is missing for file listing questions
+        if not workspace_path:
+            list_keywords_check = [
+                'quero ver', 'mostrar arquivos', 'listar arquivos', 
+                'arquivos do path', 'arquivos do caminho'
+            ]
+            if any(kw in last_user_message.lower() for kw in list_keywords_check):
+                logger.warning(
+                    "File listing question detected but workspace_path is missing!",
+                    workspace_path=None,
+                    context={
+                        "message": last_user_message,
+                        "request_workspace": request.workspace_path,
+                        "suggestion": "Frontend should send workspace_path in Agent mode"
+                    }
+                )
         
         # Use AI-powered intent detection instead of hardcoded patterns
         from services.intent_detector import get_intent_detector
@@ -889,39 +915,227 @@ async def chat(
         if file_content_context:
             context_parts.append(file_content_context)
         
+        # === DETECT CRUD INTENTIONS ===
+        crud_intent = {
+            'create': False,
+            'read': False,
+            'update': False,
+            'delete': False,
+            'list': False
+        }
+        
+        # CRUD Keywords
+        create_keywords = [
+            'criar arquivo', 'create file', 'criar pasta', 'create folder',
+            'criar documento', 'create document', 'criar planilha', 'create spreadsheet',
+            'novo arquivo', 'new file', 'nova pasta', 'new folder',
+            'adicionar arquivo', 'add file', 'adicionar pasta', 'add folder',
+            'gerar arquivo', 'generate file', 'fazer arquivo', 'make file',
+            'criar script', 'create script', 'criar projeto', 'create project',
+            'crie um', 'crie uma', 'criar um', 'criar uma',
+            'criar .txt', 'criar .py', 'criar .js', 'criar .json',
+            'criar excel', 'create excel', 'criar csv', 'create csv',
+            'criar word', 'create word', 'criar doc', 'create doc'
+        ]
+        
+        update_keywords = [
+            'modificar arquivo', 'modify file', 'editar arquivo', 'edit file',
+            'atualizar arquivo', 'update file', 'alterar arquivo', 'change file',
+            'mudar arquivo', 'change file', 'ajustar arquivo', 'adjust file',
+            'atualizar', 'update', 'modificar', 'modify', 'editar', 'edit',
+            'alterar', 'change', 'mudar', 'ajustar', 'adjust',
+            'adicionar em', 'add to', 'adicionar no', 'adicionar na',
+            'inserir em', 'insert in', 'inserir no', 'inserir na',
+            'substituir em', 'replace in', 'substituir no', 'substituir na'
+        ]
+        
+        delete_keywords = [
+            'deletar arquivo', 'delete file', 'remover arquivo', 'remove file',
+            'apagar arquivo', 'erase file', 'excluir arquivo', 'exclude file',
+            'deletar pasta', 'delete folder', 'remover pasta', 'remove folder',
+            'apagar pasta', 'erase folder', 'excluir pasta', 'exclude folder',
+            'deletar', 'delete', 'remover', 'remove', 'apagar', 'erase',
+            'excluir', 'exclude', 'eliminar', 'eliminate'
+        ]
+        
+        read_keywords = [
+            'ler arquivo', 'read file', 'ver arquivo', 'see file',
+            'mostrar arquivo', 'show file', 'exibir arquivo', 'display file',
+            'abrir arquivo', 'open file', 'visualizar arquivo', 'view file',
+            'conteúdo do arquivo', 'file content', 'o que tem no arquivo',
+            'o que está escrito', 'what is written', 'mostrar conteúdo',
+            'show content', 'ver conteúdo', 'see content'
+        ]
+        
+        message_lower = last_user_message.lower()
+        
+        # Detect CRUD intents
+        if any(kw in message_lower for kw in create_keywords):
+            crud_intent['create'] = True
+            logger.info("Detected CREATE intent", workspace_path=workspace_path)
+        
+        if any(kw in message_lower for kw in update_keywords):
+            crud_intent['update'] = True
+            logger.info("Detected UPDATE intent", workspace_path=workspace_path)
+        
+        if any(kw in message_lower for kw in delete_keywords):
+            crud_intent['delete'] = True
+            logger.info("Detected DELETE intent", workspace_path=workspace_path)
+        
+        if any(kw in message_lower for kw in read_keywords):
+            crud_intent['read'] = True
+            logger.info("Detected READ intent", workspace_path=workspace_path)
+        
         # Detect if user is asking about listing/counting files
         list_files_intent = False
         list_keywords = [
+            # Direct listing requests
             'quantos arquivos', 'how many files', 
+            'quantas pastas', 'how many folders',
+            'quantas pastas e arquivos', 'how many folders and files',
+            'quantos arquivos e pastas', 'how many files and folders',
+            'pastas e arquivos', 'folders and files',
+            'arquivos e pastas', 'files and folders',
             'listar arquivos', 'list files', 
+            'listar pastas', 'list folders',
             'arquivos no codebase', 'files in codebase', 
             'todos os arquivos', 'all files',
             'diga cada arquivo', 'tell me each file', 
             'nome e tipo', 'name and type',
+            
+            # Visibility questions (voce ve / you see)
             'quantos arquivos voce ve', 'quantos arquivos você vê',
             'quantos arquivos voce ve?', 'quantos arquivos você vê?',
             'quantos arquivos vc ve', 'quantos arquivos vc vê',
             'arquivos que voce ve', 'arquivos que você vê',
             'arquivos que vc ve', 'arquivos que vc vê',
             'voce ve arquivos', 'você vê arquivos',
-            'vc ve arquivos', 'vc vê arquivos'
+            'vc ve arquivos', 'vc vê arquivos',
+            'voce ve os arquivos', 'você vê os arquivos',
+            'vc ve os arquivos', 'vc vê os arquivos',
+            
+            # Can you see questions (consegue ver / can you see)
+            'consegue ver os arquivos', 'can you see the files',
+            'consegue ver arquivos', 'can you see files',
+            'voce consegue ver os arquivos', 'você consegue ver os arquivos',
+            'voce consegue ver arquivos', 'você consegue ver arquivos',
+            'vc consegue ver os arquivos', 'vc consegue ver arquivos',
+            'consegue ver os arquivos do path', 'can you see files in path',
+            'consegue ver os arquivos do caminho', 'can you see files in the path',
+            
+            # Can questions (pode ver / can see)
+            'pode ver os arquivos', 'can see the files',
+            'pode ver arquivos', 'can see files',
+            'voce pode ver os arquivos', 'você pode ver os arquivos',
+            'voce pode ver arquivos', 'você pode ver arquivos',
+            
+            # Access questions (tem acesso / have access)
+            'tem acesso aos arquivos', 'have access to files',
+            'tem acesso aos arquivos do path', 'have access to files in path',
+            'voce tem acesso aos arquivos', 'você tem acesso aos arquivos',
+            'voce tem acesso', 'você tem acesso',
+            
+            # General file visibility
+            'arquivos do path', 'files in path',
+            'arquivos do caminho', 'files in the path',
+            'arquivos disponiveis', 'available files',
+            'arquivos disponíveis', 'available files',
+            'quais arquivos', 'which files',
+            'que arquivos', 'what files',
+            
+            # Want to see questions (quero ver / want to see)
+            'quero ver os arquivos', 'i want to see the files',
+            'quero ver arquivos', 'i want to see files',
+            'quero ver os arquivos do path', 'i want to see files in path',
+            'quero ver os arquivos do caminho', 'i want to see files in the path',
+            'quero ver os arquivos do path selecionado', 'i want to see files in selected path',
+            'mostrar os arquivos', 'show the files',
+            'mostrar arquivos', 'show files',
+            'mostre os arquivos', 'show me the files',
+            'mostre arquivos', 'show me files',
+            
+            # Questions about seeing created files/directories
+            'voce esta vendo', 'você está vendo', 'you are seeing',
+            'voce esta vendo o', 'você está vendo o', 'are you seeing the',
+            'voce esta vendo o diretorio', 'você está vendo o diretório', 'are you seeing the directory',
+            'voce esta vendo o arquivo', 'você está vendo o arquivo', 'are you seeing the file',
+            'voce esta vendo o que', 'você está vendo o que', 'are you seeing what',
+            'voce criou', 'você criou', 'you created',
+            'voce criou o', 'você criou o', 'you created the',
+            'voce criou o diretorio', 'você criou o diretório', 'you created the directory',
+            'voce criou o arquivo', 'você criou o arquivo', 'you created the file',
+            'esta vendo o que criou', 'está vendo o que criou', 'seeing what you created',
+            'esta vendo o diretorio criado', 'está vendo o diretório criado', 'seeing the created directory'
         ]
         message_lower = last_user_message.lower()
         if any(keyword in message_lower for keyword in list_keywords):
             list_files_intent = True
+            # Adjust temperature for file listing (more deterministic, follows instructions better)
+            adjusted_temperature = min(adjusted_temperature, 0.2)
             logger.info(
-                "Detected file listing intent",
+                "Detected file listing intent - reduced temperature",
                 workspace_path=workspace_path,
-                context={"message": last_user_message, "detected_keywords": [k for k in list_keywords if k in message_lower]}
+                context={"message": last_user_message, "detected_keywords": [k for k in list_keywords if k in message_lower], "temperature": adjusted_temperature}
+            )
+        
+        # Detect if user is asking about seeing created files/directories
+        seeing_created_intent = any(keyword in last_user_message.lower() for keyword in [
+            'voce esta vendo', 'você está vendo', 'are you seeing',
+            'voce criou', 'você criou', 'you created',
+            'esta vendo o que criou', 'está vendo o que criou', 'seeing what you created',
+            'esta vendo o diretorio', 'está vendo o diretório', 'seeing the directory',
+            'esta vendo o arquivo', 'está vendo o arquivo', 'seeing the file'
+        ])
+        
+        # If asking about seeing created files, also trigger file listing
+        if seeing_created_intent:
+            list_files_intent = True
+            logger.info(
+                "Detected 'seeing created files' intent - will show file listing",
+                workspace_path=workspace_path,
+                context={"message": last_user_message}
             )
         
         if workspace_path:
-            # If user wants to list files, get file tree
-            if list_files_intent:
+            # If user wants to list files OR is asking about seeing created files, get file tree
+            if list_files_intent or seeing_created_intent:
                 try:
                     from services.workspace_service import get_workspace_service
                     ws_service = get_workspace_service()
-                    file_tree = ws_service.get_file_tree(workspace_path, max_depth=10)
+                    # Get accurate file count first
+                    from pathlib import Path
+                    workspace_path_obj = Path(workspace_path)
+                    
+                    # Count all files accurately (with reasonable limits for performance)
+                    def count_files_accurate(path: Path, max_files: int = 50000) -> tuple[int, int]:
+                        """Count files and folders accurately."""
+                        files_count = 0
+                        folders_count = 0
+                        
+                        def scan(p: Path, depth: int = 0):
+                            nonlocal files_count, folders_count
+                            if depth > 15 or files_count > max_files:  # Reasonable limits
+                                return
+                            
+                            try:
+                                for item in p.iterdir():
+                                    if item.name.startswith('.'):
+                                        continue
+                                    if item.is_dir():
+                                        folders_count += 1
+                                        scan(item, depth + 1)
+                                    elif item.is_file():
+                                        files_count += 1
+                            except (PermissionError, OSError):
+                                pass
+                        
+                        scan(path)
+                        return files_count, folders_count
+                    
+                    total_files, total_folders = count_files_accurate(workspace_path_obj)
+                    
+                    # Get file tree for listing (limited for context)
+                    file_tree = ws_service.get_file_tree(workspace_path, max_depth=3)
                     
                     def collect_files(node, file_list=None, prefix=""):
                         if file_list is None:
@@ -942,20 +1156,52 @@ async def chat(
                     all_files = collect_files(file_tree)
                     file_count = len(all_files)
                     
-                    files_list_text = f"\n=== FILE LISTING FOR WORKSPACE: {workspace_path} ===\n"
-                    files_list_text += f"Total files: {file_count}\n\n"
-                    files_list_text += "Files in codebase:\n"
-                    for f in all_files[:200]:  # Limit to 200 files to avoid token overflow
-                        files_list_text += f"- {f['path']} (type: {f['type']})\n"
-                    if len(all_files) > 200:
-                        files_list_text += f"\n... and {len(all_files) - 200} more files\n"
-                    files_list_text += "=== END OF FILE LISTING ===\n"
+                    # Count folders and files separately
+                    from pathlib import Path
+                    folders = []
+                    files_only = []
+                    for f in all_files:
+                        path_obj = Path(f['path'])
+                        if path_obj.suffix:  # Has extension = file
+                            files_only.append(f)
+                        else:  # No extension = likely folder
+                            folders.append(f)
+                    
+                    # Also get folders from tree structure
+                    def collect_folders(node, folder_list=None, prefix=""):
+                        if folder_list is None:
+                            folder_list = []
+                        current_path = prefix + node.get('name', '')
+                        if node.get('type') == 'directory':
+                            folder_list.append({
+                                'name': node.get('name', ''),
+                                'path': current_path,
+                                'type': 'folder'
+                            })
+                        for child in node.get('children', []):
+                            collect_folders(child, folder_list, current_path + '/')
+                        return folder_list
+                    
+                    all_folders = collect_folders(file_tree)
+                    folder_count = len(all_folders)
+                    file_count_only = len(files_only)
+                    
+                    # Use PromptBuilder for clean file listing format
+                    from services.prompt_builder import PromptBuilder
+                    # Use accurate counts, not limited tree counts
+                    files_list_text = PromptBuilder.build_file_listing_context(
+                        files=files_only,
+                        folders=all_folders,
+                        workspace_path=workspace_path,
+                        total_files=total_files,
+                        total_folders=total_folders
+                    )
                     
                     context_parts.insert(0, files_list_text)  # Add at beginning for priority
                     logger.info(
-                        f"Added file listing context: {file_count} files",
+                        f"Added file listing context: {total_files} total files, {total_folders} total folders (showing {len(files_only)} in listing)",
                         workspace_path=workspace_path,
-                        context={"file_count": file_count}
+                        context={"total_files": total_files, "total_folders": total_folders, "listed_files": len(files_only)}
                     )
                 except Exception as e:
                     logger.error(
@@ -996,18 +1242,10 @@ async def chat(
                 system_info_service = get_system_info_service()
                 system_info_text = system_info_service.get_formatted_prompt()
                 
-                system_prompt += "\n\n=== AGENT MODE: LOCAL MACHINE ACCESS ==="
-                system_prompt += f"\n{system_info_text}"
-                system_prompt += "\n\nCRITICAL: You have DIRECT ACCESS to the user's local machine information above."
-                system_prompt += "\nYou CAN and SHOULD answer questions about:"
-                system_prompt += "\n- Operating system and version"
-                system_prompt += "\n- CPU and hardware specifications"
-                system_prompt += "\n- Memory/RAM information"
-                system_prompt += "\n- User name and home directory"
-                system_prompt += "\n- Hostname and system details"
-                system_prompt += "\n- Any other system/machine-related questions"
-                system_prompt += "\n\nDO NOT say you cannot see or access this information - YOU HAVE IT!"
-                system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
+                # Use PromptBuilder for clean Agent Mode prompt
+                from services.prompt_builder import PromptBuilder
+                # Replace base system prompt with Agent Mode prompt (includes base + agent specifics)
+                system_prompt = PromptBuilder.build_agent_mode_prompt(system_info_text)
                 
                 logger.info(
                     "Added system information to Agent mode prompt",
@@ -1020,107 +1258,86 @@ async def chat(
                     context={"error": str(e)}
                 )
             
-            # Add file listing instructions if user asked about files
-            if list_files_intent:
-                system_prompt += "\n\n=== FILE LISTING REQUEST DETECTED ==="
-                system_prompt += "\nThe user wants to know about files in the codebase."
-                system_prompt += "\nA complete file listing has been provided in the context above."
-                system_prompt += "\nCRITICAL: You MUST use that information to answer the user's question accurately."
-                system_prompt += "\nDO NOT say you cannot see files - you have access to the file listing in the context!"
-                system_prompt += "\nList each file with its name and type/extension."
-                system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
-                if workspace_path:
-                    system_prompt += f"\nWorkspace path: {workspace_path}"
+            # LIST operation handled by PromptBuilder in CRUD section below
             
             if workspace_path:
-                # CRITICAL: Distinguish between READ and CREATE file intents
-                if read_file_intent and file_content_context:
-                    system_prompt += "\n\n=== FILE READING DETECTED ==="
-                    system_prompt += f"\nThe user wants to READ the file '{file_to_read}', NOT create it."
-                    system_prompt += "\nThe file content is provided in the context above."
-                    system_prompt += "\nDO NOT use create-file: format. Simply explain what is written in the file."
-                    system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
-                    system_prompt += "\nIf the file content is empty or the file doesn't exist, say so clearly."
-                elif read_file_intent and not file_content_context:
-                    system_prompt += "\n\n=== FILE READING DETECTED (FILE NOT FOUND) ==="
-                    system_prompt += f"\nThe user wants to READ the file '{file_to_read}', but the file was not found."
-                    system_prompt += "\nDO NOT try to create the file. Simply inform the user that the file was not found."
-                    system_prompt += "\nAnswer in the SAME LANGUAGE the user wrote (Portuguese/English)."
-                else:
-                    # Normal file creation instructions
+                # === CRUD OPERATIONS - Use PromptBuilder ===
+                from services.prompt_builder import PromptBuilder, OperationType
+                
+                # Determine operation type
+                operation = None
+                if read_file_intent:
+                    operation = OperationType.READ
+                    if not file_content_context:
+                        system_prompt += f"\n\nREAD: File '{file_to_read}' not found. Inform user."
+                elif crud_intent['create']:
+                    operation = OperationType.CREATE
+                elif crud_intent['update']:
+                    operation = OperationType.UPDATE
+                elif crud_intent['delete']:
+                    operation = OperationType.DELETE
+                elif list_files_intent or seeing_created_intent:
+                    operation = OperationType.LIST
+                
+                # Detect project intention for CREATE operations
+                crud_context = {}
+                if operation == OperationType.CREATE:
                     from services.path_intelligence import PathIntelligence
                     from services.project_detector import get_project_detector
                     
-                    # Detect if user wants external project
+                    # Detect external project
                     is_external, external_path = PathIntelligence.detect_external_project_intention(
                         last_user_message, workspace_path
                     )
                     
-                    # Detect if user wants to create a project that needs its own directory
+                    # Detect project that needs directory
                     project_detector = get_project_detector(ollama)
                     project_intention = await project_detector.detect_project_intention(
                         last_user_message, workspace_path
                     )
                     
-                    system_prompt += f"\n\nActive workspace: {workspace_path}"
-                    
+                    # Update context with project info
                     if project_intention.get("needs_directory", False):
-                        project_name = project_intention.get("project_name", "new-project")
-                        project_type = project_intention.get("project_type", "general")
-                        
-                        system_prompt += f"\n\n🎯 PROJECT CREATION DETECTED: User wants to create a {project_type} project."
-                        system_prompt += f"\nCRITICAL: You MUST create a directory for this project FIRST."
-                        system_prompt += f"\n1. FIRST create the project directory: ```create-directory:{project_name}```"
-                        system_prompt += f"\n2. THEN create ALL files INSIDE this directory: ```create-file:{project_name}/package.json```"
-                        system_prompt += f"\n3. ALL files must be created inside {project_name}/ directory"
-                        system_prompt += f"\n4. Example: ```create-file:{project_name}/src/index.js``` NOT ```create-file:src/index.js```"
-                        system_prompt += f"\n5. This keeps the project isolated and organized"
-                        
-                        # Add project-type-specific instructions
-                        if project_type == "android":
-                            system_prompt += f"\n\n📱 ANDROID PROJECT REQUIREMENTS:"
-                            system_prompt += f"\n- MUST create build.gradle (project level)"
-                            system_prompt += f"\n- MUST create settings.gradle"
-                            system_prompt += f"\n- MUST create app/build.gradle"
-                            system_prompt += f"\n- MUST create app/src/main/AndroidManifest.xml"
-                            system_prompt += f"\n- MUST create Kotlin/Java source files in app/src/main/java/"
-                            system_prompt += f"\n- MUST create MainActivity.kt or MainActivity.java"
-                            system_prompt += f"\n- If API mock requested: MUST create API service/mock files"
-                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
-                        
-                        elif project_type == "react":
-                            system_prompt += f"\n\n⚛️ REACT PROJECT REQUIREMENTS:"
-                            system_prompt += f"\n- MUST create package.json with React dependencies"
-                            system_prompt += f"\n- MUST create public/index.html"
-                            system_prompt += f"\n- MUST create src/index.js or src/index.jsx"
-                            system_prompt += f"\n- MUST create src/App.jsx or src/App.js"
-                            system_prompt += f"\n- MUST create React components (JSX/TSX files)"
-                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
-                        
-                        elif project_type == "node":
-                            system_prompt += f"\n\n📦 NODE.JS PROJECT REQUIREMENTS:"
-                            system_prompt += f"\n- MUST create package.json"
-                            system_prompt += f"\n- MUST create index.js or server.js"
-                            system_prompt += f"\n- MUST create complete project structure"
-                            system_prompt += f"\n- Create ALL files in ONE response using multiple ```create-file: blocks"
+                        crud_context = {
+                            "project_type": project_intention.get("project_type", "general"),
+                            "project_name": project_intention.get("project_name", "new-project")
+                        }
                     
                     if is_external and external_path:
-                        system_prompt += f"\n\n⚠️ EXTERNAL PROJECT DETECTED: User wants to create project outside workspace."
-                        system_prompt += f"\nSuggested path: {external_path}"
-                        system_prompt += f"\nUse ABSOLUTE paths for all files in this project."
-                    
-                    system_prompt += "\nRefer to codebase analysis when answering about 'this project'."
-                    system_prompt += "\n\nCRITICAL FILE FORMAT RULES:"
-                    system_prompt += "\n- ALWAYS use ```create-file: (three backticks + create-file:)"
-                    system_prompt += "\n- NEVER use ```bash, ```sh, or any other language tag for file actions"
-                    system_prompt += "\n- START your response DIRECTLY with ```create-file: blocks when creating files"
-                    system_prompt += "\n- DELETE FILES: Use ```delete-file:path or ```delete-directory:path format."
+                        system_prompt += f"\n\nEXTERNAL PROJECT: Use ABSOLUTE paths. Suggested: {external_path}"
+                
+                # Add operation-specific prompt (clean, direct)
+                if operation:
+                    system_prompt += PromptBuilder.build_crud_prompt(operation, crud_context)
+                
+                system_prompt += f"\n\nWorkspace: {workspace_path}"
         
-        # Add context to prompt
-        full_prompt = ""
-        if context_parts:
-            full_prompt = "\n\n".join(context_parts) + "\n\n---\n\n"
-        full_prompt += "\n".join(prompt_parts) + "\nAssistant:"
+        # Build prompt using PromptBuilder (clean structure)
+        from services.prompt_builder import PromptBuilder, OperationType
+        
+        # Determine operation (already determined above if in CRUD section)
+        operation_for_prompt = operation if 'operation' in locals() else None
+        if not operation_for_prompt:
+            # Fallback: determine from intents
+            if 'crud_intent' in locals():
+                if crud_intent.get('create'):
+                    operation_for_prompt = OperationType.CREATE
+                elif crud_intent.get('update'):
+                    operation_for_prompt = OperationType.UPDATE
+                elif crud_intent.get('delete'):
+                    operation_for_prompt = OperationType.DELETE
+                elif crud_intent.get('read'):
+                    operation_for_prompt = OperationType.READ
+            if list_files_intent or seeing_created_intent:
+                operation_for_prompt = OperationType.LIST
+        
+        # Build full prompt with optimal structure
+        full_prompt = PromptBuilder.build_full_prompt(
+            system_prompt=system_prompt,
+            context_parts=context_parts,
+            user_messages=prompt_parts,
+            operation=operation_for_prompt
+        )
         
         # Select model (required - no auto selection)
         model = request.model
@@ -1136,7 +1353,7 @@ async def chat(
                     prompt=full_prompt,
                     model=model,
                     system_prompt=system_prompt,
-                    temperature=request.temperature
+                    temperature=adjusted_temperature
                 ):
                     yield f"data: {token}\n\n"
                 yield "data: [DONE]\n\n"
@@ -1146,11 +1363,14 @@ async def chat(
                 media_type="text/event-stream"
             )
         
+        # Use adjusted temperature
+        final_temperature = adjusted_temperature
+        
         result = await ollama.generate(
             prompt=full_prompt,
             model=model,
             system_prompt=system_prompt,
-            temperature=request.temperature,
+            temperature=final_temperature,
             auto_select_model=False
         )
         

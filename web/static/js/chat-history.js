@@ -50,6 +50,12 @@ const ChatHistory = {
         this.save();
         this.render();
         this.clearMessages();
+        
+        // Close chat history sidebar after creating
+        const sidebar = document.getElementById('chatHistorySidebar');
+        if (sidebar) {
+            sidebar.classList.remove('visible');
+        }
 
         return chat;
     },
@@ -67,6 +73,12 @@ const ChatHistory = {
 
         // Update title in header
         document.getElementById('chatTitleText').textContent = chat.title || 'New Chat';
+        
+        // Close chat history sidebar after loading
+        const sidebar = document.getElementById('chatHistorySidebar');
+        if (sidebar) {
+            sidebar.classList.remove('visible');
+        }
     },
 
     /**

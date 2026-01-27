@@ -103,12 +103,15 @@ const API = {
      */
     async chat(messages, model, stream = false) {
         const workspacePath = AppState?.workspace?.currentPath || null;
-        return this.post('/api/chat', { 
+        console.log('[API.chat] Sending request with workspace_path:', workspacePath);
+        const payload = {
             messages, 
             model, 
             stream,
             workspace_path: workspacePath
-        });
+        };
+        console.log('[API.chat] Full payload:', JSON.stringify(payload, null, 2));
+        return this.post('/api/chat', payload);
     },
     
     /**

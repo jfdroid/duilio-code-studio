@@ -8,6 +8,21 @@ const Chat = {
     mode: 'chat', // 'chat' (simple) or 'agent' (complex with codebase)
 
     /**
+     * Initialize chat mode from HTML
+     */
+    initMode() {
+        // Check which button is active in HTML
+        const agentBtn = document.getElementById('agentModeBtn');
+        if (agentBtn && agentBtn.classList.contains('active')) {
+            this.mode = 'agent';
+            console.log('[DuilioCode] Initialized mode: agent (from HTML)');
+        } else {
+            this.mode = 'chat';
+            console.log('[DuilioCode] Initialized mode: chat (from HTML)');
+        }
+    },
+
+    /**
      * Set chat mode
      */
     setMode(mode) {
@@ -31,6 +46,56 @@ const Chat = {
                 : 'Ask me anything, I\'ll explain and suggest...';
         }
         
+        // === CHAT MODE: Centered Layout (like Gemini/DeepSeek) ===
+        // Center chat and hide all IDE elements in Chat mode
+        const explorerPanel = document.getElementById('explorerPanel');
+        const sidebar = document.querySelector('.sidebar-panels');
+        const mainContent = document.querySelector('.main-content-wrapper');
+        const mainArea = document.querySelector('.main-area');
+        const chatPanel = document.getElementById('chatPanel');
+        const tabsBar = document.getElementById('tabsBar');
+        const editorPanel = document.getElementById('editorPanel');
+        const statusBar = document.querySelector('.status-bar');
+        const activityBar = document.querySelector('.activity-bar');
+        
+        if (mode === 'chat') {
+            // Chat mode: Centered, focused layout
+            if (explorerPanel) explorerPanel.classList.add('hidden');
+            if (sidebar) sidebar.classList.add('hidden');
+            if (mainContent) mainContent.classList.add('chat-mode-centered');
+            if (mainArea) mainArea.classList.add('hidden');
+            if (tabsBar) tabsBar.classList.add('hidden');
+            if (editorPanel) editorPanel.classList.add('hidden');
+            if (activityBar) activityBar.classList.add('hidden');
+            if (statusBar) statusBar.classList.add('hidden');
+            if (chatPanel) {
+                chatPanel.classList.add('chat-centered');
+                chatPanel.style.width = '100%';
+                chatPanel.style.maxWidth = '900px';
+                chatPanel.style.margin = '0 auto';
+            }
+            
+            console.log('[DuilioCode] Chat mode: Centered layout activated');
+        } else {
+            // Agent mode: Show explorer and full IDE layout
+            if (explorerPanel) explorerPanel.classList.remove('hidden');
+            if (sidebar) sidebar.classList.remove('hidden');
+            if (mainContent) mainContent.classList.remove('chat-mode-centered');
+            if (mainArea) mainArea.classList.remove('hidden');
+            if (tabsBar) tabsBar.classList.remove('hidden');
+            if (editorPanel) editorPanel.classList.remove('hidden');
+            if (activityBar) activityBar.classList.remove('hidden');
+            if (statusBar) statusBar.classList.remove('hidden');
+            if (chatPanel) {
+                chatPanel.classList.remove('chat-centered');
+                chatPanel.style.width = '';
+                chatPanel.style.maxWidth = '';
+                chatPanel.style.margin = '';
+            }
+            
+            console.log('[DuilioCode] Agent mode: Full IDE layout activated');
+        }
+        
         Utils.showNotification(`Mode: ${mode === 'agent' ? 'Agent (Execute Actions)' : 'Chat (Conversation Only)'}`, 'info');
     },
 
@@ -41,6 +106,15 @@ const Chat = {
         console.log('[DuilioCode] Chat.send() called');
         const input = document.getElementById('chatInput');
         const message = input.value.trim();
+        
+        // CRITICAL: Re-check mode from UI state (in case it changed)
+        const agentBtn = document.getElementById('agentModeBtn');
+        const chatBtn = document.getElementById('chatModeBtn');
+        if (agentBtn && agentBtn.classList.contains('active')) {
+            this.mode = 'agent';
+        } else if (chatBtn && chatBtn.classList.contains('active')) {
+            this.mode = 'chat';
+        }
         
         console.log('[DuilioCode] Message:', message, 'isLoading:', AppState.chat.isLoading, 'mode:', this.mode);
         
@@ -209,7 +283,8 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
             } else {
                 // AGENT MODE: Complex endpoint with full features
                 console.log('[DuilioCode] AGENT mode - using complex endpoint with codebase');
-                console.log('[DuilioCode] Workspace:', workspacePath);
+                console.log('[DuilioCode] Workspace from AppState:', AppState.workspace.currentPath);
+                console.log('[DuilioCode] Workspace variable:', workspacePath);
                 console.log('[DuilioCode] Context length:', fullContext?.length || 0);
                 
                 // Build messages for complex endpoint
@@ -218,6 +293,17 @@ When creating files "based on" or "similar to" existing files, use their FULL CO
                     content: msg.content
                 }));
                 messages.push({ role: 'user', content: message });
+                
+                // CRITICAL: Ensure workspace_path is sent in Agent mode
+                // Use AppState directly to ensure we have the latest value
+                const finalWorkspacePath = AppState.workspace.currentPath || workspacePath;
+                console.log('[DuilioCode] Final workspace_path to send:', finalWorkspacePath);
+                
+                if (!finalWorkspacePath) {
+                    console.warn('[DuilioCode] WARNING: No workspace_path available in Agent mode!');
+                    console.warn('[DuilioCode] This may cause file listing to fail.');
+                    Utils.showNotification('Warning: No workspace folder open. File operations may not work.', 'warning');
+                }
                 
                 response = await API.chat(messages, modelToUse, false);
                 console.log('[DuilioCode] Complex API Response:', response);

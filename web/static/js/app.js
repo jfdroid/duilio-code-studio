@@ -72,6 +72,11 @@ const App = {
                 ChatHistory.init();
             }
             
+            // Initialize chat mode from HTML
+            if (typeof Chat !== 'undefined' && Chat.initMode) {
+                Chat.initMode();
+            }
+            
             console.log('[DuilioCode] Ready');
             
         } catch (error) {
