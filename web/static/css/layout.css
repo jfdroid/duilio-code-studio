@@ -11,11 +11,24 @@
     overflow: hidden;
 }
 
-/* Main Content (everything except status bar) */
-.main-content {
+/* Main Content Wrapper (contains main-content and bottom-panel) */
+.main-content-wrapper {
     display: flex;
+    flex-direction: column;
     flex: 1;
     overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+}
+
+/* Main Content (everything except status bar and bottom panel) */
+.main-content {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
 }
 
 /* Activity Bar */
@@ -442,6 +455,7 @@
     font-size: var(--font-size-base);
     transition: background var(--transition-fast);
     user-select: none;
+    position: relative;
 }
 
 .tree-item:hover {
@@ -486,6 +500,8 @@
 .tree-item-actions {
     display: none;
     gap: 2px;
+    pointer-events: auto;
+    z-index: 10;
 }
 
 .tree-item:hover .tree-item-actions {
@@ -526,6 +542,7 @@
     flex-direction: column;
     overflow: hidden;
     min-width: 0;
+    min-height: 0;
 }
 
 /* Tabs Bar */
@@ -592,6 +609,7 @@
     flex: 1;
     display: flex;
     overflow: hidden;
+    min-width: 0;
 }
 
 /* Status Bar (Footer) */
@@ -642,4 +660,127 @@
 .status-dot.checking {
     background: #d29922;
     animation: pulse 1.5s infinite;
+}
+
+/* Chat Mode: Centered Layout (like Gemini/DeepSeek) */
+.main-content-wrapper.chat-mode-centered {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: 0;
+    background: #0d1117;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.main-content-wrapper.chat-mode-centered .main-content {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    flex-direction: column;
+}
+
+.main-content-wrapper.chat-mode-centered .activity-bar.hidden,
+.main-content-wrapper.chat-mode-centered .sidebar-panels.hidden,
+.main-content-wrapper.chat-mode-centered #explorerPanel.hidden,
+.main-content-wrapper.chat-mode-centered .main-area.hidden,
+.main-content-wrapper.chat-mode-centered .tabs-bar.hidden,
+.main-content-wrapper.chat-mode-centered #editorPanel.hidden,
+.main-content-wrapper.chat-mode-centered .status-bar.hidden {
+    display: none !important;
+}
+
+/* Chat Panel - Centered Mode */
+.chat-panel.chat-centered {
+    width: 100% !important;
+    max-width: 900px !important;
+    margin: 0 auto !important;
+    border-left: none;
+    border-right: none;
+    background: #0d1117;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.chat-panel.chat-centered .chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.chat-panel.chat-centered .chat-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #21262d;
+    background: #0d1117;
+}
+
+.chat-panel.chat-centered .chat-messages {
+    flex: 1;
+    padding: 40px 24px;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+.chat-panel.chat-centered .chat-input-area {
+    padding: 16px 24px;
+    border-top: 1px solid #21262d;
+    background: #0d1117;
+}
+
+.chat-panel.chat-centered .message {
+    max-width: 100%;
+    margin-bottom: 40px;
+}
+
+.chat-panel.chat-centered .message-header {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-panel.chat-centered .message-avatar {
+    width: 32px;
+    height: 32px;
+}
+
+.chat-panel.chat-centered .message-sender {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e6edf3;
+}
+
+.chat-panel.chat-centered .message-content {
+    padding-left: 44px; /* Avatar (32px) + gap (12px) */
+    font-size: 15px;
+    line-height: 1.75;
+    color: #e6edf3;
+}
+
+.chat-panel.chat-centered .message-header {
+    margin-bottom: 12px;
+}
+
+.chat-panel.chat-centered .message-avatar {
+    width: 32px;
+    height: 32px;
+}
+
+/* Smooth transition when switching modes */
+.main-content-wrapper,
+.activity-bar,
+.sidebar-panels,
+#explorerPanel,
+.chat-panel {
+    transition: all 0.3s ease;
 }

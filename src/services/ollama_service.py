@@ -7,11 +7,17 @@ Single Responsibility: AI text generation and model management.
 
 import httpx
 import asyncio
+import sys
+from pathlib import Path
 from typing import Dict, Any, Optional, List, AsyncIterator
 from dataclasses import dataclass
 
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from core.config import get_settings
 from core.exceptions import OllamaConnectionError
+from utils.retry import retry_async
 
 
 @dataclass
@@ -36,28 +42,136 @@ class OllamaService:
     - Streaming responses
     """
     
-    # System prompt for code assistance
-    CODE_SYSTEM_PROMPT = """You are DuilioCode, an expert programming assistant.
+    CODE_SYSTEM_PROMPT = """You are DuilioCode. You have DIRECT ACCESS to the user's files and folders.
 
-Your characteristics:
-- IMPORTANT: Always respond in the SAME LANGUAGE the user writes to you. If they write in Portuguese, respond in Portuguese. If in English, respond in English. Match their language exactly.
-- Provides clean, well-documented code following best practices
-- Explains concepts clearly and didactically
-- Suggests performance and security improvements
-- Knows multiple languages: Python, JavaScript, TypeScript, Kotlin, Java, Go, Rust, C++
-- Understands software architecture: Clean Architecture, SOLID, Design Patterns
-- Provides practical examples whenever possible
+CRITICAL - YOU CAN SEE FILES AND FOLDERS:
+- A FILE LISTING is provided in the context above
+- This listing shows REAL files and folders on the user's computer
+- When asked about files/folders, use the FILE LISTING to answer
+- NEVER say "I don't have access" or "I cannot see" - YOU CAN!
+- NEVER suggest terminal commands - just use the FILE LISTING
 
-When asked to CREATE FILES:
-- You CAN create files directly in the user's workspace
-- Use the provided workspace path as the base directory
-- Create the file with proper content and structure
-- Confirm when the file is created
+When asked about files or folders:
+- Check the FILE LISTING section in context above
+- Read the "Total Folders" and "Total Files" counts
+- List the ACTUAL files/folders from that listing
+- Use ONLY the numbers and names from the FILE LISTING
 
-When providing code:
-- Use code blocks with the specified language (```python, ```javascript, etc)
-- Add explanatory comments
-- Indicate possible errors or edge cases"""
+When user asks WHY/HOW/EXPLAIN (por que, pq, como, explain):
+- EXPLAIN: Reference the FILE LISTING section
+- SHOW: "I see X because the FILE LISTING shows Total Files: X"
+- CLARIFY: Explain your process using the context
+
+PRINCIPLES:
+- Clean, production-ready code
+- Best practices and SOLID principles
+- Supports: Python, JavaScript, TypeScript, Kotlin, Java, Go, Rust, C++
+- Respond in the SAME LANGUAGE the user wrote (Portuguese/English)
+
+FILE ACTIONS - CRITICAL FORMATS (USE THESE EXACT FORMATS):
+
+1. CREATE FILE - MANDATORY FORMAT:
+```create-file:path/to/file.ext
+[complete file content here]
+```
+
+CRITICAL RULES:
+- ALWAYS use ```create-file: (three backticks + create-file:)
+- NEVER use ```bash or ```sh or any other language tag
+- NEVER write "create-file:" as plain text or in explanations
+- The path MUST include the FULL filename with extension
+- CORRECT: ```create-file:teste.txt\nHello World\n```
+- WRONG: ```bash\ncreate-file:teste.txt\n``` (don't use bash blocks)
+- WRONG: create-file:teste.txt (missing backticks)
+- WRONG: ```create-file:.txt\n``` (missing filename)
+
+2. CREATE MULTIPLE FILES - ALL IN ONE RESPONSE:
+```create-file:package.json
+{
+  "name": "my-app"
+}
+```
+```create-file:src/index.js
+import React from 'react';
+```
+```create-file:src/App.js
+export default function App() { return <div>Hello</div>; }
+```
+
+3. CREATE DIRECTORY - YOU CAN DO THIS:
+```create-directory:path/to/dir
+```
+
+CRITICAL - DIRECTORY CREATION:
+- When user asks to "criar diretorio", "criar pasta", "create directory", "create folder"
+- YOU MUST use ```create-directory:path/to/dir format
+- DO NOT say "I cannot create directories" - YOU CAN!
+- DO NOT suggest terminal commands (mkdir) - USE create-directory format!
+- Example: User says "crie o diretorio teste-chat-ai"
+  CORRECT: ```create-directory:teste-chat-ai```
+  WRONG: "I cannot create directories, use mkdir command"
+
+4. MODIFY FILE:
+```modify-file:path/to/file.ext
+[COMPLETE file content with ALL existing code + your changes]
+```
+
+5. DELETE FILE/DIRECTORY:
+```delete-file:path/to/file.ext
+```
+```delete-directory:path/to/dir
+```
+
+PATH RULES:
+- Workspace files: Use RELATIVE paths (e.g., src/components/Button.jsx)
+- External files: Use ABSOLUTE paths (e.g., /Users/username/Desktop/file.txt)
+- If user says "paralelo", "fora", "novo projeto", "pasta paralela": Create in parent directory with ABSOLUTE path
+- Simple files without directory: Create in ROOT (utils.js, NOT src/utils.js)
+- Multiple files: Create ALL in ONE response using multiple ```create-file: blocks
+
+PROJECT CREATION - CRITICAL RULES:
+- When user asks for "project", "app", "aplicativo", "complete application": Create ALL files at once
+- For Android projects: MUST create build.gradle, settings.gradle, app/build.gradle, AndroidManifest.xml, Kotlin/Java files
+- For React projects: MUST create package.json, src/index.js, src/App.jsx, components, public/index.html
+- For Node.js projects: MUST create package.json, index.js, complete structure
+- Include ALL configuration files, entry points, and complete structure
+- Follow framework patterns exactly (React, Android, Python, etc.)
+- Match existing codebase style if provided in context
+- DO NOT create partial projects - create COMPLETE, FUNCTIONAL projects
+
+🚨 CRITICAL DIRECTORY CREATION RULES:
+- When user asks to "criar diretorio", "criar pasta", "create directory", "create folder"
+- YOU MUST use ```create-directory:path format
+- DO NOT say "I cannot create directories" - YOU CAN!
+- DO NOT suggest terminal commands (mkdir) - USE create-directory format!
+- If user ONLY wants a directory (no files mentioned), create it empty: ```create-directory:path```
+- If user wants a project/app, create directory THEN files inside it
+- Example: User says "crie o diretorio teste-chat-ai"
+  CORRECT: ```create-directory:teste-chat-ai```
+  WRONG: "I cannot create directories, use mkdir command"
+
+RESPONSE FORMAT - CRITICAL:
+- When user asks to CREATE files, your response MUST START with ```create-file: blocks
+- DO NOT write explanations, introductions, or text BEFORE the create-file blocks
+- DO NOT use ```bash, ```sh, or any code block language tags
+- START your response IMMEDIATELY with: ```create-file:path/to/file.ext
+- You can add explanations AFTER all create-file blocks are done
+- Example CORRECT response:
+  ```create-file:teste.txt
+  Hello World
+  ```
+  [Optional explanation here after file is created]
+
+- Example WRONG response:
+  "Vamos criar o arquivo..." [explanation first - WRONG]
+  ```bash
+  create-file:teste.txt [WRONG - don't use bash blocks]
+  ```
+
+CONTEXT:
+- Remember files created in previous messages
+- When user says "that file" or "the file we created", reference previous context
+- Analyze codebase structure when provided"""
 
     # System prompt for general/creative tasks
     GENERAL_SYSTEM_PROMPT = """You are DuilioCode, a helpful and creative AI assistant.
@@ -72,69 +186,39 @@ Your characteristics:
 
 Be natural and conversational while being helpful and informative."""
 
-    # Keywords that indicate code-related questions
-    CODE_KEYWORDS = [
-        'code', 'codigo', 'função', 'function', 'class', 'classe', 'bug', 'error', 'erro',
-        'python', 'javascript', 'typescript', 'java', 'kotlin', 'react', 'vue', 'angular',
-        'api', 'database', 'sql', 'mongodb', 'git', 'docker', 'kubernetes', 'aws', 'azure',
-        'html', 'css', 'scss', 'json', 'yaml', 'xml', 'script', 'programar', 'programming',
-        'debug', 'refactor', 'refatorar', 'implementar', 'implement', 'criar arquivo',
-        'create file', 'variable', 'variavel', 'loop', 'array', 'object', 'objeto',
-        'import', 'export', 'module', 'package', 'npm', 'pip', 'framework', 'library',
-        'biblioteca', 'algoritmo', 'algorithm', 'data structure', 'estrutura de dados',
-        'teste', 'test', 'unit test', 'integration', 'deploy', 'build', 'compile'
-    ]
-
     @classmethod
     def is_code_related(cls, prompt: str) -> bool:
-        """
-        Detect if the prompt is code-related.
-        Returns True if it seems to be about programming.
-        """
-        prompt_lower = prompt.lower()
-        
-        # Check for code keywords
-        for keyword in cls.CODE_KEYWORDS:
-            if keyword in prompt_lower:
-                return True
-        
-        # Check for code patterns (function calls, brackets, etc)
-        code_patterns = ['()', '{}', '[]', '=>', '->', '==', '!=', '&&', '||', '```']
-        for pattern in code_patterns:
-            if pattern in prompt:
-                return True
-        
-        return False
+        """Detect if the prompt is code-related using intelligent classification."""
+        try:
+            from services.prompt_classifier import classify_prompt
+            classification = classify_prompt(prompt)
+            return classification.is_code_related
+        except:
+            prompt_lower = prompt.lower()
+            code_patterns = ['()', '{}', '[]', '=>', '->', '==', '!=', '&&', '||', '```']
+            for pattern in code_patterns:
+                if pattern in prompt:
+                    return True
+            return False
 
     @classmethod
     def get_recommended_model(cls, prompt: str, available_models: list) -> tuple:
         """
-        Get recommended model based on prompt type.
-        Returns (model_name, is_code_related, reason)
+        Get recommended model using intelligent classification.
+        Uses PromptClassifier instead of hardcoded model lists.
         """
-        is_code = cls.is_code_related(prompt)
-        
-        # Preferred models for each type
-        code_models = ['qwen2.5-coder:14b', 'qwen2.5-coder:7b', 'codellama', 'deepseek-coder']
-        general_models = ['llama3.2', 'llama3.1', 'mistral', 'gemma2', 'phi3']
-        
-        model_names = [m.lower() if isinstance(m, str) else m.get('name', '').lower() for m in available_models]
-        
-        if is_code:
-            # Find best code model
-            for preferred in code_models:
-                for available in model_names:
-                    if preferred in available:
-                        return (available, True, "Code-related question detected")
-        else:
-            # Find best general model
-            for preferred in general_models:
-                for available in model_names:
-                    if preferred in available:
-                        return (available, False, "General question - using conversational model")
-        
-        # Fallback to first available
-        return (model_names[0] if model_names else 'qwen2.5-coder:14b', is_code, "Using default model")
+        try:
+            from services.prompt_classifier import classify_prompt
+            classification = classify_prompt(prompt, available_models)
+            return (
+                classification.recommended_model,
+                classification.is_code_related,
+                classification.reasoning
+            )
+        except:
+            model_names = [m.lower() if isinstance(m, str) else m.get('name', '').lower() for m in available_models]
+            is_code = cls.is_code_related(prompt)
+            return (model_names[0] if model_names else 'qwen2.5-coder:14b', is_code, "Using default model")
 
     def __init__(self):
         self.settings = get_settings()
@@ -143,11 +227,15 @@ Be natural and conversational while being helpful and informative."""
         self._client: Optional[httpx.AsyncClient] = None
     
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create HTTP client."""
+        """Get or create HTTP client with connection pooling."""
         if self._client is None or self._client.is_closed:
+            # Use connection pooling for better performance
+            limits = httpx.Limits(max_keepalive_connections=10, max_connections=20)
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
-                timeout=httpx.Timeout(self.timeout, connect=10.0)
+                timeout=httpx.Timeout(self.timeout, connect=10.0),
+                limits=limits,
+                http2=False  # Ollama doesn't support HTTP/2
             )
         return self._client
     
@@ -177,7 +265,7 @@ Be natural and conversational while being helpful and informative."""
                     "status": "running",
                     "models_count": len(models),
                     "default_model_available": self.settings.DEFAULT_MODEL in model_names,
-                    "models": model_names[:10]  # Return first 10
+                    "models": model_names[:10]
                 }
             
             return {"status": "error", "message": f"Status code: {response.status_code}"}
@@ -205,7 +293,6 @@ Be natural and conversational while being helpful and informative."""
             models = []
             
             for model in data.get("models", []):
-                # Calculate human-readable size
                 size_bytes = model.get("size", 0)
                 if size_bytes > 1e9:
                     size_str = f"{size_bytes / 1e9:.1f}GB"
@@ -230,6 +317,12 @@ Be natural and conversational while being helpful and informative."""
         except Exception as e:
             raise OllamaConnectionError(f"Error listing models: {str(e)}")
     
+    @retry_async(
+        max_attempts=3,
+        base_delay=1.0,
+        max_delay=10.0,
+        retry_on=[httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError]
+    )
     async def generate(
         self,
         prompt: str,
@@ -255,11 +348,9 @@ Be natural and conversational while being helpful and informative."""
         Returns:
             GenerationResult with response and metadata.
         """
-        # Smart model selection based on prompt
         is_code = self.is_code_related(prompt)
         
         if model is None and auto_select_model:
-            # Try to get best model
             try:
                 models = await self.list_models()
                 model, _, _ = self.get_recommended_model(prompt, models)
@@ -268,13 +359,11 @@ Be natural and conversational while being helpful and informative."""
         else:
             model = model or self.settings.DEFAULT_MODEL
         
-        # Select appropriate system prompt
         if system_prompt is None:
             system = self.CODE_SYSTEM_PROMPT if is_code else self.GENERAL_SYSTEM_PROMPT
         else:
             system = system_prompt
         
-        # Build full prompt with context
         full_prompt = prompt
         if context:
             full_prompt = f"Conversation context:\n{context}\n\nNew question: {prompt}"
@@ -296,7 +385,6 @@ Be natural and conversational while being helpful and informative."""
             )
             
             if response.status_code != 200:
-                # Try fallback model
                 if model != self.settings.FALLBACK_MODEL:
                     return await self.generate(
                         prompt=prompt,

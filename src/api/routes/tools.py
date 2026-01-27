@@ -27,6 +27,17 @@ from services.workspace_service import WorkspaceService, get_workspace_service
 from services.ollama_service import OllamaService, get_ollama_service
 from services.file_service import FileService, get_file_service
 
+# Rate limiting (optional)
+try:
+    from middleware.rate_limiter import rate_limit_decorator
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    RATE_LIMITING_AVAILABLE = False
+    def rate_limit_decorator(limit: str = None):
+        def decorator(func):
+            return func
+        return decorator
+
 router = APIRouter(prefix="/api/tools", tags=["Tools"])
 
 
@@ -160,6 +171,7 @@ async def get_git_log(
 # === Code Execution Endpoints ===
 
 @router.post("/execute")
+@rate_limit_decorator("10/minute")  # Command execution - strict limit
 async def execute_code(request: ExecuteCodeRequest) -> Dict[str, Any]:
     """Execute code in a sandboxed environment."""
     executor = get_code_executor()
@@ -207,6 +219,7 @@ async def create_project(request: CreateProjectRequest) -> Dict[str, Any]:
 # === Refactoring Endpoints ===
 
 @router.post("/refactor/rename")
+@rate_limit_decorator("15/minute")  # Refactoring - moderate limit
 async def rename_symbol(
     request: RenameSymbolRequest,
     workspace: WorkspaceService = Depends(get_workspace_service)
@@ -246,6 +259,7 @@ async def rename_symbol(
 
 
 @router.post("/refactor/find-replace")
+@rate_limit_decorator("15/minute")  # Refactoring - moderate limit
 async def find_and_replace(
     request: FindReplaceRequest,
     workspace: WorkspaceService = Depends(get_workspace_service)
@@ -393,6 +407,7 @@ _running_tasks: Dict[str, Any] = {}
 
 
 @router.post("/agent/execute")
+@rate_limit_decorator("5/minute")  # Agent tasks - very strict limit (expensive)
 async def execute_agent_task(
     request: AgentTaskRequest,
     background_tasks: BackgroundTasks,

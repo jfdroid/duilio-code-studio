@@ -46,40 +46,48 @@ class RefactoringService:
     - Change function signature
     """
     
-    # File extensions to include in refactoring
-    CODE_EXTENSIONS = {
-        '.py', '.js', '.ts', '.jsx', '.tsx',
-        '.java', '.kt', '.go', '.rs', '.rb',
-        '.c', '.cpp', '.h', '.hpp', '.cs',
-        '.vue', '.svelte', '.php', '.swift'
-    }
-    
-    # Directories to skip
-    SKIP_DIRS = {
-        'node_modules', '__pycache__', '.git', '.svn',
-        'venv', '.venv', 'build', 'dist', 'target',
-        '.idea', '.vscode', 'coverage'
-    }
-    
-    def __init__(self, workspace_path: Optional[str] = None):
-        """Initialize refactoring service."""
+    def __init__(self, workspace_path: Optional[str] = None, ollama_service=None):
+        """
+        Initialize refactoring service.
+        
+        Args:
+            workspace_path: Workspace path
+            ollama_service: Optional Ollama service for AI-powered features
+        """
         self.workspace_path = workspace_path
+        
+        from services.file_intelligence import get_file_intelligence
+        from services.language_detector import get_language_detector
+        self.file_intelligence = get_file_intelligence(ollama_service)
+        self.language_detector = get_language_detector(ollama_service)
     
     def _get_files(self, path: str, extensions: Set[str] = None) -> List[Path]:
-        """Get all code files in path."""
-        extensions = extensions or self.CODE_EXTENSIONS
+        """
+        Get all code files in path using intelligent detection.
+        
+        Args:
+            path: Path to scan
+            extensions: Optional set of extensions to filter (if None, uses LanguageDetector)
+        """
         root = Path(path)
         files = []
         
         def scan(dir_path: Path):
             try:
                 for item in dir_path.iterdir():
-                    if item.name in self.SKIP_DIRS or item.name.startswith('.'):
+                    if self.file_intelligence.should_skip_directory(item.name):
                         continue
+                    
                     if item.is_dir():
                         scan(item)
-                    elif item.is_file() and item.suffix in extensions:
-                        files.append(item)
+                    elif item.is_file():
+                        if extensions:
+                            if item.suffix in extensions:
+                                files.append(item)
+                        else:
+                            lang_info = self.language_detector.detect_from_extension(item.suffix)
+                            if lang_info and lang_info.name != 'Unknown':
+                                files.append(item)
             except PermissionError:
                 pass
         
@@ -96,7 +104,6 @@ class RefactoringService:
         changes = []
         files = self._get_files(path)
         
-        # Build regex pattern
         if whole_word:
             pattern = rf'\b{re.escape(symbol)}\b'
         else:
@@ -111,7 +118,6 @@ class RefactoringService:
                 
                 for i, line in enumerate(lines, 1):
                     for match in regex.finditer(line):
-                        # Get context (2 lines before and after)
                         start = max(0, i - 3)
                         end = min(len(lines), i + 2)
                         context_lines = lines[start:end]
@@ -121,7 +127,7 @@ class RefactoringService:
                             file_path=str(file_path),
                             line_number=i,
                             old_text=line,
-                            new_text=line,  # Will be updated by rename
+                            new_text=line,
                             context=context
                         ))
             except Exception:
@@ -161,10 +167,8 @@ class RefactoringService:
                 errors=["No workspace path specified"]
             )
         
-        # Find all references
         changes = self._find_symbol_references(old_name, search_path, whole_word)
         
-        # Update changes with new text
         if whole_word:
             pattern = rf'\b{re.escape(old_name)}\b'
         else:
@@ -173,12 +177,10 @@ class RefactoringService:
         for change in changes:
             change.new_text = re.sub(pattern, new_name, change.old_text)
         
-        # Apply changes if not preview
         if not preview:
             errors = []
             modified_files = set()
             
-            # Group changes by file
             changes_by_file: Dict[str, List[RefactorChange]] = {}
             for change in changes:
                 if change.file_path not in changes_by_file:
@@ -204,7 +206,6 @@ class RefactoringService:
                 preview_only=False
             )
         
-        # Count unique files
         unique_files = set(c.file_path for c in changes)
         
         return RefactorResult(
@@ -250,7 +251,6 @@ class RefactoringService:
                 errors=["No workspace path specified"]
             )
         
-        # Get files
         if file_pattern:
             extensions = {file_pattern.replace('*', '')} if '.' in file_pattern else None
         else:
@@ -259,7 +259,6 @@ class RefactoringService:
         files = self._get_files(search_path, extensions)
         changes = []
         
-        # Compile pattern
         if is_regex:
             try:
                 regex = re.compile(find_pattern)
@@ -275,7 +274,6 @@ class RefactoringService:
         else:
             regex = re.compile(re.escape(find_pattern))
         
-        # Find matches
         for file_path in files:
             try:
                 content = file_path.read_text(encoding='utf-8', errors='ignore')
@@ -285,7 +283,6 @@ class RefactoringService:
                     if regex.search(line):
                         new_line = regex.sub(replace_pattern, line)
                         
-                        # Get context
                         start = max(0, i - 3)
                         end = min(len(lines), i + 2)
                         context = '\n'.join(lines[start:end])
@@ -300,7 +297,6 @@ class RefactoringService:
             except Exception:
                 continue
         
-        # Apply if not preview
         if not preview:
             errors = []
             modified_files = set()
@@ -366,15 +362,12 @@ class RefactoringService:
             content = Path(file_path).read_text(encoding='utf-8')
             lines = content.split('\n')
             
-            # Extract the code
             extracted = '\n'.join(lines[start_line - 1:end_line])
             
-            # Detect indentation
             first_line = lines[start_line - 1]
             indent = len(first_line) - len(first_line.lstrip())
             base_indent = ' ' * indent
             
-            # Create new function based on language
             if language in ('python', 'py'):
                 new_function = f"\n\ndef {function_name}():\n"
                 new_function += '\n'.join('    ' + line for line in extracted.split('\n'))
@@ -395,7 +388,6 @@ class RefactoringService:
                     errors=[f"Language not supported: {language}"]
                 )
             
-            # Build new content
             new_lines = lines[:start_line - 1] + [call] + lines[end_line:]
             new_content = '\n'.join(new_lines) + new_function
             
@@ -460,7 +452,6 @@ class RefactoringService:
         
         changes = []
         
-        # Main file move
         changes.append(RefactorChange(
             file_path=source,
             line_number=0,
@@ -469,14 +460,11 @@ class RefactoringService:
             context="File move operation"
         ))
         
-        # Find and update imports
         if update_imports and self.workspace_path:
-            # Get module name from path
             source_module = source_path.stem
             dest_module = dest_path.stem
             
             if source_module != dest_module:
-                # Find references to old module name
                 import_changes = self._find_symbol_references(
                     source_module,
                     self.workspace_path
@@ -491,16 +479,13 @@ class RefactoringService:
         
         if not preview:
             try:
-                # Create destination directory
                 dest_path.parent.mkdir(parents=True, exist_ok=True)
                 
-                # Move the file
                 import shutil
                 shutil.move(str(source_path), str(dest_path))
                 
-                # Apply import updates
                 if update_imports:
-                    for change in changes[1:]:  # Skip the move change
+                    for change in changes[1:]:
                         content = Path(change.file_path).read_text()
                         new_content = content.replace(
                             change.old_text,

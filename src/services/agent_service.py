@@ -174,7 +174,6 @@ Return ONLY valid JSON, no other text."""
             except:
                 pass
         
-        # Fallback analysis
         return {
             "task_type": "feature",
             "complexity": "medium",

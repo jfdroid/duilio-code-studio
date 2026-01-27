@@ -176,6 +176,141 @@
     min-height: 0;
 }
 
+/* Centered Chat Mode - Enhanced Message Styling */
+.chat-panel.chat-centered .chat-messages {
+    padding: 40px 24px;
+    scroll-behavior: smooth;
+}
+
+.chat-panel.chat-centered .message {
+    margin-bottom: 40px;
+    padding: 0;
+}
+
+.chat-panel.chat-centered .message-header {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-panel.chat-centered .message-sender {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e6edf3;
+}
+
+.chat-panel.chat-centered .message-content {
+    padding-left: 44px; /* Avatar width (32px) + gap (12px) */
+    font-size: 15px;
+    line-height: 1.75;
+    color: #e6edf3;
+}
+
+.chat-panel.chat-centered .message-content p {
+    margin-bottom: 16px;
+}
+
+.chat-panel.chat-centered .message-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Centered Chat Input */
+.chat-panel.chat-centered .chat-input-wrapper {
+    max-width: 100%;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    transition: border-color 0.2s ease;
+}
+
+.chat-panel.chat-centered .chat-input-wrapper:focus-within {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+}
+
+.chat-panel.chat-centered .chat-textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #e6edf3;
+    font-size: 15px;
+    line-height: 1.6;
+    resize: none;
+    min-height: 24px;
+    max-height: 200px;
+    padding: 0;
+}
+
+.chat-panel.chat-centered .chat-textarea::placeholder {
+    color: #6e7681;
+}
+
+.chat-panel.chat-centered .chat-send-btn {
+    width: 36px;
+    height: 36px;
+    background: #58a6ff;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.chat-panel.chat-centered .chat-send-btn:hover {
+    background: #79b8ff;
+    transform: scale(1.05);
+}
+
+.chat-panel.chat-centered .chat-send-btn:active {
+    transform: scale(0.95);
+}
+
+.chat-panel.chat-centered .chat-send-btn:disabled {
+    background: #30363d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Centered Chat Options */
+.chat-panel.chat-centered .chat-options {
+    padding: 12px 0 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.chat-panel.chat-centered .mode-selector {
+    background: #161b22;
+    border: 1px solid #30363d;
+}
+
+.chat-panel.chat-centered .model-selector-inline {
+    font-size: 12px;
+}
+
+.chat-panel.chat-centered .model-selector-inline label {
+    color: #8b949e;
+}
+
+.chat-panel.chat-centered .model-selector-inline select {
+    background: #161b22;
+    border: 1px solid #30363d;
+    color: #e6edf3;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
 .message {
     margin-bottom: var(--space-5);
     animation: fadeIn var(--transition-slow);

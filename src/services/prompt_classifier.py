@@ -13,19 +13,19 @@ from enum import Enum
 
 class PromptCategory(Enum):
     """Categories of user prompts."""
-    CODE_GENERATION = "code_generation"       # Create new code
-    CODE_EXPLANATION = "code_explanation"     # Explain existing code
-    CODE_DEBUG = "code_debug"                 # Fix bugs/errors
-    CODE_REFACTOR = "code_refactor"           # Improve/refactor code
-    CODE_REVIEW = "code_review"               # Review code quality
-    CODEBASE_ANALYSIS = "codebase_analysis"   # Analyze project structure
-    GENERAL_QUESTION = "general_question"     # General knowledge
-    CREATIVE_WRITING = "creative_writing"     # Stories, poems, etc
-    DOCUMENTATION = "documentation"           # Write docs/README
-    SHELL_COMMAND = "shell_command"           # Terminal commands
-    DATABASE_QUERY = "database_query"         # SQL, database operations
-    ARCHITECTURE = "architecture"             # System design
-    TESTING = "testing"                       # Write tests
+    CODE_GENERATION = "code_generation"
+    CODE_EXPLANATION = "code_explanation"
+    CODE_DEBUG = "code_debug"
+    CODE_REFACTOR = "code_refactor"
+    CODE_REVIEW = "code_review"
+    CODEBASE_ANALYSIS = "codebase_analysis"
+    GENERAL_QUESTION = "general_question"
+    CREATIVE_WRITING = "creative_writing"
+    DOCUMENTATION = "documentation"
+    SHELL_COMMAND = "shell_command"
+    DATABASE_QUERY = "database_query"
+    ARCHITECTURE = "architecture"
+    TESTING = "testing"
 
 
 @dataclass
@@ -56,12 +56,20 @@ class PromptClassifier:
             'crie': 1.0, 'faça': 0.7, 'escreva': 0.8, 'implemente': 1.0,
             'function': 0.7, 'class': 0.7, 'component': 0.8, 'feature': 0.7,
             'new file': 1.0, 'novo arquivo': 1.0, 'criar arquivo': 1.0,
+            'arquivo chamado': 1.2, 'file called': 1.2, 'file named': 1.2,
+            'chamado': 1.1, 'called': 1.1, 'named': 1.1,
         },
         PromptCategory.CODE_EXPLANATION: {
             'explain': 1.0, 'what is': 0.8, 'how does': 0.9, 'what does': 0.9,
             'explique': 1.0, 'como funciona': 1.0, 'o que é': 0.8, 'o que faz': 0.9,
             'understand': 0.7, 'entenda': 0.7, 'describe': 0.8, 'descreva': 0.8,
             'purpose': 0.6, 'objetivo': 0.6, 'meaning': 0.6, 'significado': 0.6,
+            # File reading keywords
+            'read': 1.2, 'ler': 1.2, 'show': 0.9, 'mostrar': 0.9, 'display': 0.9,
+            'o que está escrito': 1.2, 'what is written': 1.2, 'what\'s in': 1.1,
+            'conteúdo do arquivo': 1.2, 'file content': 1.2, 'content of': 1.1,
+            'abrir arquivo': 1.0, 'open file': 1.0, 'ver arquivo': 1.0, 'view file': 1.0,
+            'mostrar conteúdo': 1.1, 'show content': 1.1, 'exibir': 0.9,
         },
         PromptCategory.CODE_DEBUG: {
             'bug': 1.0, 'error': 1.0, 'fix': 1.0, 'debug': 1.0,
@@ -121,30 +129,27 @@ class PromptClassifier:
         },
     }
     
-    # Language patterns that indicate code context
+    # Generic code patterns (not hardcoded to specific languages)
     CODE_LANGUAGE_PATTERNS = [
-        r'\b(python|javascript|typescript|java|kotlin|go|rust|c\+\+|ruby|php|swift)\b',
-        r'\b(react|vue|angular|django|flask|fastapi|spring|node)\b',
-        r'\b(html|css|scss|json|yaml|xml|sql)\b',
+        r'\b\w+\s*(?:programming|language|code|script)\b',  # Generic language mentions
+        r'\.(py|js|ts|jsx|tsx|java|kt|go|rs|rb|php|swift|cpp|c|cs)\b',  # File extensions
+        r'\b(framework|library|package|module|dependency)\b',  # Generic tech terms
     ]
     
-    # Code syntax patterns
+    # Generic code syntax patterns (work across languages)
     CODE_SYNTAX_PATTERNS = [
         r'```\w*\n',           # Code blocks
-        r'def\s+\w+\s*\(',    # Python function
-        r'function\s+\w+\s*\(', # JS function
-        r'class\s+\w+',        # Class definition
+        r'\w+\s*\([^)]*\)',   # Function calls (generic)
+        r'class\s+\w+',        # Class definition (generic)
         r'=>',                  # Arrow function
         r'\{\s*\n',            # Block start
-        r'import\s+\w+',       # Import statement
-        r'from\s+\w+\s+import', # Python import
-        r'require\s*\(',       # Node require
-        r'\$\(\s*[\'"]',       # jQuery
+        r'import\s+',          # Import statement (generic)
+        r'from\s+.*\s+import', # From import (generic)
+        r'require\s*\(',       # Require statement
+        r'#include',           # Include statement
+        r'package\s+',         # Package statement
+        r'using\s+',           # Using statement
     ]
-    
-    # Models for each category type
-    CODE_MODELS = ['qwen2.5-coder:14b', 'qwen2.5-coder:7b', 'codellama', 'deepseek-coder']
-    GENERAL_MODELS = ['llama3.2', 'llama3.1', 'mistral', 'gemma2', 'phi3']
     
     @classmethod
     def classify(cls, prompt: str, available_models: List[str] = None) -> ClassificationResult:
@@ -160,7 +165,6 @@ class PromptClassifier:
         """
         prompt_lower = prompt.lower()
         
-        # Score each category
         scores: Dict[PromptCategory, float] = {}
         keywords_by_category: Dict[PromptCategory, List[str]] = {}
         
@@ -176,7 +180,6 @@ class PromptClassifier:
             scores[category] = score
             keywords_by_category[category] = found_keywords
         
-        # Check for code patterns (boost code categories)
         has_code_syntax = any(
             re.search(pattern, prompt, re.IGNORECASE)
             for pattern in cls.CODE_SYNTAX_PATTERNS
@@ -187,7 +190,6 @@ class PromptClassifier:
             for pattern in cls.CODE_LANGUAGE_PATTERNS
         )
         
-        # Boost code-related categories if code patterns found
         if has_code_syntax or has_code_language:
             for category in [
                 PromptCategory.CODE_GENERATION,
@@ -197,15 +199,12 @@ class PromptClassifier:
             ]:
                 scores[category] = scores.get(category, 0) * 1.5 + 0.5
         
-        # Find best category
         best_category = max(scores, key=scores.get)
         best_score = scores[best_category]
         
-        # Calculate confidence (0-1)
         total_score = sum(scores.values())
         confidence = best_score / total_score if total_score > 0 else 0.5
         
-        # Determine if code-related
         code_categories = {
             PromptCategory.CODE_GENERATION,
             PromptCategory.CODE_EXPLANATION,
@@ -220,14 +219,14 @@ class PromptClassifier:
         }
         is_code_related = best_category in code_categories or has_code_syntax or has_code_language
         
-        # Select model
         if available_models:
             model_names = [m.lower() if isinstance(m, str) else m.get('name', '').lower() for m in available_models]
             
             if is_code_related:
-                for preferred in cls.CODE_MODELS:
+                code_indicators = ['coder', 'code', 'deepseek', 'codellama']
+                for indicator in code_indicators:
                     for available in model_names:
-                        if preferred in available:
+                        if indicator in available:
                             recommended_model = available
                             break
                     else:
@@ -236,9 +235,10 @@ class PromptClassifier:
                 else:
                     recommended_model = model_names[0] if model_names else 'qwen2.5-coder:7b'
             else:
-                for preferred in cls.GENERAL_MODELS:
+                general_indicators = ['llama', 'mistral', 'gemma', 'phi', 'gpt']
+                for indicator in general_indicators:
                     for available in model_names:
-                        if preferred in available:
+                        if indicator in available:
                             recommended_model = available
                             break
                     else:
@@ -249,10 +249,8 @@ class PromptClassifier:
         else:
             recommended_model = 'qwen2.5-coder:7b' if is_code_related else 'llama3.2:latest'
         
-        # Generate reasoning
         reasoning = cls._generate_reasoning(best_category, keywords_by_category[best_category], confidence)
         
-        # Generate system prompt modifier
         system_modifier = cls._get_system_modifier(best_category)
         
         return ClassificationResult(

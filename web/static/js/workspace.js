@@ -123,22 +123,67 @@ const Workspace = {
             const folderIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
             const icon = item.is_directory ? folderIcon : Utils.getFileIcon(item.name);
             
-            div.innerHTML = `
-                <span class="tree-item-icon">${icon}</span>
-                <span class="tree-item-name">${item.name}</span>
-                <div class="tree-item-actions">
-                    ${item.is_directory ? `<button class="tree-action" onclick="event.stopPropagation(); FileManager.createInFolder('${item.path}')">+</button>` : ''}
-                </div>
-            `;
+            // Create elements separately to avoid innerHTML issues
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'tree-item-icon';
+            iconSpan.innerHTML = icon;
             
-            div.onclick = (e) => {
-                e.stopPropagation();
-                if (item.is_directory) {
-                    this.toggleFolder(div, item);
-                } else {
-                    FileManager.open(item.path);
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'tree-item-name';
+            nameSpan.textContent = item.name;
+            
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'tree-item-actions';
+            if (item.is_directory) {
+                const actionBtn = document.createElement('button');
+                actionBtn.className = 'tree-action';
+                actionBtn.textContent = '+';
+                actionBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    FileManager.createInFolder(item.path);
+                };
+                actionsDiv.appendChild(actionBtn);
+            }
+            
+            div.appendChild(iconSpan);
+            div.appendChild(nameSpan);
+            div.appendChild(actionsDiv);
+            
+            // Store path and isDir in closure to avoid issues
+            const filePath = item.path;
+            const isDirectory = item.is_directory;
+            
+            // Add click handler - simple and direct approach
+            div.addEventListener('click', async function(e) {
+                // Don't open if clicking on action buttons
+                if (e.target.closest('.tree-item-actions') || 
+                    e.target.closest('.tree-action') || 
+                    e.target.classList.contains('tree-action')) {
+                    return;
                 }
-            };
+                
+                // Prevent default and stop propagation to avoid conflicts
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (isDirectory) {
+                    await Workspace.toggleFolder(div, item);
+                } else {
+                    // Open file
+                    if (typeof FileManager !== 'undefined' && FileManager.open) {
+                        try {
+                            await FileManager.open(filePath);
+                        } catch (err) {
+                            console.error('[Workspace] Error opening file:', err);
+                            alert('Error opening file: ' + (err.message || String(err)));
+                        }
+                    } else {
+                        console.error('[Workspace] FileManager not available');
+                        alert('Error: FileManager is not available. Please refresh the page.');
+                    }
+                }
+            }, false); // Use bubble phase (default)
             
             container.appendChild(div);
             

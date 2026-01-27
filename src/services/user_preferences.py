@@ -14,6 +14,10 @@ from collections import defaultdict
 from core.config import get_settings
 
 
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 @dataclass
 class ModelUsage:
     """Track model usage statistics."""

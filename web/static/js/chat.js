@@ -5,7 +5,78 @@
 
 const Chat = {
     abortController: null,
-    mode: 'agent', // 'chat' or 'agent'
+    mode: 'chat', // 'chat' (simple) or 'agent' (complex with codebase)
+
+    /**
+     * Initialize chat mode from HTML
+     */
+    initMode() {
+        // Check which button is active in HTML
+        const agentBtn = document.getElementById('agentModeBtn');
+        if (agentBtn && agentBtn.classList.contains('active')) {
+            this.mode = 'agent';
+            console.log('[DuilioCode] Initialized mode: agent (from HTML)');
+        } else {
+            this.mode = 'chat';
+            console.log('[DuilioCode] Initialized mode: chat (from HTML)');
+        }
+        
+        // Set default model for initial mode
+        // Wait a bit for models to load
+        setTimeout(() => {
+            this.setDefaultModelForMode(this.mode);
+        }, 500);
+    },
+
+    /**
+     * Set default model based on mode
+     */
+    setDefaultModelForMode(mode) {
+        const modelSelect = document.getElementById('modelSelect');
+        if (!modelSelect) return;
+        
+        // Get available models
+        const availableModels = Array.from(modelSelect.options).map(opt => opt.value);
+        
+        if (mode === 'chat') {
+            // Chat mode: Try to find Llama model
+            const llamaModel = availableModels.find(m => 
+                m.toLowerCase().includes('llama') || 
+                m.toLowerCase().includes('llama2') ||
+                m.toLowerCase().includes('llama3')
+            );
+            
+            if (llamaModel) {
+                modelSelect.value = llamaModel;
+                AppState.chat.currentModel = llamaModel;
+                console.log('[DuilioCode] Chat mode: Set default model to', llamaModel);
+            } else {
+                console.warn('[DuilioCode] Chat mode: Llama model not found, keeping current selection');
+            }
+        } else {
+            // Agent mode: Try to find Qwen 7B
+            const qwen7bModel = availableModels.find(m => 
+                m.toLowerCase().includes('qwen') && 
+                (m.toLowerCase().includes('7b') || m.toLowerCase().includes('7-b'))
+            );
+            
+            if (qwen7bModel) {
+                modelSelect.value = qwen7bModel;
+                AppState.chat.currentModel = qwen7bModel;
+                console.log('[DuilioCode] Agent mode: Set default model to', qwen7bModel);
+            } else {
+                // Fallback to any Qwen model
+                const qwenModel = availableModels.find(m => m.toLowerCase().includes('qwen'));
+                if (qwenModel) {
+                    modelSelect.value = qwenModel;
+                    AppState.chat.currentModel = qwenModel;
+                    console.log('[DuilioCode] Agent mode: Set default model to', qwenModel, '(7B not found)');
+                } else {
+                    console.warn('[DuilioCode] Agent mode: Qwen model not found, keeping current selection');
+                }
+            }
+        }
+    },
 
     /**
      * Set chat mode
@@ -31,6 +102,59 @@ const Chat = {
                 : 'Ask me anything, I\'ll explain and suggest...';
         }
         
+        // Set default model based on mode
+        this.setDefaultModelForMode(mode);
+        
+        // === CHAT MODE: Centered Layout (like Gemini/DeepSeek) ===
+        // Center chat and hide all IDE elements in Chat mode
+        const explorerPanel = document.getElementById('explorerPanel');
+        const sidebar = document.querySelector('.sidebar-panels');
+        const mainContent = document.querySelector('.main-content-wrapper');
+        const mainArea = document.querySelector('.main-area');
+        const chatPanel = document.getElementById('chatPanel');
+        const tabsBar = document.getElementById('tabsBar');
+        const editorPanel = document.getElementById('editorPanel');
+        const statusBar = document.querySelector('.status-bar');
+        const activityBar = document.querySelector('.activity-bar');
+        
+        if (mode === 'chat') {
+            // Chat mode: Centered, focused layout
+            if (explorerPanel) explorerPanel.classList.add('hidden');
+            if (sidebar) sidebar.classList.add('hidden');
+            if (mainContent) mainContent.classList.add('chat-mode-centered');
+            if (mainArea) mainArea.classList.add('hidden');
+            if (tabsBar) tabsBar.classList.add('hidden');
+            if (editorPanel) editorPanel.classList.add('hidden');
+            if (activityBar) activityBar.classList.add('hidden');
+            if (statusBar) statusBar.classList.add('hidden');
+            if (chatPanel) {
+                chatPanel.classList.add('chat-centered');
+                chatPanel.style.width = '100%';
+                chatPanel.style.maxWidth = '900px';
+                chatPanel.style.margin = '0 auto';
+            }
+            
+            console.log('[DuilioCode] Chat mode: Centered layout activated');
+        } else {
+            // Agent mode: Show explorer and full IDE layout
+            if (explorerPanel) explorerPanel.classList.remove('hidden');
+            if (sidebar) sidebar.classList.remove('hidden');
+            if (mainContent) mainContent.classList.remove('chat-mode-centered');
+            if (mainArea) mainArea.classList.remove('hidden');
+            if (tabsBar) tabsBar.classList.remove('hidden');
+            if (editorPanel) editorPanel.classList.remove('hidden');
+            if (activityBar) activityBar.classList.remove('hidden');
+            if (statusBar) statusBar.classList.remove('hidden');
+            if (chatPanel) {
+                chatPanel.classList.remove('chat-centered');
+                chatPanel.style.width = '';
+                chatPanel.style.maxWidth = '';
+                chatPanel.style.margin = '';
+            }
+            
+            console.log('[DuilioCode] Agent mode: Full IDE layout activated');
+        }
+        
         Utils.showNotification(`Mode: ${mode === 'agent' ? 'Agent (Execute Actions)' : 'Chat (Conversation Only)'}`, 'info');
     },
 
@@ -41,6 +165,15 @@ const Chat = {
         console.log('[DuilioCode] Chat.send() called');
         const input = document.getElementById('chatInput');
         const message = input.value.trim();
+        
+        // CRITICAL: Re-check mode from UI state (in case it changed)
+        const agentBtn = document.getElementById('agentModeBtn');
+        const chatBtn = document.getElementById('chatModeBtn');
+        if (agentBtn && agentBtn.classList.contains('active')) {
+            this.mode = 'agent';
+        } else if (chatBtn && chatBtn.classList.contains('active')) {
+            this.mode = 'chat';
+        }
         
         console.log('[DuilioCode] Message:', message, 'isLoading:', AppState.chat.isLoading, 'mode:', this.mode);
         
@@ -66,15 +199,16 @@ const Chat = {
         this.abortController = new AbortController();
         
         try {
-            // Get file context if file is open
+            // Build comprehensive context
             let context = '';
+            const workspacePath = AppState.workspace.currentPath;
             
             // Add workspace context
-            if (AppState.workspace.currentPath) {
-                context += `Current workspace: ${AppState.workspace.currentPath}\n`;
+            if (workspacePath) {
+                context += `Current workspace: ${workspacePath}\n`;
             }
             
-            // Add file context
+            // Add file context if file is open
             if (AppState.editor.currentFile) {
                 // Get content from Monaco or fallback textarea
                 let content = '';
@@ -83,24 +217,89 @@ const Chat = {
                 } else {
                     content = document.getElementById('codeEditor')?.value || '';
                 }
-                context += `Current file: ${AppState.editor.currentFile.path}\n\nContent:\n\`\`\`${AppState.editor.currentFile.language}\n${content.slice(0, 2000)}\n\`\`\``;
+                context += `\n=== CURRENTLY OPEN FILE ===\n`;
+                context += `File: ${AppState.editor.currentFile.path}\n`;
+                context += `Language: ${AppState.editor.currentFile.language}\n`;
+                context += `Content (first 2000 chars):\n\`\`\`${AppState.editor.currentFile.language}\n${content.slice(0, 2000)}\n\`\`\`\n`;
             }
             
-            // Add system instruction for file operations
-            const systemContext = context ? `You have access to the user's workspace. When they ask you to create files, use the workspace path as base: ${AppState.workspace.currentPath || '~'}. ${context}` : null;
+            // Build system context
+            // NOTE: The backend will automatically include codebase analysis when include_codebase: true
+            // We add instructions here to guide the AI on how to use that context
+            let systemContext = '';
+            if (workspacePath) {
+                systemContext += `You have access to the user's workspace at: ${workspacePath}\n`;
+                systemContext += `The backend will provide you with FULL CODEBASE ANALYSIS including:\n`;
+                systemContext += `- Project structure and file tree\n`;
+                systemContext += `- Key files with their content\n`;
+                systemContext += `- Dependencies and entry points\n`;
+                systemContext += `- Coding patterns and conventions\n\n`;
+                systemContext += `You MUST use this analysis to make intelligent decisions when creating files.\n`;
+            }
+            if (context) {
+                systemContext += context;
+            }
             
-            // Use smart model selection (pass null to let backend decide) or specific model
+            const finalSystemContext = systemContext || null;
+            
+            // Get selected model (required - no auto selection)
             const selectedModel = document.getElementById('modelSelect')?.value;
-            const modelToUse = (selectedModel === 'auto' || !selectedModel) ? null : selectedModel;
+            if (!selectedModel) {
+                throw new Error('No model selected. Please select a model first.');
+            }
+            const modelToUse = selectedModel;
             
-            // Add mode to context
+            // Add mode to context with CRITICAL instructions for file creation
             const modeContext = this.mode === 'agent' 
-                ? `\n\nIMPORTANT: You are in AGENT MODE. When the user asks to create files, modify code, or run commands, you MUST output the actual actions in a structured format that can be executed. Use these formats:
+                ? `\n\n=== AGENT MODE - CRITICAL INSTRUCTIONS ===
 
-For creating files:
+You are in AGENT MODE. When the user asks to create files, modify code, or run commands, you MUST output the actual actions in a structured format.
+
+BEFORE CREATING ANY FILE:
+1. ANALYZE the codebase structure provided in the context above
+2. UNDERSTAND the project's architecture, patterns, and conventions
+3. IDENTIFY where similar files are located in the project
+4. FOLLOW existing directory structures and naming conventions
+5. MATCH the coding style, imports, and structure of similar files
+6. RESPECT framework-specific patterns (React, Python, Node.js, etc.)
+7. CREATE files in the CORRECT directories based on their purpose and type
+8. ENSURE new files integrate properly with existing code (imports, exports, dependencies)
+
+FILE CREATION FORMAT (CRITICAL - USE THIS EXACT FORMAT):
 \`\`\`create-file:path/to/file.ext
 file content here
 \`\`\`
+
+IMPORTANT: You can create MULTIPLE files in ONE response by using multiple \`\`\`create-file: blocks.
+When user asks for a "project" or "complete application", create ALL necessary files in the SAME response.
+
+PATH RULES (CRITICAL):
+- CRITICAL: When user asks for a file WITHOUT specifying a directory (e.g., "create utils.js"), create it in the ROOT of the workspace (e.g., utils.js, NOT src/utils.js)
+- ONLY create files in subdirectories if:
+  * User explicitly specifies a directory (e.g., "create src/utils.js")
+  * The codebase already has a clear structure and similar files exist in that directory
+  * You're creating a complete project with multiple files and following established patterns
+- For simple single-file requests, ALWAYS use root unless user specifies otherwise
+- For files INSIDE the workspace: Use RELATIVE paths from workspace root
+- For files OUTSIDE the workspace (when user explicitly requests): Use ABSOLUTE paths (e.g., /Users/username/Desktop/file.txt, ~/Documents/file.txt)
+- If user asks to create a file in a specific location (Desktop, Documents, etc.), use the FULL ABSOLUTE PATH they requested
+- If creating a component/module/test and similar files exist, follow their pattern
+- NEVER create files randomly - always base on codebase analysis (for workspace files) or user's explicit request (for external paths)
+
+CONTENT RULES:
+- When user asks to create a file "based on", "similar to", "like", or "following the pattern of" another file:
+  * Find similar files in the codebase (same type, same directory, similar name)
+  * Use those files as REFERENCE and TEMPLATE
+  * Match the EXACT structure, imports, exports, and patterns from the reference files
+  * Keep the same coding style, naming conventions, and organization
+  * Adapt the content to the new file's purpose while maintaining consistency
+- Match the coding style of similar files in the project
+- Include proper imports/exports matching project patterns
+- Follow the same structure and organization as existing files
+- Use the same naming conventions (camelCase, PascalCase, snake_case, etc.)
+- Include proper headers, comments, and documentation if the project uses them
+- Match indentation style (spaces vs tabs, 2 vs 4 spaces)
+- When creating files similar to existing ones, analyze the reference files' content in the codebase context and replicate their patterns
 
 For modifying files:
 \`\`\`modify-file:path/to/file.ext
@@ -112,31 +311,101 @@ For running commands:
 command here
 \`\`\`
 
-ALWAYS include the actual code/content, not just instructions.`
+CONTEXT RETENTION:
+- Remember ALL files created in previous messages in this conversation
+- When user refers to "that file" or "the file we created", remember which file they mean
+- Maintain full conversation context - you have access to all previous messages
+- When modifying files, reference the file by its path from previous context
+
+REMEMBER: You have FULL CONTEXT of the codebase. Use it to make intelligent decisions about file placement and structure.
+When creating files "based on" or "similar to" existing files, use their FULL CONTENT from the codebase context as a TEMPLATE.`
                 : '\n\nYou are in CHAT MODE. Just explain, suggest, and discuss. Do not execute any actions.';
             
-            const fullContext = (systemContext || '') + modeContext;
+            const fullContext = (finalSystemContext || '') + modeContext;
             
-            console.log('[DuilioCode] Calling API.generate:', { message, modelToUse, mode: this.mode });
-            const response = await API.generate(message, modelToUse, fullContext);
-            console.log('[DuilioCode] API Response:', response);
+            // MODE-BASED ENDPOINT SELECTION:
+            // - Chat mode → Simple endpoint (/api/chat/simple) - clean Ollama connection
+            // - Agent mode → Complex endpoint (/api/chat) - full features with codebase
+            let response;
+            if (this.mode === 'chat') {
+                // CHAT MODE: Simple, direct Ollama connection - no complex logic
+                console.log('[DuilioCode] CHAT mode - using simple endpoint');
+                const messages = AppState.chat.messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                }));
+                // Add current user message
+                messages.push({ role: 'user', content: message });
+                
+                response = await API.chatSimple(messages, modelToUse, 0.7, false);
+                console.log('[DuilioCode] Simple API Response:', response);
+            } else {
+                // AGENT MODE: Complex endpoint with full features
+                console.log('[DuilioCode] AGENT mode - using complex endpoint with codebase');
+                console.log('[DuilioCode] Workspace from AppState:', AppState.workspace.currentPath);
+                console.log('[DuilioCode] Workspace variable:', workspacePath);
+                console.log('[DuilioCode] Context length:', fullContext?.length || 0);
+                
+                // Build messages for complex endpoint
+                const messages = AppState.chat.messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                }));
+                messages.push({ role: 'user', content: message });
+                
+                // CRITICAL: Ensure workspace_path is sent in Agent mode
+                // Use AppState directly to ensure we have the latest value
+                const finalWorkspacePath = AppState.workspace.currentPath || workspacePath;
+                console.log('[DuilioCode] Final workspace_path to send:', finalWorkspacePath);
+                
+                if (!finalWorkspacePath) {
+                    console.warn('[DuilioCode] WARNING: No workspace_path available in Agent mode!');
+                    console.warn('[DuilioCode] This may cause file listing to fail.');
+                    Utils.showNotification('Warning: No workspace folder open. File operations may not work.', 'warning');
+                }
+                
+                response = await API.chat(messages, modelToUse, false);
+                console.log('[DuilioCode] Complex API Response:', response);
+            }
             
-            // Update model selector to show which model was actually used
-            if (response.model && selectedModel === 'auto') {
-                console.log(`[DuilioCode] Auto-selected model: ${response.model}`);
+            // Log which model was used
+            if (response.model) {
+                console.log(`[DuilioCode] Using model: ${response.model}`);
             }
             
             this.hideTypingIndicator();
             
-            // In Agent mode, process and execute actions
-            let responseText = response.response;
+            // Extract response text (handle both simple and complex response formats)
+            let responseText;
+            if (response.choices && response.choices[0] && response.choices[0].message) {
+                // Both modes use choices[0].message.content format
+                responseText = response.choices[0].message.content;
+            } else if (response.response) {
+                // Fallback: old format
+                responseText = response.response;
+            } else {
+                console.warn('[DuilioCode] Unexpected response format:', response);
+                responseText = JSON.stringify(response);
+            }
+            
+            // In Agent mode, process and execute actions from response
             if (this.mode === 'agent') {
-                responseText = await this.processAgentActions(response.response);
+                responseText = await this.processAgentActions(responseText);
             }
             
             this.addMessage('assistant', responseText);
             if (typeof ChatHistory !== 'undefined') {
                 ChatHistory.addMessage('assistant', responseText);
+            }
+            
+            // CRITICAL: Refresh explorer if actions were processed (Agent mode only)
+            if (this.mode === 'agent' && response.actions_processed && response.actions_result) {
+                if (response.actions_result.success_count > 0 || response.refresh_explorer) {
+                    console.log('[DuilioCode] Refreshing explorer after actions');
+                    if (typeof Workspace !== 'undefined') {
+                        await Workspace.refresh();
+                    }
+                }
             }
             
         } catch (error) {
@@ -210,10 +479,78 @@ ALWAYS include the actual code/content, not just instructions.`
         container.insertAdjacentHTML('beforeend', messageHtml);
         container.scrollTop = container.scrollHeight;
         
-        // Highlight code blocks
-        container.querySelectorAll('pre code').forEach(block => {
-            hljs.highlightElement(block);
-        });
+        // CRITICAL: Attach event listeners AFTER DOM insertion
+        // Use setTimeout to ensure DOM is fully ready
+        setTimeout(() => {
+            const lastMessage = container.lastElementChild;
+            if (lastMessage) {
+                // File links - use event delegation for better reliability
+                const messageContent = lastMessage.querySelector('.message-content');
+                if (messageContent) {
+                    // Remove any existing listeners by cloning (clean slate)
+                    const fileLinks = messageContent.querySelectorAll('.file-link[data-file-path]');
+                    fileLinks.forEach(link => {
+                        // Remove old listeners by replacing the element
+                        const newLink = link.cloneNode(true);
+                        link.parentNode.replaceChild(newLink, link);
+                        
+                        // Add fresh event listener
+                        newLink.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const filePath = newLink.getAttribute('data-file-path');
+                            console.log('[Chat] File link clicked:', filePath);
+                            if (filePath) {
+                                Chat.openFileFromChat(filePath);
+                            }
+                        });
+                        
+                        // Ensure link is clickable
+                        newLink.style.cursor = 'pointer';
+                        newLink.style.textDecoration = 'underline';
+                    });
+                    
+                    // Code block headers
+                    const codeHeaders = messageContent.querySelectorAll('.code-block-header[data-file-path]');
+                    codeHeaders.forEach(header => {
+                        // Remove old listeners
+                        const newHeader = header.cloneNode(true);
+                        header.parentNode.replaceChild(newHeader, header);
+                        
+                        // Add fresh event listener
+                        newHeader.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const filePath = newHeader.getAttribute('data-file-path');
+                            console.log('[Chat] Code header clicked:', filePath);
+                            if (filePath) {
+                                Chat.openFileFromChat(filePath);
+                            }
+                        });
+                        
+                        // Ensure header is clickable
+                        newHeader.style.cursor = 'pointer';
+                    });
+                }
+            }
+        }, 0);
+        
+        // Highlight code blocks (skip create-file and modify-file blocks)
+        if (typeof hljs !== 'undefined') {
+            container.querySelectorAll('pre code').forEach(block => {
+                // Skip highlighting for create-file and modify-file blocks
+                const text = block.textContent || '';
+                if (text.includes('create-file:') || text.includes('modify-file:')) {
+                    return;
+                }
+                try {
+                    hljs.highlightElement(block);
+                } catch (error) {
+                    // Ignore highlighting errors (e.g., unknown language)
+                    console.debug('[Chat] Highlight error:', error);
+                }
+            });
+        }
         
         // Render Mermaid diagrams
         if (typeof ChatRenderers !== 'undefined') {
@@ -232,12 +569,18 @@ ALWAYS include the actual code/content, not just instructions.`
     formatMessage(content) {
         let formatted = content;
         
+        // CRITICAL: Make file paths clickable BEFORE markdown parsing
+        // This ensures paths are converted to links before marked.parse() processes them
+        formatted = this.makePathsClickable(formatted);
+        
         // Use marked for markdown if available
         if (typeof marked !== 'undefined') {
-            formatted = marked.parse(content);
+            formatted = marked.parse(formatted);
+            // After marked.parse, paths might be inside <p> tags, re-process them
+            formatted = this.makePathsClickable(formatted);
         } else {
             // Basic formatting
-            formatted = content
+            formatted = formatted
                 .replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
                     return `<pre><code class="language-${lang}">${Utils.escapeHtml(code.trim())}</code><button class="apply-code-btn" onclick="Chat.applyCode(this)">Apply</button></pre>`;
                 })
@@ -250,10 +593,7 @@ ALWAYS include the actual code/content, not just instructions.`
             formatted = ChatRenderers.processContent(formatted);
         }
         
-        // Make file paths clickable
-        formatted = this.makePathsClickable(formatted);
-        
-        // Add clickable headers to code blocks
+        // Add clickable headers to code blocks (after markdown processing)
         formatted = this.addCodeBlockHeaders(formatted);
         
         return formatted;
@@ -265,12 +605,34 @@ ALWAYS include the actual code/content, not just instructions.`
      */
     makePathsClickable(html) {
         // Pattern to match file paths (not already in links)
+        // Updated to match paths even inside markdown paragraphs
         const pathPattern = /(?<!["'=])(\b(?:\.\/|\.\.\/|src\/|app\/|lib\/|components\/|services\/|utils\/|pages\/|api\/|tests?\/)?[\w\-./]+\.(js|jsx|ts|tsx|py|java|kt|go|rs|rb|c|cpp|h|hpp|css|scss|html|json|yaml|yml|md|txt|sh|sql))\b(?![^<]*>)/gi;
         
         return html.replace(pathPattern, (match, path) => {
             // Skip if it's a URL or already linked
             if (path.startsWith('http') || path.includes('://')) return match;
-            return `<a href="#" class="file-link" onclick="Chat.openFileFromChat('${path}'); return false;" title="Open ${path}">${path}</a>`;
+            
+            // CRITICAL: Check if this match is already inside a link tag
+            // Look backwards and forwards in the HTML string to see if we're inside <a>...</a>
+            const matchIndex = html.indexOf(match);
+            if (matchIndex !== -1) {
+                const beforeMatch = html.substring(0, matchIndex);
+                const afterMatch = html.substring(matchIndex + match.length);
+                
+                // Find the last <a> tag before this match
+                const lastATag = beforeMatch.lastIndexOf('<a ');
+                const lastATagClose = beforeMatch.lastIndexOf('</a>');
+                
+                // If there's an <a> tag before us and no closing </a> before us, we're inside a link
+                if (lastATag > lastATagClose) {
+                    return match; // Already inside a link, skip
+                }
+            }
+            
+            // Escape path for HTML attribute to prevent breaking
+            const escapedPath = Utils.escapeHtml(path);
+            // Use data attribute instead of inline onclick to avoid issues with special characters
+            return `<a href="#" class="file-link" data-file-path="${escapedPath}" title="Open ${escapedPath}" style="cursor: pointer; text-decoration: underline; color: #4a9eff;">${path}</a>`;
         });
     },
     
@@ -283,8 +645,10 @@ ALWAYS include the actual code/content, not just instructions.`
         const codeBlockPattern = /<pre><code[^>]*>((?:\/\/|#|\/\*|\{\/\*)\s*([\w\-./]+\.(js|jsx|ts|tsx|py|java|kt|go|rs|rb|c|cpp|h|hpp|css|scss|html|json|yaml|yml|md))\s*(?:\*\/|\*\/\})?[\r\n])/gi;
         
         return html.replace(codeBlockPattern, (match, commentLine, filePath) => {
-            // Create clickable header
-            const header = `<div class="code-block-header" onclick="Chat.openFileFromChat('${filePath}')" title="Click to open ${filePath}">
+            // Escape path for HTML attribute
+            const escapedPath = Utils.escapeHtml(filePath);
+            // Create clickable header using data attribute instead of inline onclick
+            const header = `<div class="code-block-header" data-file-path="${escapedPath}" title="Click to open ${escapedPath}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
                 </svg>
@@ -300,12 +664,24 @@ ALWAYS include the actual code/content, not just instructions.`
      * Open file from chat link
      */
     openFileFromChat(path) {
-        // Normalize path
+        // Normalize path - use Utils.normalizeFilePath to avoid duplication
         let fullPath = path;
         
-        // If path doesn't start with /, prepend workspace path
-        if (!path.startsWith('/') && AppState.workspace.currentPath) {
-            fullPath = AppState.workspace.currentPath + '/' + path.replace(/^\.\//, '');
+        // Use Utils.normalizeFilePath if available (handles path normalization correctly)
+        if (typeof Utils !== 'undefined' && Utils.normalizeFilePath) {
+            fullPath = Utils.normalizeFilePath(path, AppState.workspace.currentPath);
+        } else {
+            // Fallback: only prepend workspace if path is relative
+            if (path && !path.startsWith('/') && !path.startsWith('~') && AppState.workspace.currentPath) {
+                // Remove leading ./ if present
+                const cleanPath = path.replace(/^\.\//, '');
+                // Check if path already contains workspace to avoid duplication
+                if (!cleanPath.startsWith(AppState.workspace.currentPath)) {
+                    fullPath = AppState.workspace.currentPath + '/' + cleanPath;
+                } else {
+                    fullPath = cleanPath;
+                }
+            }
         }
         
         console.log('[DuilioCode] Opening file from chat:', fullPath);
@@ -329,7 +705,8 @@ ALWAYS include the actual code/content, not just instructions.`
         let actionsExecuted = [];
         
         // Process create-file actions
-        const createFileRegex = /```create-file:([\w\-./]+)\n([\s\S]*?)```/g;
+        // Improved regex to handle paths with spaces, special chars, and multiple files
+        const createFileRegex = /```create-file:([^\n]+)\n([\s\S]*?)```/g;
         let match;
         
         while ((match = createFileRegex.exec(responseText)) !== null) {
@@ -337,13 +714,40 @@ ALWAYS include the actual code/content, not just instructions.`
             const content = match[2];
             
             try {
-                // Determine full path
-                let fullPath = filePath;
-                if (!filePath.startsWith('/') && AppState.workspace.currentPath) {
-                    fullPath = `${AppState.workspace.currentPath}/${filePath}`;
+                // CRITICAL: Normalize path to avoid duplication
+                // BUT: If path is absolute and clearly outside workspace, preserve it
+                const workspacePath = AppState.workspace.currentPath;
+
+                console.log('[DuilioCode Agent] ===== FILE CREATION =====');
+                console.log('[DuilioCode Agent] Original path from AI:', filePath);
+                console.log('[DuilioCode Agent] Workspace path:', workspacePath);
+
+                // Check if path is absolute and outside workspace
+                let fullPath;
+                if (filePath.startsWith('/') && workspacePath && !filePath.startsWith(workspacePath)) {
+                    // Absolute path outside workspace - use as-is (e.g., /Users/username/Desktop/file.txt)
+                    console.log('[DuilioCode Agent] Path is absolute and outside workspace - using as-is');
+                    fullPath = filePath;
+                } else {
+                    // Normalize path (handles relative paths and paths within workspace)
+                    fullPath = Utils.normalizeFilePath(filePath, workspacePath);
                 }
                 
-                console.log('[DuilioCode Agent] Creating file:', fullPath);
+                console.log('[DuilioCode Agent] Normalized path:', fullPath);
+                console.log('[DuilioCode Agent] Path contains workspace?', fullPath.includes(workspacePath || ''));
+                
+                // FINAL SAFETY CHECK: If path still contains duplicate workspace, fix it
+                if (workspacePath) {
+                    const duplicatePattern = workspacePath + '/' + workspacePath;
+                    if (fullPath.includes(duplicatePattern)) {
+                        console.warn('[DuilioCode Agent] WARNING: Duplicate workspace detected, fixing...');
+                        const escaped = workspacePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        fullPath = fullPath.replace(new RegExp(escaped + '/' + escaped, 'g'), workspacePath);
+                        console.log('[DuilioCode Agent] Fixed path:', fullPath);
+                    }
+                }
+                
+                console.log('[DuilioCode Agent] Final path to create:', fullPath);
                 
                 // Create the file via API
                 await API.createFile(fullPath, false, content);
@@ -365,19 +769,21 @@ ALWAYS include the actual code/content, not just instructions.`
         }
         
         // Process modify-file actions
-        const modifyFileRegex = /```modify-file:([\w\-./]+)\n([\s\S]*?)```/g;
+        // Improved regex to handle paths with spaces and special chars
+        const modifyFileRegex = /```modify-file:([^\n]+)\n([\s\S]*?)```/g;
         
         while ((match = modifyFileRegex.exec(responseText)) !== null) {
             const filePath = match[1].trim();
             const content = match[2];
             
             try {
-                let fullPath = filePath;
-                if (!filePath.startsWith('/') && AppState.workspace.currentPath) {
-                    fullPath = `${AppState.workspace.currentPath}/${filePath}`;
-                }
+                // CRITICAL: Normalize path to avoid duplication
+                const workspacePath = AppState.workspace.currentPath;
+                const fullPath = Utils.normalizeFilePath(filePath, workspacePath);
                 
                 console.log('[DuilioCode Agent] Modifying file:', fullPath);
+                console.log('[DuilioCode Agent] Original path:', filePath);
+                console.log('[DuilioCode Agent] Workspace:', workspacePath);
                 
                 await API.writeFile(fullPath, content);
                 actionsExecuted.push(`✅ Modified: ${filePath}`);
@@ -415,11 +821,6 @@ ALWAYS include the actual code/content, not just instructions.`
                     `✅ **Command executed:** \`${command}\`\n\`\`\`\n${output}\n\`\`\``
                 );
                 
-                // Also write to terminal if open
-                if (typeof Terminal !== 'undefined' && Terminal.activeTerminal) {
-                    Terminal.write(`$ ${command}`);
-                    Terminal.write(output);
-                }
                 
             } catch (error) {
                 console.error('[DuilioCode Agent] Failed to run command:', error);
@@ -515,14 +916,7 @@ ALWAYS include the actual code/content, not just instructions.`
                     <span class="message-sender">DuilioCode</span>
                 </div>
                 <div class="message-content">
-                    <p>Hello! I'm your local AI assistant. I can help you:</p>
-                    <ul>
-                        <li>Create entire projects and file structures</li>
-                        <li>Edit and refactor existing code</li>
-                        <li>Explain concepts and debug issues</li>
-                        <li>Generate scripts, pipelines, and configs</li>
-                    </ul>
-                    <p>Open a folder to get started, or just ask me anything!</p>
+                    <p>Hi! I'm DuilioCode, your local AI coding assistant. Ask me anything about your code, and I'll help you build, debug, or understand your projects.</p>
                 </div>
             </div>
         `;

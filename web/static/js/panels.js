@@ -41,13 +41,14 @@ const Panels = {
             this.setupResizer(resizerLeft, sidebar, 'width');
         }
         
-        // Resizer between main area and chat
+        // Resizer between main area and chat (chat is now sibling of main-area)
+        const mainAreaContainer = document.querySelector('.main-area');
         const chatPanel = document.getElementById('chatPanel');
-        if (chatPanel) {
+        if (mainAreaContainer && chatPanel) {
             const resizerRight = document.createElement('div');
             resizerRight.className = 'panel-resizer panel-resizer-vertical';
             resizerRight.dataset.target = 'chat';
-            chatPanel.before(resizerRight);
+            mainAreaContainer.after(resizerRight);
             
             this.setupResizer(resizerRight, chatPanel, 'width', true);
         }
@@ -115,11 +116,6 @@ const Panels = {
         // Resize Monaco editor
         if (typeof MonacoEditor !== 'undefined' && MonacoEditor.isReady) {
             MonacoEditor.resize();
-        }
-        
-        // Resize terminal
-        if (typeof Terminal !== 'undefined' && Terminal.activeTerminal?.fitAddon) {
-            Terminal.activeTerminal.fitAddon.fit();
         }
     },
     

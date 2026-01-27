@@ -14,7 +14,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.live import Live
 
-from src.chat.ollama_client import OllamaClient
+from chat.ollama_client import OllamaClient
 
 
 console = Console()

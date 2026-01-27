@@ -11,6 +11,11 @@ from services.ollama_service import OllamaService, get_ollama_service
 from core.exceptions import OllamaConnectionError
 
 
+from pathlib import Path
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 router = APIRouter(prefix="/api/models", tags=["Models"])
 
 

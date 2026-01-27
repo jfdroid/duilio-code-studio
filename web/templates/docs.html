@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação - DuilioCode Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-bg: #ffffff;
+            --color-bg-secondary: #f7f9fc;
+            --color-bg-tertiary: #f1f5f9;
+            --color-text: #1e293b;
+            --color-text-secondary: #64748b;
+            --color-text-tertiary: #94a3b8;
+            --color-border: #e2e8f0;
+            --color-accent: #3b82f6;
+            --color-accent-hover: #2563eb;
+            --color-code-bg: #f8fafc;
+            --color-code-border: #e2e8f0;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
+            --color-info: #3b82f6;
+            --sidebar-width: 260px;
+            --content-max-width: 1200px;
+            --toc-width: 240px;
+        }
+
+        [data-theme="dark"] {
+            --color-bg: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-bg-tertiary: #334155;
+            --color-text: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-text-tertiary: #94a3b8;
+            --color-border: #334155;
+            --color-accent: #60a5fa;
+            --color-accent-hover: #93c5fd;
+            --color-code-bg: #1e293b;
+            --color-code-border: #334155;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        /* Header */
+        .docs-header {
+            background: var(--color-bg);
+            border-bottom: 1px solid var(--color-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 12px 24px;
+        }
+
+        .docs-header-content {
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .docs-logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-accent);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .docs-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .lang-switcher {
+            display: flex;
+            gap: 4px;
+            background: var(--color-bg-secondary);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .lang-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            color: var(--color-text);
+            background: var(--color-bg);
+        }
+
+        .lang-btn.active {
+            background: var(--color-bg);
+            color: var(--color-accent);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* Main Layout */
+        .docs-container {
+            display: flex;
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar */
+        .docs-sidebar {
+            width: var(--sidebar-width);
+            background: var(--color-bg-secondary);
+            border-right: 1px solid var(--color-border);
+            padding: 24px;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .docs-search {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+        }
+
+        .docs-search:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-tertiary);
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 8px 12px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 14px;
+            transition: all 0.15s;
+            line-height: 1.5;
+        }
+
+        .nav-item:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text);
+        }
+
+        .nav-item.active {
+            background: var(--color-accent);
+            color: white;
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .docs-main {
+            flex: 1;
+            padding: 48px 64px;
+            min-width: 0;
+        }
+
+        .docs-content {
+            max-width: 800px;
+        }
+
+        .docs-title {
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            color: var(--color-text);
+            letter-spacing: -0.02em;
+        }
+
+        .docs-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .docs-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        /* Content Styling */
+        .docs-body {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .docs-body h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 48px 0 16px;
+            color: var(--color-text);
+            line-height: 1.3;
+            letter-spacing: -0.01em;
+        }
+
+        .docs-body h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 40px 0 12px;
+            color: var(--color-text);
+            line-height: 1.4;
+            padding-top: 8px;
+        }
+
+        .docs-body h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 32px 0 10px;
+            color: var(--color-text);
+            line-height: 1.4;
+        }
+
+        .docs-body h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 24px 0 8px;
+            color: var(--color-text);
+        }
+
+        .docs-body p {
+            margin-bottom: 20px;
+            color: var(--color-text);
+        }
+
+        .docs-body ul, .docs-body ol {
+            margin: 20px 0;
+            padding-left: 28px;
+        }
+
+        .docs-body li {
+            margin-bottom: 8px;
+            color: var(--color-text);
+        }
+
+        .docs-body li::marker {
+            color: var(--color-text-secondary);
+        }
+
+        .docs-body a {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .docs-body a:hover {
+            border-bottom-color: var(--color-accent);
+        }
+
+        /* Code Blocks */
+        .docs-body code {
+            background: var(--color-code-bg);
+            border: 1px solid var(--color-code-border);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: #e11d48;
+        }
+
+        [data-theme="dark"] .docs-body code {
+            color: #f472b6;
+        }
+
+        .docs-body pre {
+            background: var(--color-code-bg);
+            border: 1px solid var(--color-code-border);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 24px 0;
+            line-height: 1.6;
+        }
+
+        .docs-body pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--color-text);
+            font-size: 14px;
+        }
+
+        /* Callouts */
+        .callout {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 24px 0;
+            border-left: 4px solid;
+        }
+
+        .callout-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--color-info);
+        }
+
+        .callout-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--color-success);
+        }
+
+        .callout-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--color-warning);
+        }
+
+        .callout-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--color-error);
+        }
+
+        /* Tables */
+        .docs-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .docs-body table th,
+        .docs-body table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .docs-body table th {
+            background: var(--color-bg-secondary);
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .docs-body table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Blockquotes */
+        .docs-body blockquote {
+            border-left: 4px solid var(--color-accent);
+            padding-left: 20px;
+            margin: 24px 0;
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+
+        /* Navigation Footer */
+        .docs-nav-footer {
+            margin-top: 64px;
+            padding-top: 32px;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .docs-nav-link {
+            flex: 1;
+            padding: 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .docs-nav-link:hover {
+            border-color: var(--color-accent);
+            background: var(--color-bg-secondary);
+        }
+
+        .docs-nav-link-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .docs-nav-link-title {
+            font-weight: 600;
+            color: var(--color-accent);
+        }
+
+        /* Loading & Error */
+        .docs-loading {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .docs-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--color-error);
+            border-radius: 8px;
+            padding: 20px;
+            color: var(--color-error);
+            margin: 24px 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .docs-sidebar {
+                position: fixed;
+                left: -100%;
+                top: 60px;
+                z-index: 50;
+                transition: left 0.3s;
+            }
+
+            .docs-sidebar.open {
+                left: 0;
+            }
+
+            .docs-main {
+                padding: 32px 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .docs-title {
+                font-size: 32px;
+            }
+
+            .docs-main {
+                padding: 24px 16px;
+            }
+
+            .docs-nav-footer {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="docs-header">
+        <div class="docs-header-content">
+            <a href="/docs" class="docs-logo">
+                📚 DuilioCode
+            </a>
+            <div class="docs-header-actions">
+                <div class="lang-switcher">
+                    <button class="lang-btn active" data-lang="pt">PT</button>
+                    <button class="lang-btn" data-lang="en">EN</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="docs-container">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar" id="sidebar">
+            <input type="text" class="docs-search" id="searchBox" placeholder="Buscar...">
+            <nav id="navMenu"></nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="docs-main">
+            <div class="docs-content" id="mainContent">
+                <div class="docs-loading">Carregando...</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        // Translations
+        const TRANSLATIONS = {
+            pt: {
+                title: 'Documentação - DuilioCode Studio',
+                searchPlaceholder: 'Buscar...',
+                loading: 'Carregando...',
+                error: 'Erro ao carregar documento:',
+                noResults: 'Nenhum resultado encontrado',
+                searchResults: 'Resultados da Busca',
+                categories: {
+                    index: 'Índice',
+                    quickStart: 'Início Rápido',
+                    architecture: 'Arquitetura',
+                    integrations: 'Integrações',
+                    chat: 'Sistema de Chat',
+                    files: 'Operações de Arquivos',
+                    intelligence: 'Inteligência e Análise',
+                    database: 'Banco de Dados',
+                    security: 'Segurança',
+                    observability: 'Observabilidade',
+                    tests: 'Testes',
+                    services: 'Serviços e Algoritmos',
+                    deploy: 'Deploy e Produção',
+                    others: 'Outros'
+                }
+            },
+            en: {
+                title: 'Documentation - DuilioCode Studio',
+                searchPlaceholder: 'Search...',
+                loading: 'Loading...',
+                error: 'Error loading document:',
+                noResults: 'No results found',
+                searchResults: 'Search Results',
+                categories: {
+                    index: 'Index',
+                    quickStart: 'Quick Start',
+                    architecture: 'Architecture',
+                    integrations: 'Integrations',
+                    chat: 'Chat System',
+                    files: 'File Operations',
+                    intelligence: 'Intelligence and Analysis',
+                    database: 'Database',
+                    security: 'Security',
+                    observability: 'Observability',
+                    tests: 'Tests',
+                    services: 'Services and Algorithms',
+                    deploy: 'Deploy and Production',
+                    others: 'Others'
+                }
+            }
+        };
+
+        const CONFIG = {
+            currentLang: 'pt',
+            currentDoc: null,
+            docs: { pt: [], en: [] }
+        };
+
+        function t(key) {
+            const keys = key.split('.');
+            let value = TRANSLATIONS[CONFIG.currentLang];
+            for (const k of keys) {
+                value = value?.[k];
+            }
+            return value || key;
+        }
+
+        function updateUILanguage() {
+            document.title = t('title');
+            document.getElementById('searchBox').placeholder = t('searchPlaceholder');
+        }
+
+        async function init() {
+            const browserLang = navigator.language || navigator.userLanguage;
+            if (browserLang.startsWith('en')) {
+                CONFIG.currentLang = 'en';
+                document.querySelector('.lang-btn[data-lang="en"]').classList.add('active');
+                document.querySelector('.lang-btn[data-lang="pt"]').classList.remove('active');
+            }
+            
+            updateUILanguage();
+            await loadDocsIndex();
+            renderNavigation();
+            
+            const initialDoc = CONFIG.currentLang === 'pt' ? '00-indice' : '00-index';
+            loadDocument(CONFIG.currentLang, initialDoc);
+            
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    switchLanguage(btn.dataset.lang);
+                });
+            });
+
+            document.getElementById('searchBox').addEventListener('input', handleSearch);
+        }
+
+        async function loadDocsIndex() {
+            try {
+                const [ptRes, enRes] = await Promise.all([
+                    fetch('/api/docs/list?lang=pt'),
+                    fetch('/api/docs/list?lang=en')
+                ]);
+                CONFIG.docs.pt = await ptRes.json();
+                CONFIG.docs.en = await enRes.json();
+            } catch (error) {
+                console.error('Error loading docs:', error);
+            }
+        }
+
+        function getCategoryKey(category) {
+            if (category.includes('Índice') || category.includes('Index')) return 'categories.index';
+            if (category.includes('Início') || category.includes('Quick')) return 'categories.quickStart';
+            if (category.includes('Arquitetura') || category.includes('Architecture')) return 'categories.architecture';
+            if (category.includes('Integrações') || category.includes('Integrations')) return 'categories.integrations';
+            if (category.includes('Chat')) return 'categories.chat';
+            if (category.includes('Arquivos') || category.includes('File')) return 'categories.files';
+            if (category.includes('Inteligência') || category.includes('Intelligence')) return 'categories.intelligence';
+            if (category.includes('Banco') || category.includes('Database')) return 'categories.database';
+            if (category.includes('Segurança') || category.includes('Security')) return 'categories.security';
+            if (category.includes('Observabilidade') || category.includes('Observability')) return 'categories.observability';
+            if (category.includes('Testes') || category.includes('Tests')) return 'categories.tests';
+            if (category.includes('Serviços') || category.includes('Services')) return 'categories.services';
+            if (category.includes('Deploy') || category.includes('Production')) return 'categories.deploy';
+            return 'categories.others';
+        }
+
+        function renderNavigation() {
+            const nav = document.getElementById('navMenu');
+            const docs = CONFIG.docs[CONFIG.currentLang] || [];
+            
+            if (docs.length === 0) {
+                nav.innerHTML = `<div class="nav-section"><div class="nav-section-title">${t('loading')}</div></nav>`;
+                return;
+            }
+
+            const categories = {};
+            docs.forEach(doc => {
+                const category = doc.category || t('categories.others');
+                if (!categories[category]) categories[category] = [];
+                categories[category].push(doc);
+            });
+
+            let html = '';
+            Object.keys(categories).sort().forEach(category => {
+                const categoryKey = getCategoryKey(category);
+                const translatedCategory = t(categoryKey);
+                html += `<div class="nav-section">
+                    <div class="nav-section-title">${translatedCategory}</div>`;
+                categories[category].forEach(doc => {
+                    const active = CONFIG.currentDoc === doc.id ? 'active' : '';
+                    html += `<a href="#" class="nav-item ${active}" data-doc="${doc.id}">${doc.title}</a>`;
+                });
+                html += `</div>`;
+            });
+
+            nav.innerHTML = html;
+            nav.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loadDocument(CONFIG.currentLang, item.dataset.doc);
+                });
+            });
+        }
+
+        async function loadDocument(lang, docId) {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.innerHTML = `<div class="docs-loading">${t('loading')}</div>`;
+
+            try {
+                const response = await fetch(`/api/docs/content?lang=${lang}&doc=${docId}`);
+                if (!response.ok) {
+                    // If document not found, try to load the index document
+                    const indexId = lang === 'pt' ? '00-indice' : '00-index';
+                    if (docId !== indexId) {
+                        console.warn(`Document ${docId} not found in ${lang}, loading index instead`);
+                        return loadDocument(lang, indexId);
+                    }
+                    throw new Error('Document not found');
+                }
+
+                const data = await response.json();
+                CONFIG.currentDoc = docId;
+
+                marked.setOptions({
+                    highlight: function(code, lang) {
+                        if (lang && hljs.getLanguage(lang)) {
+                            return hljs.highlight(code, { language: lang }).value;
+                        }
+                        return hljs.highlightAuto(code).value;
+                    }
+                });
+
+                const html = marked.parse(data.content);
+                const categoryKey = getCategoryKey(data.category || '');
+                const translatedCategory = t(categoryKey);
+
+                mainContent.innerHTML = `
+                    <div class="docs-content">
+                        <h1 class="docs-title">${data.title}</h1>
+                        <div class="docs-meta">
+                            <span class="docs-badge">${translatedCategory}</span>
+                            <span>•</span>
+                            <span>${lang.toUpperCase()}</span>
+                        </div>
+                        <div class="docs-body">${html}</div>
+                    </div>
+                `;
+
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.doc === docId);
+                });
+
+                window.scrollTo(0, 0);
+            } catch (error) {
+                mainContent.innerHTML = `<div class="docs-error"><strong>${t('error')}</strong><br>${error.message}</div>`;
+            }
+        }
+
+        function getDefaultDocId(lang) {
+            // Map document IDs between languages
+            const docMap = {
+                'pt': {
+                    '00-index': '00-indice',
+                    '00-indice': '00-indice'
+                },
+                'en': {
+                    '00-indice': '00-index',
+                    '00-index': '00-index'
+                }
+            };
+            
+            // If we have a current doc, try to map it
+            if (CONFIG.currentDoc) {
+                const mapped = docMap[lang]?.[CONFIG.currentDoc];
+                if (mapped) return mapped;
+                
+                // Try to find equivalent by checking if doc exists in new language
+                const docs = CONFIG.docs[lang] || [];
+                const equivalent = docs.find(d => {
+                    // Try exact match first
+                    if (d.id === CONFIG.currentDoc) return true;
+                    // Try removing language-specific suffix
+                    const baseId = CONFIG.currentDoc.replace(/-(indice|index)$/, '');
+                    return d.id.startsWith(baseId);
+                });
+                if (equivalent) return equivalent.id;
+            }
+            
+            // Default to index document
+            return lang === 'pt' ? '00-indice' : '00-index';
+        }
+
+        function switchLanguage(lang) {
+            CONFIG.currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            updateUILanguage();
+            renderNavigation();
+            
+            // Get the appropriate document ID for the new language
+            const docId = getDefaultDocId(lang);
+            loadDocument(lang, docId);
+        }
+
+        async function handleSearch(e) {
+            const query = e.target.value.toLowerCase();
+            if (query.length < 2) {
+                renderNavigation();
+                return;
+            }
+
+            const docs = CONFIG.docs[CONFIG.currentLang] || [];
+            const searchPromises = docs.map(async doc => {
+                if (!doc.content) {
+                    try {
+                        const response = await fetch(`/api/docs/content?lang=${CONFIG.currentLang}&doc=${doc.id}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            doc.content = data.content;
+                        }
+                    } catch (error) {
+                        console.error(`Error loading doc ${doc.id}:`, error);
+                    }
+                }
+                return doc;
+            });
+            
+            await Promise.all(searchPromises);
+            const filtered = docs.filter(doc => 
+                doc.title.toLowerCase().includes(query) ||
+                (doc.content && doc.content.toLowerCase().includes(query))
+            );
+
+            const nav = document.getElementById('navMenu');
+            if (filtered.length === 0) {
+                nav.innerHTML = `<div class="nav-section"><div class="nav-section-title">${t('noResults')}</div></nav>`;
+                return;
+            }
+
+            let html = `<div class="nav-section"><div class="nav-section-title">${t('searchResults')}</div>`;
+            filtered.forEach(doc => {
+                html += `<a href="#" class="nav-item" data-doc="${doc.id}">${doc.title}</a>`;
+            });
+            html += '</div>';
+            nav.innerHTML = html;
+
+            nav.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loadDocument(CONFIG.currentLang, item.dataset.doc);
+                });
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

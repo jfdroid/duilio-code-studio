@@ -65,16 +65,25 @@ const UI = {
             const data = await API.listModels();
             const select = document.getElementById('modelSelect');
             
-            if (select && data.models) {
-                // Add AUTO option first (selected by default)
-                let options = '<option value="auto" selected>AUTO (Smart Selection)</option>';
-                
-                // Add all available models
-                options += data.models.map(m => 
+            if (select && data.models && data.models.length > 0) {
+                // Add all available models (no AUTO option)
+                // Don't select by default - let Chat.setDefaultModelForMode() handle it
+                let options = data.models.map((m) => 
                     `<option value="${m.name}">${m.name}</option>`
                 ).join('');
                 
                 select.innerHTML = options;
+                
+                // Set default model based on current mode
+                if (typeof Chat !== 'undefined' && Chat.mode) {
+                    Chat.setDefaultModelForMode(Chat.mode);
+                } else {
+                    // Fallback: select first model if Chat not initialized
+                    if (data.models[0]) {
+                        select.value = data.models[0].name;
+                        AppState.chat.currentModel = data.models[0].name;
+                    }
+                }
             }
         } catch (error) {
             console.error('Failed to load models:', error);
@@ -86,7 +95,6 @@ const UI = {
      */
     setModel(model) {
         AppState.chat.currentModel = model;
-        AppState.chat.autoSelectModel = (model === 'auto');
     },
     
     /**

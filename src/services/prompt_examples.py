@@ -115,6 +115,36 @@ PROMPT_EXAMPLES: List[PromptExample] = [
         example_response_start="Here are the performance improvements:\n\n**Current Issues:**"
     ),
     
+    # === File Creation Examples (CRITICAL FOR FORMAT) ===
+    PromptExample(
+        prompt="crie um arquivo teste.txt com o conteúdo Hello World",
+        category="code_generation",
+        intent="User wants to create a simple file with specific content",
+        keywords=["crie", "arquivo", "teste.txt", "conteúdo"],
+        example_response_start="```create-file:teste.txt\nHello World\n```"
+    ),
+    PromptExample(
+        prompt="create a file example.js with console.log('test')",
+        category="code_generation",
+        intent="User wants to create a JavaScript file",
+        keywords=["create", "file", "example.js", "console.log"],
+        example_response_start="```create-file:example.js\nconsole.log('test');\n```"
+    ),
+    PromptExample(
+        prompt="crie um projeto React com package.json, src/index.js e src/App.js",
+        category="code_generation",
+        intent="User wants to create a complete React project with multiple files",
+        keywords=["crie", "projeto", "react", "package.json", "múltiplos"],
+        example_response_start="```create-file:package.json\n{\n  \"name\": \"my-app\",\n  \"version\": \"1.0.0\"\n}\n```\n```create-file:src/index.js\nimport React from 'react';\n```\n```create-file:src/App.js\nexport default function App() { return <div>Hello</div>; }\n```"
+    ),
+    PromptExample(
+        prompt="create a folder called components and a Button.jsx file inside it",
+        category="code_generation",
+        intent="User wants to create directory structure with files",
+        keywords=["create", "folder", "components", "Button.jsx", "inside"],
+        example_response_start="```create-directory:components\n```\n```create-file:components/Button.jsx\nimport React from 'react';\n\nexport default function Button() { return <button>Click</button>; }\n```"
+    ),
+    
     # === General/Creative Examples ===
     PromptExample(
         prompt="write a story about a programmer",
