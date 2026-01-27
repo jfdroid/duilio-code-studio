@@ -383,13 +383,27 @@ class ChatHandler:
         """Detect CRUD operation intentions."""
         message_lower = message.lower()
         
-        create_keywords = [
-            'criar arquivo', 'create file', 'criar pasta', 'create folder',
-            'criar documento', 'create document', 'novo arquivo', 'new file',
-            'adicionar arquivo', 'add file', 'gerar arquivo', 'generate file',
-            'criar script', 'create script', 'criar projeto', 'create project',
-            'crie um', 'crie uma', 'criar um', 'criar uma'
+        # Directory creation keywords (more specific)
+        directory_keywords = [
+            'criar diretorio', 'criar diretório', 'create directory',
+            'crie o diretorio', 'crie o diretório', 'crie diretorio', 'crie diretório',
+            'criar um diretorio', 'criar um diretório', 'create a directory',
+            'novo diretorio', 'novo diretório', 'new directory',
+            'criar pasta', 'create folder', 'crie pasta', 'crie folder',
+            'criar uma pasta', 'create a folder', 'nova pasta', 'new folder'
         ]
+        
+        # General create keywords (files, documents, etc.)
+        create_keywords = [
+            'criar arquivo', 'create file', 'criar documento', 'create document',
+            'novo arquivo', 'new file', 'adicionar arquivo', 'add file',
+            'gerar arquivo', 'generate file', 'criar script', 'create script',
+            'criar projeto', 'create project', 'crie um', 'crie uma',
+            'criar um', 'criar uma'
+        ]
+        
+        # Check if it's specifically a directory creation request
+        is_directory_request = any(kw in message_lower for kw in directory_keywords)
         
         update_keywords = [
             'modificar arquivo', 'modify file', 'editar arquivo', 'edit file',
@@ -409,7 +423,8 @@ class ChatHandler:
         ]
         
         return {
-            'create': any(kw in message_lower for kw in create_keywords),
+            'create': any(kw in message_lower for kw in create_keywords) or is_directory_request,
+            'create_directory': is_directory_request,  # Specific flag for directory creation
             'update': any(kw in message_lower for kw in update_keywords),
             'delete': any(kw in message_lower for kw in delete_keywords),
             'read': any(kw in message_lower for kw in read_keywords),
@@ -594,6 +609,24 @@ class ChatHandler:
             if operation:
                 crud_context = {}
                 if operation == OperationType.CREATE:
+                    # Check if it's a directory creation request
+                    if crud_intent.get('create_directory', False):
+                        # Extract directory name from message
+                        import re
+                        dir_match = re.search(r'(?:criar|crie|create)\s+(?:o|a|um|uma)?\s*(?:diretorio|diretório|directory|pasta|folder)\s+(?:chamado|named|)?\s*([^\s]+)', last_user_message, re.IGNORECASE)
+                        if dir_match:
+                            dir_name = dir_match.group(1).strip()
+                            crud_context = {
+                                "is_directory": True,
+                                "directory_name": dir_name
+                            }
+                            system_prompt += "\n\n🚨 DIRECTORY CREATION REQUEST DETECTED:"
+                            system_prompt += f"\n- User wants to create directory: {dir_name}"
+                            system_prompt += "\n- YOU MUST use: ```create-directory:" + dir_name + "```"
+                            system_prompt += "\n- DO NOT say 'I cannot create directories' - YOU CAN!"
+                            system_prompt += "\n- DO NOT suggest terminal commands - USE create-directory format!"
+                            system_prompt += "\n- Start your response IMMEDIATELY with: ```create-directory:" + dir_name + "```"
+                    
                     # Detect project intention
                     try:
                         project_detector = get_project_detector(ollama)
@@ -601,10 +634,10 @@ class ChatHandler:
                             last_user_message, workspace_path
                         )
                         if project_intention.get("needs_directory", False):
-                            crud_context = {
+                            crud_context.update({
                                 "project_type": project_intention.get("project_type", "general"),
                                 "project_name": project_intention.get("project_name", "new-project")
-                            }
+                            })
                     except Exception as e:
                         self.logger.warning(f"Error detecting project intention: {e}")
                 

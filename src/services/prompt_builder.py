@@ -71,10 +71,19 @@ When user asks "why", "por que", "pq", "como", "explain", "explique":
     @staticmethod
     def _build_create_prompt(context: Dict[str, Any]) -> str:
         """Build CREATE operation prompt."""
-        prompt = "\nCREATE:"
-        prompt += "\n- Use ```create-file:path/to/file.ext format"
-        prompt += "\n- Start response with create-file blocks immediately"
-        prompt += "\n- No explanations before the create-file blocks"
+        prompt = "\nCREATE OPERATION - YOU CAN CREATE FILES AND DIRECTORIES:"
+        prompt += "\n- For FILES: Use ```create-file:path/to/file.ext format"
+        prompt += "\n- For DIRECTORIES: Use ```create-directory:path/to/dir format"
+        prompt += "\n- Start response with create blocks immediately"
+        prompt += "\n- No explanations before the create blocks"
+        prompt += "\n\nCRITICAL - DIRECTORY CREATION:"
+        prompt += "\n- When user asks 'criar diretorio', 'criar pasta', 'create directory', 'create folder'"
+        prompt += "\n- YOU MUST use ```create-directory:path format"
+        prompt += "\n- DO NOT say 'I cannot create directories' - YOU CAN!"
+        prompt += "\n- DO NOT suggest terminal commands (mkdir) - USE create-directory format!"
+        prompt += "\n- Example: User says 'crie o diretorio teste'"
+        prompt += "\n  CORRECT: ```create-directory:teste```"
+        prompt += "\n  WRONG: 'I cannot create directories, use mkdir command'"
         
         if context.get("project_type"):
             project_name = context.get('project_name', 'project')
