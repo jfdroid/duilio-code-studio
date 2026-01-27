@@ -149,6 +149,62 @@ async def chat(
     )
 
 
+@router.post("/generate/stream")
+@rate_limit_decorator("20/minute")
+async def generate_stream(
+    request: GenerateRequest,
+    ollama: OllamaService = Depends(get_ollama_service)
+) -> StreamingResponse:
+    """Stream code generation token by token."""
+    from fastapi.responses import StreamingResponse
+    
+    async def stream_generator():
+        async for token in ollama.generate_stream(
+            prompt=request.prompt,
+            model=request.model,
+            system_prompt=request.system_prompt,
+            temperature=request.temperature
+        ):
+            yield f"data: {token}\n\n"
+        yield "data: [DONE]\n\n"
+    
+    return StreamingResponse(
+        stream_generator(),
+        media_type="text/event-stream"
+    )
+
+
+@router.post("/recommend-model")
+async def recommend_model(
+    prompt: str,
+    ollama: OllamaService = Depends(get_ollama_service)
+) -> Dict[str, Any]:
+    """
+    Get recommended model for a given prompt.
+    Uses intelligent classification to suggest the best model.
+    """
+    try:
+        from ...services.prompt_classifier import classify_prompt
+        models = await ollama.list_models()
+        classification = classify_prompt(prompt, models)
+        
+        return {
+            "recommended_model": classification.recommended_model,
+            "is_code_related": classification.is_code_related,
+            "category": classification.category.value,
+            "confidence": classification.confidence,
+            "reason": classification.reasoning,
+            "keywords_found": classification.keywords_found
+        }
+    except Exception as e:
+        return {
+            "recommended_model": "qwen2.5-coder:14b",
+            "is_code_related": True,
+            "reason": f"Error: {str(e)}, using default",
+            "category": "code_generation"
+        }
+
+
 # === Codebase Analysis Endpoints ===
 
 @router.post("/analyze-codebase")
