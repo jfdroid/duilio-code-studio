@@ -265,8 +265,8 @@ def create_app() -> FastAPI:
                 <head><title>DuilioCode Studio</title></head>
                 <body style="font-family: sans-serif; padding: 40px;">
                     <h1>DuilioCode Studio</h1>
-                    <p>API is running. Visit <a href="/docs">/docs</a> for API documentation.</p>
-                    <p><a href="/docs/viewer">📚 View Documentation</a></p>
+                    <p><a href="/docs">📚 View Documentation</a></p>
+                    <p><a href="/api-docs">📖 API Documentation (Swagger)</a></p>
                 </body>
                 </html>
 """)
