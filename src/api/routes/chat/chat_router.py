@@ -11,11 +11,11 @@ from typing import Dict, Any
 from .chat_handler import ChatHandler
 from .generate_handler import GenerateHandler
 from .codebase_endpoints import CodebaseEndpoints
-from ...services.ollama_service import OllamaService, get_ollama_service
-from ...services.workspace_service import WorkspaceService, get_workspace_service
-from ...services.user_preferences import UserPreferencesService, get_user_preferences_service
-from ...services.prompt_examples import PromptExamplesService, get_prompt_examples_service
-from ...core.logger import get_logger
+from services.ollama_service import OllamaService, get_ollama_service
+from services.workspace_service import WorkspaceService, get_workspace_service
+from services.user_preferences import UserPreferencesService, get_user_preferences_service
+from services.prompt_examples import PromptExamplesService, get_prompt_examples_service
+from core.logger import get_logger
 
 # Rate limiting
 try:
@@ -156,8 +156,6 @@ async def generate_stream(
     ollama: OllamaService = Depends(get_ollama_service)
 ) -> StreamingResponse:
     """Stream code generation token by token."""
-    from fastapi.responses import StreamingResponse
-    
     async def stream_generator():
         async for token in ollama.generate_stream(
             prompt=request.prompt,
@@ -184,7 +182,7 @@ async def recommend_model(
     Uses intelligent classification to suggest the best model.
     """
     try:
-        from ...services.prompt_classifier import classify_prompt
+        from services.prompt_classifier import classify_prompt
         models = await ollama.list_models()
         classification = classify_prompt(prompt, models)
         

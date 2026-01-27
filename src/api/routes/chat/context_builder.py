@@ -5,10 +5,18 @@ Builds codebase context with proper caching.
 Replaces global _codebase_cache with CacheService.
 """
 
+import sys
 from typing import Optional
-from ...services.codebase_analyzer import CodebaseAnalyzer
-from ...services.cache_service import get_cache_service
-from ...core.logger import get_logger
+from pathlib import Path
+
+# Add parent directories to path for imports
+src_path = Path(__file__).parent.parent.parent.parent
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+from services.codebase_analyzer import CodebaseAnalyzer
+from services.cache_service import get_cache_service
+from core.logger import get_logger
 
 
 def get_codebase_context(

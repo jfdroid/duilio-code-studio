@@ -5,13 +5,19 @@ Handles codebase analysis endpoints.
 Extracted from chat.py for better organization.
 """
 
+import sys
 from typing import Dict, Any
 from pathlib import Path
 import os
 
-from ...services.codebase_analyzer import CodebaseAnalyzer
-from ...services.ollama_service import OllamaService
-from ...core.logger import get_logger
+# Add parent directories to path for imports
+src_path = Path(__file__).parent.parent.parent.parent
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+from services.codebase_analyzer import CodebaseAnalyzer
+from services.ollama_service import OllamaService
+from core.logger import get_logger
 from fastapi import HTTPException
 from .context_builder import get_codebase_context
 

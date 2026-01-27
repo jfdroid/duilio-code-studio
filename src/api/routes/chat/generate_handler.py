@@ -6,19 +6,25 @@ Extracted from chat.py for better organization.
 """
 
 import time
+import sys
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-from ...services.ollama_service import OllamaService
-from ...services.workspace_service import WorkspaceService
-from ...services.user_preferences import UserPreferencesService
-from ...services.prompt_examples import PromptExamplesService
-from ...services.file_service import FileService
-from ...services.intent_detector import get_intent_detector
-from ...services.prompt_classifier import classify_prompt
-from ...core.logger import get_logger
-from ...core.validators import WorkspacePathValidator, ModelNameValidator, TemperatureValidator, MaxTokensValidator
-from ...core.exceptions import ValidationError
+# Add parent directories to path for imports (same as chat.py)
+src_path = Path(__file__).parent.parent.parent.parent
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+from services.ollama_service import OllamaService
+from services.workspace_service import WorkspaceService
+from services.user_preferences import UserPreferencesService
+from services.prompt_examples import PromptExamplesService
+from services.file_service import FileService
+from services.intent_detector import get_intent_detector
+from services.prompt_classifier import classify_prompt
+from core.logger import get_logger
+from core.validators import WorkspacePathValidator, ModelNameValidator, TemperatureValidator, MaxTokensValidator
+from core.exceptions import ValidationError
 from fastapi import HTTPException
 
 

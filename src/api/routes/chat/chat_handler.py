@@ -6,23 +6,29 @@ Extracted from chat.py for better organization.
 """
 
 import re
+import sys
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
-from ...services.ollama_service import OllamaService
-from ...services.workspace_service import WorkspaceService
-from ...services.file_service import FileService
-from ...services.intent_detector import get_intent_detector
-from ...services.prompt_classifier import classify_prompt
-from ...services.prompt_builder import PromptBuilder, OperationType
-from ...services.linguistic_analyzer import get_linguistic_analyzer
-from ...services.system_info import get_system_info_service
-from ...services.path_intelligence import PathIntelligence
-from ...services.project_detector import get_project_detector
-from ...services.action_processor import get_action_processor
-from ...core.logger import get_logger
-from ...core.validators import ModelNameValidator, TemperatureValidator
-from ...core.exceptions import ValidationError
+# Add parent directories to path for imports (same as chat.py)
+src_path = Path(__file__).parent.parent.parent.parent
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+from services.ollama_service import OllamaService
+from services.workspace_service import WorkspaceService
+from services.file_service import FileService
+from services.intent_detector import get_intent_detector
+from services.prompt_classifier import classify_prompt
+from services.prompt_builder import PromptBuilder, OperationType
+from services.linguistic_analyzer import get_linguistic_analyzer
+from services.system_info import get_system_info_service
+from services.path_intelligence import PathIntelligence
+from services.project_detector import get_project_detector
+from services.action_processor import get_action_processor
+from core.logger import get_logger
+from core.validators import ModelNameValidator, TemperatureValidator
+from core.exceptions import ValidationError
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from .context_builder import get_codebase_context
@@ -164,12 +170,25 @@ class ChatHandler:
                 seeing_created_intent
             )
             
-            full_prompt = PromptBuilder.build_full_prompt(
-                system_prompt=system_prompt,
-                context_parts=context_parts,
-                user_messages=prompt_parts,
-                operation=operation
-            )
+            # Build prompt manually (PromptBuilder.build_full_prompt adds operation prompt twice)
+            # Separate file listing from other context
+            file_listing = [c for c in context_parts if "FILE LISTING" in c]
+            other_context = [c for c in context_parts if c not in file_listing]
+            
+            full_prompt = system_prompt
+            
+            # Add file listing first (highest priority)
+            if file_listing:
+                full_prompt += "\n\n" + "\n".join(file_listing)
+            
+            # Add other context
+            if other_context:
+                full_prompt += "\n\n" + "\n".join(other_context)
+            
+            # Add user messages
+            full_prompt += "\n\n---\n\n"
+            full_prompt += "\n".join(prompt_parts)
+            full_prompt += "\n\nAssistant:"
             
             # Handle streaming
             if request.stream:
@@ -324,7 +343,7 @@ class ChatHandler:
             
             # Search in workspace tree
             try:
-                from ...services.workspace_service import get_workspace_service
+                from services.workspace_service import get_workspace_service
                 ws_service = get_workspace_service()
                 tree = ws_service.get_file_tree(workspace_path, max_depth=5)
                 
@@ -418,7 +437,7 @@ class ChatHandler:
     async def _build_file_listing_context(self, workspace_path: str) -> Optional[str]:
         """Build file listing context."""
         try:
-            from ...services.workspace_service import get_workspace_service
+            from services.workspace_service import get_workspace_service
             ws_service = get_workspace_service()
             workspace_path_obj = Path(workspace_path)
             
