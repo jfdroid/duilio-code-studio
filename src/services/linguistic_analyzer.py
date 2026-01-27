@@ -199,15 +199,29 @@ class LinguisticAnalyzer:
     def _extract_verbs(self, text: str) -> List[Tuple[str, VerbCategory]]:
         """Extract verbs and categorize them."""
         verbs = []
+        found_categories = set()  # Track found categories to avoid duplicates
         
-        for category, verb_list in self.VERB_MAPPINGS.items():
+        # Sort by category priority (COMMAND > QUERY > EXPLANATION > CONFIRMATION)
+        category_priority = [
+            VerbCategory.COMMAND,
+            VerbCategory.QUERY,
+            VerbCategory.EXPLANATION,
+            VerbCategory.CONFIRMATION,
+            VerbCategory.NEGATION,
+        ]
+        
+        for category in category_priority:
+            if category in found_categories:
+                continue
+                
+            verb_list = self.VERB_MAPPINGS.get(category, [])
             for verb in verb_list:
                 # Use word boundaries to avoid partial matches
                 pattern = r'\b' + re.escape(verb) + r'\b'
                 if re.search(pattern, text, re.IGNORECASE):
                     verbs.append((verb, category))
-                    # Break after first match per category to avoid duplicates
-                    break
+                    found_categories.add(category)
+                    break  # Only one verb per category
         
         return verbs
     
