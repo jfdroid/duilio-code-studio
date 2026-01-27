@@ -29,6 +29,7 @@ from services.action_processor import get_action_processor
 from core.logger import get_logger
 from core.validators import ModelNameValidator, TemperatureValidator
 from core.exceptions import ValidationError
+from core.error_handler import handle_error
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from typing import TYPE_CHECKING
@@ -270,10 +271,10 @@ class ChatHandler:
             }
             
         except ValidationError as e:
-            raise HTTPException(status_code=e.status_code, detail=e.detail)
+            raise handle_error(e, context={"endpoint": "chat", "model": request.model})
         except Exception as e:
             self.logger.error(f"Error in chat: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise handle_error(e, context={"endpoint": "chat"})
     
     def _resolve_workspace_path(
         self, 

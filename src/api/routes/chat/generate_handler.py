@@ -25,6 +25,7 @@ from services.prompt_classifier import classify_prompt
 from core.logger import get_logger
 from core.validators import WorkspacePathValidator, ModelNameValidator, TemperatureValidator, MaxTokensValidator
 from core.exceptions import ValidationError
+from core.error_handler import handle_error
 from fastapi import HTTPException
 from typing import TYPE_CHECKING
 
@@ -125,10 +126,10 @@ class GenerateHandler:
             }
             
         except ValidationError as e:
-            raise HTTPException(status_code=e.status_code, detail=e.detail)
+            raise handle_error(e, context={"endpoint": "generate", "model": request.model})
         except Exception as e:
             self.logger.error(f"Error in generate: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise handle_error(e, context={"endpoint": "generate"})
     
     def _resolve_workspace_path(self, request_path: Optional[str], workspace: WorkspaceService) -> Optional[str]:
         """Resolve workspace path from request or workspace service."""

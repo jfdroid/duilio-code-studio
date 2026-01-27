@@ -56,7 +56,8 @@ from api.routes.chat_simple import router as chat_simple_router
 # Import services for lifecycle management
 from services.ollama_service import get_ollama_service
 from core.config import get_settings
-from core.exceptions import DuilioException
+from core.exceptions import DuilioException, ValidationError, FileNotFoundError, WorkspaceError
+from core.error_handler import get_error_handler
 from core.logger import get_logger
 
 # Rate limiting (optional)
@@ -158,19 +159,50 @@ def create_app() -> FastAPI:
         return response
     
     # === Exception Handlers ===
+    error_handler = get_error_handler()
     
     @app.exception_handler(DuilioException)
     async def duilio_exception_handler(request: Request, exc: DuilioException):
+        """Handle DuilioException using centralized error handler."""
         return JSONResponse(
             status_code=exc.status_code,
             content={"error": exc.message, "detail": exc.detail}
         )
     
+    @app.exception_handler(ValidationError)
+    async def validation_exception_handler(request: Request, exc: ValidationError):
+        """Handle validation errors using centralized error handler."""
+        http_exc = error_handler.handle_validation_error(exc, context={"path": request.url.path})
+        return JSONResponse(
+            status_code=http_exc.status_code,
+            content={"error": "Validation error", "detail": http_exc.detail}
+        )
+    
+    @app.exception_handler(FileNotFoundError)
+    async def file_not_found_handler(request: Request, exc: FileNotFoundError):
+        """Handle file not found errors using centralized error handler."""
+        http_exc = error_handler.handle_file_not_found(exc, context={"path": request.url.path})
+        return JSONResponse(
+            status_code=http_exc.status_code,
+            content={"error": "File not found", "detail": http_exc.detail}
+        )
+    
+    @app.exception_handler(WorkspaceError)
+    async def workspace_error_handler(request: Request, exc: WorkspaceError):
+        """Handle workspace errors using centralized error handler."""
+        http_exc = error_handler.handle_workspace_error(exc, context={"path": request.url.path})
+        return JSONResponse(
+            status_code=http_exc.status_code,
+            content={"error": "Workspace error", "detail": http_exc.detail}
+        )
+    
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception):
+        """Handle generic errors using centralized error handler."""
+        http_exc = error_handler.handle_generic_error(exc, context={"path": request.url.path})
         return JSONResponse(
-            status_code=500,
-            content={"error": "Internal server error", "detail": str(exc)}
+            status_code=http_exc.status_code,
+            content={"error": "Internal server error", "detail": http_exc.detail}
         )
     
     # === Rate Limiting ===
