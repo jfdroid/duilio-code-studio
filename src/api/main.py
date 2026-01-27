@@ -53,12 +53,10 @@ from api.routes import (
 from api.routes.tools import router as tools_router
 from api.routes.chat_simple import router as chat_simple_router
 
-# Import services for lifecycle management
-from services.ollama_service import get_ollama_service
-from core.config import get_settings
+# Import services for lifecycle management (using container)
+from core.container import get_ollama_service, get_settings, get_logger
 from core.exceptions import DuilioException, ValidationError, FileNotFoundError, WorkspaceError
 from core.error_handler import get_error_handler
-from core.logger import get_logger
 
 # Rate limiting (optional)
 try:
