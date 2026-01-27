@@ -105,7 +105,8 @@ async def lifespan(app: FastAPI):
         logger.warning("Ollama offline - AI features unavailable")
     
     logger.info(f"Server starting on http://{settings.HOST}:{settings.PORT}")
-    logger.info(f"API docs available at http://{settings.HOST}:{settings.PORT}/docs")
+    logger.info(f"Documentation available at http://{settings.HOST}:{settings.PORT}/docs")
+    logger.info(f"API docs (Swagger) available at http://{settings.HOST}:{settings.PORT}/api-docs")
     
     yield
     
