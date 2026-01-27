@@ -700,7 +700,15 @@
 
             try {
                 const response = await fetch(`/api/docs/content?lang=${lang}&doc=${docId}`);
-                if (!response.ok) throw new Error('Document not found');
+                if (!response.ok) {
+                    // If document not found, try to load the index document
+                    const indexId = lang === 'pt' ? '00-indice' : '00-index';
+                    if (docId !== indexId) {
+                        console.warn(`Document ${docId} not found in ${lang}, loading index instead`);
+                        return loadDocument(lang, indexId);
+                    }
+                    throw new Error('Document not found');
+                }
 
                 const data = await response.json();
                 CONFIG.currentDoc = docId;
