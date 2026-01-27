@@ -25,3 +25,7 @@ tree-sitter>=0.20.0
 
 # Rate Limiting
 slowapi>=0.1.9
+
+# Database
+sqlalchemy>=2.0.0
+alembic>=1.13.0

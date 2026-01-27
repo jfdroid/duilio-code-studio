@@ -195,6 +195,17 @@ def get_metrics_collector():
     return _get_metrics_collector()
 
 
+def get_database_service():
+    """
+    Get database service instance (singleton).
+    
+    Returns:
+        DatabaseService instance
+    """
+    from services.database_service import get_database_service as _get_database_service
+    return _get_database_service()
+
+
 # === FastAPI Dependency Providers ===
 # These can be used directly with Depends() in route handlers
 
