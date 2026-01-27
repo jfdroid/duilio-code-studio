@@ -1305,14 +1305,25 @@ async def chat(
                 ]
                 explanation_intent = any(kw in last_user_message.lower() for kw in explanation_keywords)
                 
+                # Add linguistic analysis context to system prompt
+                if linguistic_context:
+                    system_prompt += f"\n\n=== LINGUISTIC ANALYSIS ===\n{linguistic_context}\n"
+                
                 # Add explanation instructions if user asked for reasoning
                 if explanation_intent:
-                    system_prompt += "\n\nEXPLANATION REQUEST DETECTED:"
+                    system_prompt += "\n\nEXPLANATION REQUEST DETECTED (from verb/connector analysis):"
                     system_prompt += "\n- User asked WHY/HOW/EXPLAIN - provide detailed reasoning"
                     system_prompt += "\n- Explain your process: how you arrived at the answer"
                     system_prompt += "\n- Reference the FILE LISTING or context you used"
                     system_prompt += "\n- Be clear and specific about your reasoning"
                     system_prompt += "\n- Example: 'I see X files because in the FILE LISTING section above, it shows Total Files: X'"
+                
+                # Add data requirement instructions
+                if linguistic_analysis.requires_data:
+                    system_prompt += "\n\nDATA REQUEST DETECTED:"
+                    system_prompt += "\n- User wants specific data/information"
+                    system_prompt += "\n- Use FILE LISTING to provide exact numbers and names"
+                    system_prompt += "\n- Answer directly with data from context"
                 
                 # Detect project intention for CREATE operations
                 crud_context = {}
