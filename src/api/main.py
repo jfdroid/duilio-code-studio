@@ -87,6 +87,14 @@ async def lifespan(app: FastAPI):
     logger.info(f"{settings.APP_NAME} v{settings.APP_VERSION} starting")
     logger.info(f"Base directory: {settings.BASE_DIR}")
     
+    # Initialize database
+    try:
+        from core.database import init_database
+        init_database()
+        logger.info("Database initialized")
+    except Exception as e:
+        logger.warning(f"Could not initialize database: {e}")
+    
     # Check Ollama
     ollama = get_ollama_service()
     status = await ollama.health_check()
