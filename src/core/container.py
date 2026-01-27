@@ -191,13 +191,8 @@ def get_metrics_collector():
     Returns:
         MetricsCollector instance
     """
-    from services.metrics import get_metrics_collector as _get_metrics_collector
-    try:
-        return _get_metrics_collector()
-    except ImportError:
-        # Fallback to core.metrics if services.metrics doesn't exist
-        from core.metrics import get_metrics_collector as _get_metrics_collector
-        return _get_metrics_collector()
+    from core.metrics import get_metrics_collector as _get_metrics_collector
+    return _get_metrics_collector()
 
 
 # === FastAPI Dependency Providers ===

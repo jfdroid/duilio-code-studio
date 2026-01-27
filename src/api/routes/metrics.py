@@ -14,10 +14,14 @@ src_path = Path(__file__).parent.parent.parent
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from core.container import get_metrics_collector
-from core.metrics import MetricsCollector
+from core.metrics import MetricsCollector, get_metrics_collector as _get_metrics_collector
 
 router = APIRouter(prefix="/api/metrics", tags=["Metrics"])
+
+
+def get_metrics_collector() -> MetricsCollector:
+    """Get metrics collector instance."""
+    return _get_metrics_collector()
 
 
 @router.get("/stats")
