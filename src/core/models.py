@@ -36,7 +36,7 @@ class ConversationHistory(Base):
     content = Column(Text, nullable=False)
     model = Column(String)
     workspace_path = Column(String)
-    metadata = Column(JSON)  # Additional metadata (tokens, duration, etc.)
+    extra_data = Column(JSON)  # Additional metadata (tokens, duration, etc.)
     created_at = Column(DateTime, server_default=func.now(), index=True)
     
     def __repr__(self):
@@ -52,7 +52,7 @@ class SystemMetric(Base):
     duration_ms = Column(Float, nullable=False)
     success = Column(Boolean, default=True)
     error = Column(Text)
-    metadata = Column(JSON)
+    extra_data = Column(JSON)
     created_at = Column(DateTime, server_default=func.now(), index=True)
     
     def __repr__(self):

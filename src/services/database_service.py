@@ -143,7 +143,7 @@ class DatabaseService:
                 content=content,
                 model=model,
                 workspace_path=workspace_path,
-                metadata=metadata or {}
+                extra_data=metadata or {}
             )
             db.add(message)
             db.commit()
@@ -189,7 +189,7 @@ class DatabaseService:
                     "content": msg.content,
                     "model": msg.model,
                     "workspace_path": msg.workspace_path,
-                    "metadata": msg.metadata,
+                    "metadata": msg.extra_data,
                     "created_at": msg.created_at.isoformat() if msg.created_at else None
                 }
                 for msg in reversed(messages)  # Reverse to get chronological order
@@ -254,7 +254,7 @@ class DatabaseService:
                 duration_ms=duration_ms,
                 success=success,
                 error=error,
-                metadata=metadata or {}
+                extra_data=metadata or {}
             )
             db.add(metric)
             db.commit()
@@ -296,7 +296,7 @@ class DatabaseService:
                     "duration_ms": m.duration_ms,
                     "success": m.success,
                     "error": m.error,
-                    "metadata": m.metadata,
+                    "metadata": m.extra_data,
                     "created_at": m.created_at.isoformat() if m.created_at else None
                 }
                 for m in metrics
