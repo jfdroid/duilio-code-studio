@@ -235,6 +235,13 @@ def create_app() -> FastAPI:
     from api.routes.observability import router as observability_router
     app.include_router(observability_router)  # Observability (tracing, Prometheus)
     
+    # Documentation router
+    try:
+        from api.routes.docs import router as docs_router
+        app.include_router(docs_router)
+    except ImportError:
+        pass
+    
     # === Static Files ===
     web_dir = settings.WEB_DIR
     templates_dir = settings.TEMPLATES_DIR
