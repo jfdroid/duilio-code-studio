@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
     <style>
         * {
             margin: 0;
@@ -16,333 +16,516 @@
         }
 
         :root {
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-tertiary: #1c2128;
-            --text-primary: #c9d1d9;
-            --text-secondary: #8b949e;
-            --accent: #58a6ff;
-            --accent-hover: #79c0ff;
-            --border: #30363d;
-            --code-bg: #161b22;
-            --sidebar-width: 280px;
+            --color-bg: #ffffff;
+            --color-bg-secondary: #f7f9fc;
+            --color-bg-tertiary: #f1f5f9;
+            --color-text: #1e293b;
+            --color-text-secondary: #64748b;
+            --color-text-tertiary: #94a3b8;
+            --color-border: #e2e8f0;
+            --color-accent: #3b82f6;
+            --color-accent-hover: #2563eb;
+            --color-code-bg: #f8fafc;
+            --color-code-border: #e2e8f0;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
+            --color-info: #3b82f6;
+            --sidebar-width: 260px;
+            --content-max-width: 1200px;
+            --toc-width: 240px;
+        }
+
+        [data-theme="dark"] {
+            --color-bg: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-bg-tertiary: #334155;
+            --color-text: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-text-tertiary: #94a3b8;
+            --color-border: #334155;
+            --color-accent: #60a5fa;
+            --color-accent-hover: #93c5fd;
+            --color-code-bg: #1e293b;
+            --color-code-border: #334155;
         }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        /* Header */
+        .docs-header {
+            background: var(--color-bg);
+            border-bottom: 1px solid var(--color-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 12px 24px;
+        }
+
+        .docs-header-content {
+            max-width: var(--content-max-width);
+            margin: 0 auto;
             display: flex;
-            min-height: 100vh;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
         }
 
-        /* Sidebar */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            overflow-y: auto;
-            position: fixed;
-            height: 100vh;
-            padding: 20px;
-        }
-
-        .sidebar-header {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .sidebar-header h1 {
-            font-size: 20px;
+        .docs-logo {
+            font-size: 18px;
             font-weight: 700;
-            color: var(--accent);
-            margin-bottom: 5px;
-        }
-
-        .sidebar-header p {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .lang-selector {
+            color: var(--color-accent);
+            text-decoration: none;
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .docs-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .lang-switcher {
+            display: flex;
+            gap: 4px;
+            background: var(--color-bg-secondary);
+            padding: 4px;
+            border-radius: 8px;
         }
 
         .lang-btn {
-            flex: 1;
-            padding: 8px 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-primary);
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
             cursor: pointer;
-            font-size: 13px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
             transition: all 0.2s;
         }
 
         .lang-btn:hover {
-            background: var(--bg-primary);
-            border-color: var(--accent);
+            color: var(--color-text);
+            background: var(--color-bg);
         }
 
         .lang-btn.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
+            background: var(--color-bg);
+            color: var(--color-accent);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        .search-box {
+        /* Main Layout */
+        .docs-container {
+            display: flex;
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar */
+        .docs-sidebar {
+            width: var(--sidebar-width);
+            background: var(--color-bg-secondary);
+            border-right: 1px solid var(--color-border);
+            padding: 24px;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .docs-search {
             width: 100%;
-            padding: 10px 15px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-primary);
+            padding: 10px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-bg);
+            color: var(--color-text);
             font-size: 14px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            transition: all 0.2s;
         }
 
-        .search-box:focus {
+        .docs-search:focus {
             outline: none;
-            border-color: var(--accent);
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .nav-section {
-            margin-bottom: 25px;
+            margin-bottom: 32px;
         }
 
         .nav-section-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
+            font-size: 12px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-tertiary);
+            margin-bottom: 12px;
+            padding: 0 4px;
         }
 
         .nav-item {
             display: block;
             padding: 8px 12px;
-            color: var(--text-secondary);
+            color: var(--color-text-secondary);
             text-decoration: none;
             border-radius: 6px;
             margin-bottom: 4px;
             font-size: 14px;
-            transition: all 0.2s;
+            transition: all 0.15s;
+            line-height: 1.5;
         }
 
         .nav-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
+            background: var(--color-bg-tertiary);
+            color: var(--color-text);
         }
 
         .nav-item.active {
-            background: var(--accent);
+            background: var(--color-accent);
             color: white;
+            font-weight: 500;
         }
 
         /* Main Content */
-        .main-content {
+        .docs-main {
             flex: 1;
-            margin-left: var(--sidebar-width);
-            padding: 40px 60px;
-            max-width: 900px;
+            padding: 48px 64px;
+            min-width: 0;
         }
 
-        .doc-header {
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border);
+        .docs-content {
+            max-width: 800px;
         }
 
-        .doc-header h1 {
-            font-size: 36px;
+        .docs-title {
+            font-size: 42px;
             font-weight: 700;
-            margin-bottom: 10px;
-            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 16px;
+            color: var(--color-text);
+            letter-spacing: -0.02em;
         }
 
-        .doc-header .meta {
-            color: var(--text-secondary);
+        .docs-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--color-border);
             font-size: 14px;
+            color: var(--color-text-secondary);
         }
 
-        .doc-content {
+        .docs-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        /* Content Styling */
+        .docs-body {
             font-size: 16px;
             line-height: 1.8;
         }
 
-        .doc-content h1 {
+        .docs-body h1 {
             font-size: 32px;
-            margin: 40px 0 20px;
-            color: var(--text-primary);
             font-weight: 700;
+            margin: 48px 0 16px;
+            color: var(--color-text);
+            line-height: 1.3;
+            letter-spacing: -0.01em;
         }
 
-        .doc-content h2 {
+        .docs-body h2 {
             font-size: 24px;
-            margin: 35px 0 15px;
-            color: var(--text-primary);
             font-weight: 600;
+            margin: 40px 0 12px;
+            color: var(--color-text);
+            line-height: 1.4;
+            padding-top: 8px;
         }
 
-        .doc-content h3 {
+        .docs-body h3 {
             font-size: 20px;
-            margin: 30px 0 12px;
-            color: var(--text-primary);
             font-weight: 600;
+            margin: 32px 0 10px;
+            color: var(--color-text);
+            line-height: 1.4;
         }
 
-        .doc-content p {
-            margin-bottom: 16px;
-            color: var(--text-primary);
+        .docs-body h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 24px 0 8px;
+            color: var(--color-text);
         }
 
-        .doc-content code {
-            background: var(--code-bg);
+        .docs-body p {
+            margin-bottom: 20px;
+            color: var(--color-text);
+        }
+
+        .docs-body ul, .docs-body ol {
+            margin: 20px 0;
+            padding-left: 28px;
+        }
+
+        .docs-body li {
+            margin-bottom: 8px;
+            color: var(--color-text);
+        }
+
+        .docs-body li::marker {
+            color: var(--color-text-secondary);
+        }
+
+        .docs-body a {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .docs-body a:hover {
+            border-bottom-color: var(--color-accent);
+        }
+
+        /* Code Blocks */
+        .docs-body code {
+            background: var(--color-code-bg);
+            border: 1px solid var(--color-code-border);
             padding: 2px 6px;
             border-radius: 4px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 14px;
-            color: var(--accent);
+            color: #e11d48;
         }
 
-        .doc-content pre {
-            background: var(--code-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
+        [data-theme="dark"] .docs-body code {
+            color: #f472b6;
+        }
+
+        .docs-body pre {
+            background: var(--color-code-bg);
+            border: 1px solid var(--color-code-border);
+            border-radius: 12px;
+            padding: 20px;
             overflow-x: auto;
-            margin: 20px 0;
+            margin: 24px 0;
+            line-height: 1.6;
         }
 
-        .doc-content pre code {
+        .docs-body pre code {
             background: none;
+            border: none;
             padding: 0;
-            color: var(--text-primary);
+            color: var(--color-text);
+            font-size: 14px;
         }
 
-        .doc-content ul, .doc-content ol {
-            margin: 16px 0;
-            padding-left: 30px;
+        /* Callouts */
+        .callout {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 24px 0;
+            border-left: 4px solid;
         }
 
-        .doc-content li {
-            margin-bottom: 8px;
-            color: var(--text-primary);
+        .callout-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--color-info);
         }
 
-        .doc-content a {
-            color: var(--accent);
-            text-decoration: none;
+        .callout-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--color-success);
         }
 
-        .doc-content a:hover {
-            text-decoration: underline;
+        .callout-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--color-warning);
         }
 
-        .doc-content blockquote {
-            border-left: 4px solid var(--accent);
+        .callout-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--color-error);
+        }
+
+        /* Tables */
+        .docs-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .docs-body table th,
+        .docs-body table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .docs-body table th {
+            background: var(--color-bg-secondary);
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .docs-body table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Blockquotes */
+        .docs-body blockquote {
+            border-left: 4px solid var(--color-accent);
             padding-left: 20px;
-            margin: 20px 0;
-            color: var(--text-secondary);
+            margin: 24px 0;
+            color: var(--color-text-secondary);
             font-style: italic;
         }
 
-        .doc-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
+        /* Navigation Footer */
+        .docs-nav-footer {
+            margin-top: 64px;
+            padding-top: 32px;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
         }
 
-        .doc-content table th,
-        .doc-content table td {
-            padding: 12px;
-            border: 1px solid var(--border);
-            text-align: left;
+        .docs-nav-link {
+            flex: 1;
+            padding: 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s;
         }
 
-        .doc-content table th {
-            background: var(--bg-secondary);
+        .docs-nav-link:hover {
+            border-color: var(--color-accent);
+            background: var(--color-bg-secondary);
+        }
+
+        .docs-nav-link-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .docs-nav-link-title {
             font-weight: 600;
+            color: var(--color-accent);
         }
 
-        .loading {
+        /* Loading & Error */
+        .docs-loading {
             text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
+            padding: 80px 20px;
+            color: var(--color-text-secondary);
         }
 
-        .error {
-            background: rgba(248, 81, 73, 0.1);
-            border: 1px solid rgba(248, 81, 73, 0.3);
+        .docs-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--color-error);
             border-radius: 8px;
             padding: 20px;
-            color: #f85149;
-            margin: 20px 0;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 14px;
-            margin-bottom: 20px;
-            transition: color 0.2s;
-        }
-
-        .back-link:hover {
-            color: var(--accent);
+            color: var(--color-error);
+            margin: 24px 0;
         }
 
         /* Responsive */
+        @media (max-width: 1024px) {
+            .docs-sidebar {
+                position: fixed;
+                left: -100%;
+                top: 60px;
+                z-index: 50;
+                transition: left 0.3s;
+            }
+
+            .docs-sidebar.open {
+                left: 0;
+            }
+
+            .docs-main {
+                padding: 32px 24px;
+            }
+        }
+
         @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s;
+            .docs-title {
+                font-size: 32px;
             }
 
-            .sidebar.open {
-                transform: translateX(0);
+            .docs-main {
+                padding: 24px 16px;
             }
 
-            .main-content {
-                margin-left: 0;
-                padding: 20px;
+            .docs-nav-footer {
+                flex-direction: column;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h1>📚 DuilioCode</h1>
-            <p>Documentação Completa</p>
+    <!-- Header -->
+    <header class="docs-header">
+        <div class="docs-header-content">
+            <a href="/docs" class="docs-logo">
+                📚 DuilioCode
+            </a>
+            <div class="docs-header-actions">
+                <div class="lang-switcher">
+                    <button class="lang-btn active" data-lang="pt">PT</button>
+                    <button class="lang-btn" data-lang="en">EN</button>
+                </div>
+            </div>
         </div>
+    </header>
 
-        <div class="lang-selector">
-            <button class="lang-btn active" data-lang="pt">🇧🇷 PT</button>
-            <button class="lang-btn" data-lang="en">🇺🇸 EN</button>
-        </div>
+    <!-- Main Container -->
+    <div class="docs-container">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar" id="sidebar">
+            <input type="text" class="docs-search" id="searchBox" placeholder="Buscar...">
+            <nav id="navMenu"></nav>
+        </aside>
 
-        <input type="text" class="search-box" id="searchBox" placeholder="🔍 Buscar documentação...">
-
-        <nav id="navMenu">
-            <!-- Navigation will be loaded here -->
-        </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        <div class="loading">Carregando documentação...</div>
-    </main>
+        <!-- Main Content -->
+        <main class="docs-main">
+            <div class="docs-content" id="mainContent">
+                <div class="docs-loading">Carregando...</div>
+            </div>
+        </main>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -351,71 +534,60 @@
         const TRANSLATIONS = {
             pt: {
                 title: 'Documentação - DuilioCode Studio',
-                sidebarTitle: '📚 DuilioCode',
-                sidebarSubtitle: 'Documentação Completa',
-                searchPlaceholder: '🔍 Buscar documentação...',
-                loading: 'Carregando documentação...',
+                searchPlaceholder: 'Buscar...',
+                loading: 'Carregando...',
                 error: 'Erro ao carregar documento:',
                 noResults: 'Nenhum resultado encontrado',
                 searchResults: 'Resultados da Busca',
-                backToIndex: '← Voltar ao índice',
                 categories: {
-                    index: '📚 Índice',
-                    quickStart: '🚀 Início Rápido',
-                    architecture: '🏗️ Arquitetura',
-                    integrations: '🔌 Integrações',
-                    chat: '💬 Sistema de Chat',
-                    files: '📁 Operações de Arquivos',
-                    intelligence: '🧠 Inteligência e Análise',
-                    database: '🗄️ Banco de Dados',
-                    security: '🔒 Segurança',
-                    observability: '📊 Observabilidade',
-                    tests: '🧪 Testes',
-                    services: '🔧 Serviços e Algoritmos',
-                    deploy: '🚀 Deploy e Produção',
-                    others: '📝 Outros'
+                    index: 'Índice',
+                    quickStart: 'Início Rápido',
+                    architecture: 'Arquitetura',
+                    integrations: 'Integrações',
+                    chat: 'Sistema de Chat',
+                    files: 'Operações de Arquivos',
+                    intelligence: 'Inteligência e Análise',
+                    database: 'Banco de Dados',
+                    security: 'Segurança',
+                    observability: 'Observabilidade',
+                    tests: 'Testes',
+                    services: 'Serviços e Algoritmos',
+                    deploy: 'Deploy e Produção',
+                    others: 'Outros'
                 }
             },
             en: {
                 title: 'Documentation - DuilioCode Studio',
-                sidebarTitle: '📚 DuilioCode',
-                sidebarSubtitle: 'Complete Documentation',
-                searchPlaceholder: '🔍 Search documentation...',
-                loading: 'Loading documentation...',
+                searchPlaceholder: 'Search...',
+                loading: 'Loading...',
                 error: 'Error loading document:',
                 noResults: 'No results found',
                 searchResults: 'Search Results',
-                backToIndex: '← Back to index',
                 categories: {
-                    index: '📚 Index',
-                    quickStart: '🚀 Quick Start',
-                    architecture: '🏗️ Architecture',
-                    integrations: '🔌 Integrations',
-                    chat: '💬 Chat System',
-                    files: '📁 File Operations',
-                    intelligence: '🧠 Intelligence and Analysis',
-                    database: '🗄️ Database',
-                    security: '🔒 Security',
-                    observability: '📊 Observability',
-                    tests: '🧪 Tests',
-                    services: '🔧 Services and Algorithms',
-                    deploy: '🚀 Deploy and Production',
-                    others: '📝 Others'
+                    index: 'Index',
+                    quickStart: 'Quick Start',
+                    architecture: 'Architecture',
+                    integrations: 'Integrations',
+                    chat: 'Chat System',
+                    files: 'File Operations',
+                    intelligence: 'Intelligence and Analysis',
+                    database: 'Database',
+                    security: 'Security',
+                    observability: 'Observability',
+                    tests: 'Tests',
+                    services: 'Services and Algorithms',
+                    deploy: 'Deploy and Production',
+                    others: 'Others'
                 }
             }
         };
 
-        // Configuration
         const CONFIG = {
             currentLang: 'pt',
             currentDoc: null,
-            docs: {
-                pt: [],
-                en: []
-            }
+            docs: { pt: [], en: [] }
         };
 
-        // Get current translation
         function t(key) {
             const keys = key.split('.');
             let value = TRANSLATIONS[CONFIG.currentLang];
@@ -425,17 +597,12 @@
             return value || key;
         }
 
-        // Update UI language
         function updateUILanguage() {
             document.title = t('title');
-            document.querySelector('.sidebar-header h1').textContent = t('sidebarTitle');
-            document.querySelector('.sidebar-header p').textContent = t('sidebarSubtitle');
             document.getElementById('searchBox').placeholder = t('searchPlaceholder');
         }
 
-        // Initialize
         async function init() {
-            // Detect browser language
             const browserLang = navigator.language || navigator.userLanguage;
             if (browserLang.startsWith('en')) {
                 CONFIG.currentLang = 'en';
@@ -447,46 +614,40 @@
             await loadDocsIndex();
             renderNavigation();
             
-            // Load initial document based on language
             const initialDoc = CONFIG.currentLang === 'pt' ? '00-indice' : '00-index';
             loadDocument(CONFIG.currentLang, initialDoc);
             
-            // Setup event listeners
             document.querySelectorAll('.lang-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const lang = btn.dataset.lang;
-                    switchLanguage(lang);
+                    switchLanguage(btn.dataset.lang);
                 });
             });
 
             document.getElementById('searchBox').addEventListener('input', handleSearch);
         }
 
-        // Load docs index
         async function loadDocsIndex() {
             try {
                 const [ptRes, enRes] = await Promise.all([
                     fetch('/api/docs/list?lang=pt'),
                     fetch('/api/docs/list?lang=en')
                 ]);
-                
                 CONFIG.docs.pt = await ptRes.json();
                 CONFIG.docs.en = await enRes.json();
             } catch (error) {
-                console.error('Error loading docs index:', error);
+                console.error('Error loading docs:', error);
             }
         }
 
-        // Map category emoji to translation key
         function getCategoryKey(category) {
             if (category.includes('Índice') || category.includes('Index')) return 'categories.index';
-            if (category.includes('Início Rápido') || category.includes('Quick Start')) return 'categories.quickStart';
+            if (category.includes('Início') || category.includes('Quick')) return 'categories.quickStart';
             if (category.includes('Arquitetura') || category.includes('Architecture')) return 'categories.architecture';
             if (category.includes('Integrações') || category.includes('Integrations')) return 'categories.integrations';
             if (category.includes('Chat')) return 'categories.chat';
             if (category.includes('Arquivos') || category.includes('File')) return 'categories.files';
             if (category.includes('Inteligência') || category.includes('Intelligence')) return 'categories.intelligence';
-            if (category.includes('Banco de Dados') || category.includes('Database')) return 'categories.database';
+            if (category.includes('Banco') || category.includes('Database')) return 'categories.database';
             if (category.includes('Segurança') || category.includes('Security')) return 'categories.security';
             if (category.includes('Observabilidade') || category.includes('Observability')) return 'categories.observability';
             if (category.includes('Testes') || category.includes('Tests')) return 'categories.tests';
@@ -495,7 +656,6 @@
             return 'categories.others';
         }
 
-        // Render navigation
         function renderNavigation() {
             const nav = document.getElementById('navMenu');
             const docs = CONFIG.docs[CONFIG.currentLang] || [];
@@ -505,24 +665,19 @@
                 return;
             }
 
-            // Group by category
             const categories = {};
             docs.forEach(doc => {
                 const category = doc.category || t('categories.others');
-                if (!categories[category]) {
-                    categories[category] = [];
-                }
+                if (!categories[category]) categories[category] = [];
                 categories[category].push(doc);
             });
 
             let html = '';
             Object.keys(categories).sort().forEach(category => {
-                // Translate category name
                 const categoryKey = getCategoryKey(category);
                 const translatedCategory = t(categoryKey);
-                
-                html += `<div class="nav-section">`;
-                html += `<div class="nav-section-title">${translatedCategory}</div>`;
+                html += `<div class="nav-section">
+                    <div class="nav-section-title">${translatedCategory}</div>`;
                 categories[category].forEach(doc => {
                     const active = CONFIG.currentDoc === doc.id ? 'active' : '';
                     html += `<a href="#" class="nav-item ${active}" data-doc="${doc.id}">${doc.title}</a>`;
@@ -531,21 +686,17 @@
             });
 
             nav.innerHTML = html;
-
-            // Add click listeners
             nav.querySelectorAll('.nav-item').forEach(item => {
                 item.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const docId = item.dataset.doc;
-                    loadDocument(CONFIG.currentLang, docId);
+                    loadDocument(CONFIG.currentLang, item.dataset.doc);
                 });
             });
         }
 
-        // Load document
         async function loadDocument(lang, docId) {
             const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `<div class="loading">${t('loading')}</div>`;
+            mainContent.innerHTML = `<div class="docs-loading">${t('loading')}</div>`;
 
             try {
                 const response = await fetch(`/api/docs/content?lang=${lang}&doc=${docId}`);
@@ -554,7 +705,6 @@
                 const data = await response.json();
                 CONFIG.currentDoc = docId;
 
-                // Render markdown
                 marked.setOptions({
                     highlight: function(code, lang) {
                         if (lang && hljs.getLanguage(lang)) {
@@ -565,75 +715,42 @@
                 });
 
                 const html = marked.parse(data.content);
-                
-                // Translate category
                 const categoryKey = getCategoryKey(data.category || '');
                 const translatedCategory = t(categoryKey);
 
                 mainContent.innerHTML = `
-                    <div class="doc-header">
-                        <h1>${data.title}</h1>
-                        <div class="meta">${translatedCategory} • ${lang.toUpperCase()}</div>
+                    <div class="docs-content">
+                        <h1 class="docs-title">${data.title}</h1>
+                        <div class="docs-meta">
+                            <span class="docs-badge">${translatedCategory}</span>
+                            <span>•</span>
+                            <span>${lang.toUpperCase()}</span>
+                        </div>
+                        <div class="docs-body">${html}</div>
                     </div>
-                    <div class="doc-content">${html}</div>
                 `;
 
-                // Update active nav item
                 document.querySelectorAll('.nav-item').forEach(item => {
                     item.classList.toggle('active', item.dataset.doc === docId);
                 });
 
-                // Scroll to top
                 window.scrollTo(0, 0);
             } catch (error) {
-                mainContent.innerHTML = `
-                    <div class="error">
-                        <strong>${t('error')}</strong><br>
-                        ${error.message}
-                    </div>
-                `;
+                mainContent.innerHTML = `<div class="docs-error"><strong>${t('error')}</strong><br>${error.message}</div>`;
             }
         }
 
-        // Switch language
         function switchLanguage(lang) {
             CONFIG.currentLang = lang;
-            
-            // Update buttons
             document.querySelectorAll('.lang-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.lang === lang);
             });
-
-            // Update UI language
             updateUILanguage();
-
-            // Reload navigation and current doc
             renderNavigation();
-            
-            // Map document IDs between languages
-            const docMap = {
-                'pt': { '00-indice': '00-index' },
-                'en': { '00-index': '00-indice' }
-            };
-            
-            let docId = CONFIG.currentDoc;
-            if (!docId) {
-                docId = lang === 'pt' ? '00-indice' : '00-index';
-            } else {
-                // Try to find equivalent document in other language
-                const mapped = docMap[lang]?.[docId];
-                if (mapped) {
-                    docId = mapped;
-                } else {
-                    // Keep same doc ID, might not exist in other language
-                    docId = CONFIG.currentDoc;
-                }
-            }
-            
+            const docId = CONFIG.currentDoc || (lang === 'pt' ? '00-indice' : '00-index');
             loadDocument(lang, docId);
         }
 
-        // Handle search
         async function handleSearch(e) {
             const query = e.target.value.toLowerCase();
             if (query.length < 2) {
@@ -642,8 +759,6 @@
             }
 
             const docs = CONFIG.docs[CONFIG.currentLang] || [];
-            
-            // Load content for search (if not already loaded)
             const searchPromises = docs.map(async doc => {
                 if (!doc.content) {
                     try {
@@ -660,7 +775,6 @@
             });
             
             await Promise.all(searchPromises);
-            
             const filtered = docs.filter(doc => 
                 doc.title.toLowerCase().includes(query) ||
                 (doc.content && doc.content.toLowerCase().includes(query))
@@ -679,17 +793,14 @@
             html += '</div>';
             nav.innerHTML = html;
 
-            // Add click listeners
             nav.querySelectorAll('.nav-item').forEach(item => {
                 item.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const docId = item.dataset.doc;
-                    loadDocument(CONFIG.currentLang, docId);
+                    loadDocument(CONFIG.currentLang, item.dataset.doc);
                 });
             });
         }
 
-        // Start
         init();
     </script>
 </body>
