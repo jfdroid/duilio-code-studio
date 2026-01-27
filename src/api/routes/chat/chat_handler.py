@@ -70,6 +70,16 @@ class ChatHandler:
         adjusted_temperature = request.temperature
         
         try:
+            # Sanitize inputs
+            if request.workspace_path:
+                try:
+                    request.workspace_path = InputSanitizer.sanitize_path(
+                        request.workspace_path,
+                        workspace_path=request.workspace_path
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Path sanitization warning: {e}")
+            
             # Validate inputs
             request.model = ModelNameValidator.validate(request.model)
             request.temperature = TemperatureValidator.validate(request.temperature)
