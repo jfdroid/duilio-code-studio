@@ -259,6 +259,25 @@ def create_app() -> FastAPI:
                 <body style="font-family: sans-serif; padding: 40px;">
                     <h1>DuilioCode Studio</h1>
                     <p>API is running. Visit <a href="/docs">/docs</a> for API documentation.</p>
+                    <p><a href="/docs/viewer">📚 View Documentation</a></p>
+                </body>
+                </html>
+""")
+        
+        # Serve documentation viewer
+        @app.get("/docs", response_class=HTMLResponse)
+        async def serve_docs():
+            """Serve documentation viewer."""
+            docs_file = templates_dir / "docs.html"
+            if docs_file.exists():
+                return HTMLResponse(content=docs_file.read_text())
+            return HTMLResponse(content="""
+                <!DOCTYPE html>
+                <html>
+                <head><title>Documentation - DuilioCode Studio</title></head>
+                <body style="font-family: sans-serif; padding: 40px;">
+                    <h1>Documentation</h1>
+                    <p>Documentation viewer not found. Check <a href="/api/docs/list">/api/docs/list</a> for available docs.</p>
                 </body>
                 </html>
 """)

@@ -14,6 +14,12 @@ from .files import router as files_router
 from .workspace import router as workspace_router
 from .models import router as models_router
 
+# Documentation router
+try:
+    from .docs import router as docs_router
+except ImportError:
+    docs_router = None
+
 __all__ = [
     "health_router",
     "chat_router",
