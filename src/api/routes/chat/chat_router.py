@@ -5,8 +5,16 @@ Main router for chat endpoints.
 Refactored from chat.py to improve maintainability.
 """
 
+import sys
+from pathlib import Path
 from fastapi import APIRouter, Depends
-from typing import Dict, Any
+from fastapi.responses import StreamingResponse
+from typing import Dict, Any, List, Optional
+
+# Add parent directories to path for imports
+src_path = Path(__file__).parent.parent.parent.parent
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
 
 from .chat_handler import ChatHandler
 from .generate_handler import GenerateHandler
