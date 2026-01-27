@@ -740,6 +740,40 @@
             }
         }
 
+        function getDefaultDocId(lang) {
+            // Map document IDs between languages
+            const docMap = {
+                'pt': {
+                    '00-index': '00-indice',
+                    '00-indice': '00-indice'
+                },
+                'en': {
+                    '00-indice': '00-index',
+                    '00-index': '00-index'
+                }
+            };
+            
+            // If we have a current doc, try to map it
+            if (CONFIG.currentDoc) {
+                const mapped = docMap[lang]?.[CONFIG.currentDoc];
+                if (mapped) return mapped;
+                
+                // Try to find equivalent by checking if doc exists in new language
+                const docs = CONFIG.docs[lang] || [];
+                const equivalent = docs.find(d => {
+                    // Try exact match first
+                    if (d.id === CONFIG.currentDoc) return true;
+                    // Try removing language-specific suffix
+                    const baseId = CONFIG.currentDoc.replace(/-(indice|index)$/, '');
+                    return d.id.startsWith(baseId);
+                });
+                if (equivalent) return equivalent.id;
+            }
+            
+            // Default to index document
+            return lang === 'pt' ? '00-indice' : '00-index';
+        }
+
         function switchLanguage(lang) {
             CONFIG.currentLang = lang;
             document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -747,7 +781,9 @@
             });
             updateUILanguage();
             renderNavigation();
-            const docId = CONFIG.currentDoc || (lang === 'pt' ? '00-indice' : '00-index');
+            
+            // Get the appropriate document ID for the new language
+            const docId = getDefaultDocId(lang);
             loadDocument(lang, docId);
         }
 
