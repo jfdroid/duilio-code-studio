@@ -26,6 +26,7 @@ from core.logger import get_logger
 from core.validators import WorkspacePathValidator, ModelNameValidator, TemperatureValidator, MaxTokensValidator
 from core.exceptions import ValidationError
 from core.error_handler import handle_error
+from core.metrics import track_performance
 from fastapi import HTTPException
 from typing import TYPE_CHECKING
 
@@ -39,6 +40,7 @@ class GenerateHandler:
     def __init__(self):
         self.logger = get_logger()
     
+    @track_performance("code_generation")
     async def handle(
         self,
         request: "GenerateRequest",

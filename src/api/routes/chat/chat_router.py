@@ -120,12 +120,42 @@ async def generate(
     """
     Generate code or text response with intelligent context.
     
-    Features:
-    - Intelligent model selection
-    - Automatic codebase analysis
-    - Smart prompt classification
+    **Features**:
+    - Intelligent model selection based on prompt type
+    - Automatic codebase analysis for context
+    - Smart prompt classification (code vs general)
     - Few-shot learning from examples
     - User preference learning
+    
+    **Request Body**:
+    - `prompt` (required): The user's prompt/question
+    - `model` (required): Model name to use (e.g., "qwen2.5-coder:14b")
+    - `system_prompt` (optional): Custom system prompt
+    - `context` (optional): Additional context
+    - `workspace_path` (optional): Path to workspace for codebase analysis
+    - `include_codebase` (default: true): Include codebase analysis in context
+    - `temperature` (default: 0.7): Sampling temperature (0.0-2.0)
+    - `max_tokens` (default: 4096): Maximum tokens to generate
+    
+    **Response**:
+    ```json
+    {
+      "response": "Generated code or text",
+      "model": "qwen2.5-coder:14b",
+      "tokens": 150,
+      "duration_ms": 1234.5
+    }
+    ```
+    
+    **Example Request**:
+    ```json
+    {
+      "prompt": "Create a React component for a button",
+      "model": "qwen2.5-coder:14b",
+      "workspace_path": "/path/to/project",
+      "temperature": 0.7
+    }
+    ```
     """
     handler = get_generate_handler()
     return await handler.handle(
@@ -145,15 +175,66 @@ async def chat(
     workspace: WorkspaceService = Depends(get_workspace_service)
 ) -> Dict[str, Any]:
     """
-    Chat completion endpoint with intelligent context.
+    Chat completion endpoint with intelligent context and CRUD capabilities.
     
-    Features:
-    - Automatic codebase analysis
+    **Features**:
+    - Automatic codebase analysis for context
     - Conversation history handling
     - Smart model selection
-    - Streaming support
-    - CRUD operation detection
-    - Linguistic analysis
+    - Streaming support (when `stream=true`)
+    - CRUD operation detection (create, read, update, delete, list)
+    - Advanced linguistic analysis (verbs, connectors, intent)
+    - File system access and operations
+    - System information integration
+    
+    **Request Body**:
+    - `messages` (required): List of conversation messages
+      ```json
+      [
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi there!"},
+        {"role": "user", "content": "List files in current directory"}
+      ]
+      ```
+    - `model` (required): Model name (e.g., "qwen2.5-coder:14b")
+    - `workspace_path` (optional): Workspace path for file operations
+    - `temperature` (default: 0.7): Response creativity (0.0-2.0)
+    - `stream` (default: false): Enable streaming response
+    
+    **Response**:
+    ```json
+    {
+      "response": "AI-generated response",
+      "model": "qwen2.5-coder:14b",
+      "tokens": 200,
+      "actions": [
+        {
+          "type": "list_files",
+          "path": "/path/to/workspace"
+        }
+      ],
+      "duration_ms": 2345.6
+    }
+    ```
+    
+    **Example Request**:
+    ```json
+    {
+      "messages": [
+        {"role": "user", "content": "Create a file called test.txt with 'Hello World'"}
+      ],
+      "model": "qwen2.5-coder:14b",
+      "workspace_path": "/path/to/project",
+      "temperature": 0.7
+    }
+    ```
+    
+    **CRUD Operations Supported**:
+    - **Create**: Files, directories, projects
+    - **Read**: File content, directory listings
+    - **Update**: Modify existing files
+    - **Delete**: Files and directories
+    - **List**: Files and folders in workspace
     """
     handler = get_chat_handler()
     return await handler.handle(
@@ -169,7 +250,35 @@ async def generate_stream(
     request: GenerateRequest,
     ollama: OllamaService = Depends(get_ollama_service)
 ) -> StreamingResponse:
-    """Stream code generation token by token."""
+    """
+    Stream code generation token by token.
+    
+    Returns Server-Sent Events (SSE) stream with tokens as they are generated.
+    Useful for real-time UI updates.
+    
+    **Request Body**: Same as `/generate` endpoint
+    
+    **Response**: `text/event-stream` with format:
+    ```
+    data: token1
+    data: token2
+    data: [DONE]
+    ```
+    
+    **Example**:
+    ```javascript
+    const response = await fetch('/api/generate/stream', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt: "Create a function",
+        model: "qwen2.5-coder:14b"
+      })
+    });
+    
+    const reader = response.body.getReader();
+    // Process stream...
+    ```
+    """
     async def stream_generator():
         async for token in ollama.generate_stream(
             prompt=request.prompt,
@@ -193,7 +302,34 @@ async def recommend_model(
 ) -> Dict[str, Any]:
     """
     Get recommended model for a given prompt.
-    Uses intelligent classification to suggest the best model.
+    
+    Uses intelligent classification to suggest the best model based on:
+    - Prompt content analysis
+    - Code vs general text detection
+    - Available models
+    - User preferences
+    
+    **Request Body**:
+    - `prompt` (required): The prompt to analyze
+    
+    **Response**:
+    ```json
+    {
+      "recommended_model": "qwen2.5-coder:14b",
+      "is_code_related": true,
+      "category": "code_generation",
+      "confidence": 0.95,
+      "reason": "Detected code patterns: function, class",
+      "keywords_found": ["function", "class", "def"]
+    }
+    ```
+    
+    **Example Request**:
+    ```json
+    {
+      "prompt": "Create a Python function to calculate factorial"
+    }
+    ```
     """
     try:
         from services.prompt_classifier import classify_prompt
@@ -227,12 +363,38 @@ async def analyze_codebase_endpoint(
     """
     Analyze a codebase and return structured information.
     
-    Returns:
+    Performs comprehensive analysis of a codebase including:
     - File tree structure
     - Language distribution
-    - Dependencies
-    - Entry points
-    - AI-ready context
+    - Dependencies detection
+    - Entry points identification
+    - AI-ready context generation
+    
+    **Request Body**:
+    - `path` (required): Path to the codebase directory
+    - `max_files` (default: 100): Maximum files to analyze
+    
+    **Response**:
+    ```json
+    {
+      "file_tree": {...},
+      "languages": {
+        "python": 45,
+        "javascript": 30
+      },
+      "dependencies": ["react", "fastapi"],
+      "entry_points": ["main.py", "index.js"],
+      "context": "AI-ready context string..."
+    }
+    ```
+    
+    **Example Request**:
+    ```json
+    {
+      "path": "/path/to/project",
+      "max_files": 200
+    }
+    ```
     """
     endpoints = get_codebase_endpoints()
     return await endpoints.analyze_codebase(request=request, ollama=ollama)
@@ -246,7 +408,29 @@ async def get_codebase_context_endpoint(
 ) -> Dict[str, Any]:
     """
     Get AI-ready context for a codebase.
-    Uses caching for performance.
+    
+    Returns cached or fresh codebase analysis for use in AI prompts.
+    Uses intelligent caching for performance optimization.
+    
+    **Query Parameters**:
+    - `path` (required): Path to the codebase directory
+    - `refresh` (default: false): Force refresh, bypass cache
+    
+    **Response**:
+    ```json
+    {
+      "context": "Structured codebase context...",
+      "file_count": 150,
+      "languages": ["python", "javascript"],
+      "cached": true,
+      "cache_age_seconds": 3600
+    }
+    ```
+    
+    **Example Request**:
+    ```
+    GET /api/codebase-context?path=/path/to/project&refresh=false
+    ```
     """
     endpoints = get_codebase_endpoints()
     return await endpoints.get_codebase_context(path=path, refresh=refresh, ollama=ollama)

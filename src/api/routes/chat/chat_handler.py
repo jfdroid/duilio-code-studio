@@ -30,6 +30,7 @@ from core.logger import get_logger
 from core.validators import ModelNameValidator, TemperatureValidator
 from core.exceptions import ValidationError
 from core.error_handler import handle_error
+from core.metrics import track_performance
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from typing import TYPE_CHECKING
@@ -45,6 +46,7 @@ class ChatHandler:
     def __init__(self):
         self.logger = get_logger()
     
+    @track_performance("chat_completion")
     async def handle(
         self,
         request: "ChatRequest",

@@ -52,6 +52,7 @@ from api.routes import (
 )
 from api.routes.tools import router as tools_router
 from api.routes.chat_simple import router as chat_simple_router
+from api.routes.metrics import router as metrics_router
 
 # Import services for lifecycle management (using container)
 from core.container import get_ollama_service, get_settings, get_logger
@@ -221,6 +222,7 @@ def create_app() -> FastAPI:
     app.include_router(workspace_router)
     app.include_router(models_router)
     app.include_router(tools_router)  # Git, Execute, Scaffold, Refactor, Docs, Security, Agent
+    app.include_router(metrics_router)  # Performance metrics and monitoring
     
     # === Static Files ===
     web_dir = settings.WEB_DIR
