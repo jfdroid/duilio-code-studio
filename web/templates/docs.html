@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação - DuilioCode Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1c2128;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --border: #30363d;
+            --code-bg: #161b22;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            position: fixed;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        .sidebar-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .lang-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .lang-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        .lang-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px 15px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 40px 60px;
+            max-width: 900px;
+        }
+
+        .doc-header {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .doc-header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .doc-header .meta {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .doc-content {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .doc-content h1 {
+            font-size: 32px;
+            margin: 40px 0 20px;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .doc-content h2 {
+            font-size: 24px;
+            margin: 35px 0 15px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .doc-content h3 {
+            font-size: 20px;
+            margin: 30px 0 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .doc-content p {
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .doc-content code {
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--accent);
+        }
+
+        .doc-content pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .doc-content pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .doc-content ul, .doc-content ol {
+            margin: 16px 0;
+            padding-left: 30px;
+        }
+
+        .doc-content li {
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .doc-content a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .doc-content a:hover {
+            text-decoration: underline;
+        }
+
+        .doc-content blockquote {
+            border-left: 4px solid var(--accent);
+            padding-left: 20px;
+            margin: 20px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .doc-content table th,
+        .doc-content table td {
+            padding: 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .doc-content table th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .error {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid rgba(248, 81, 73, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            color: #f85149;
+            margin: 20px 0;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--accent);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1>📚 DuilioCode</h1>
+            <p>Documentação Completa</p>
+        </div>
+
+        <div class="lang-selector">
+            <button class="lang-btn active" data-lang="pt">🇧🇷 PT</button>
+            <button class="lang-btn" data-lang="en">🇺🇸 EN</button>
+        </div>
+
+        <input type="text" class="search-box" id="searchBox" placeholder="🔍 Buscar documentação...">
+
+        <nav id="navMenu">
+            <!-- Navigation will be loaded here -->
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <div class="loading">Carregando documentação...</div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        // Configuration
+        const CONFIG = {
+            currentLang: 'pt',
+            currentDoc: null,
+            docs: {
+                pt: [],
+                en: []
+            }
+        };
+
+        // Initialize
+        async function init() {
+            await loadDocsIndex();
+            renderNavigation();
+            loadDocument('pt', '00-indice');
+            
+            // Setup event listeners
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const lang = btn.dataset.lang;
+                    switchLanguage(lang);
+                });
+            });
+
+            document.getElementById('searchBox').addEventListener('input', handleSearch);
+        }
+
+        // Load docs index
+        async function loadDocsIndex() {
+            try {
+                const [ptRes, enRes] = await Promise.all([
+                    fetch('/api/docs/list?lang=pt'),
+                    fetch('/api/docs/list?lang=en')
+                ]);
+                
+                CONFIG.docs.pt = await ptRes.json();
+                CONFIG.docs.en = await enRes.json();
+            } catch (error) {
+                console.error('Error loading docs index:', error);
+            }
+        }
+
+        // Render navigation
+        function renderNavigation() {
+            const nav = document.getElementById('navMenu');
+            const docs = CONFIG.docs[CONFIG.currentLang] || [];
+            
+            if (docs.length === 0) {
+                nav.innerHTML = '<div class="nav-section"><div class="nav-section-title">Carregando...</div></nav>';
+                return;
+            }
+
+            // Group by category
+            const categories = {};
+            docs.forEach(doc => {
+                const category = doc.category || 'Outros';
+                if (!categories[category]) {
+                    categories[category] = [];
+                }
+                categories[category].push(doc);
+            });
+
+            let html = '';
+            Object.keys(categories).forEach(category => {
+                html += `<div class="nav-section">`;
+                html += `<div class="nav-section-title">${category}</div>`;
+                categories[category].forEach(doc => {
+                    const active = CONFIG.currentDoc === doc.id ? 'active' : '';
+                    html += `<a href="#" class="nav-item ${active}" data-doc="${doc.id}">${doc.title}</a>`;
+                });
+                html += `</div>`;
+            });
+
+            nav.innerHTML = html;
+
+            // Add click listeners
+            nav.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const docId = item.dataset.doc;
+                    loadDocument(CONFIG.currentLang, docId);
+                });
+            });
+        }
+
+        // Load document
+        async function loadDocument(lang, docId) {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.innerHTML = '<div class="loading">Carregando...</div>';
+
+            try {
+                const response = await fetch(`/api/docs/content?lang=${lang}&doc=${docId}`);
+                if (!response.ok) throw new Error('Document not found');
+
+                const data = await response.json();
+                CONFIG.currentDoc = docId;
+
+                // Render markdown
+                marked.setOptions({
+                    highlight: function(code, lang) {
+                        if (lang && hljs.getLanguage(lang)) {
+                            return hljs.highlight(code, { language: lang }).value;
+                        }
+                        return hljs.highlightAuto(code).value;
+                    }
+                });
+
+                const html = marked.parse(data.content);
+
+                mainContent.innerHTML = `
+                    <div class="doc-header">
+                        <h1>${data.title}</h1>
+                        <div class="meta">${data.category || ''} • ${lang.toUpperCase()}</div>
+                    </div>
+                    <div class="doc-content">${html}</div>
+                `;
+
+                // Update active nav item
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.doc === docId);
+                });
+
+                // Scroll to top
+                window.scrollTo(0, 0);
+            } catch (error) {
+                mainContent.innerHTML = `
+                    <div class="error">
+                        <strong>Erro ao carregar documento:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Switch language
+        function switchLanguage(lang) {
+            CONFIG.currentLang = lang;
+            
+            // Update buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+
+            // Reload navigation and current doc
+            renderNavigation();
+            if (CONFIG.currentDoc) {
+                loadDocument(lang, CONFIG.currentDoc);
+            } else {
+                loadDocument(lang, '00-indice');
+            }
+        }
+
+        // Handle search
+        function handleSearch(e) {
+            const query = e.target.value.toLowerCase();
+            if (query.length < 2) {
+                renderNavigation();
+                return;
+            }
+
+            const docs = CONFIG.docs[CONFIG.currentLang] || [];
+            const filtered = docs.filter(doc => 
+                doc.title.toLowerCase().includes(query) ||
+                (doc.content && doc.content.toLowerCase().includes(query))
+            );
+
+            const nav = document.getElementById('navMenu');
+            let html = '<div class="nav-section"><div class="nav-section-title">Resultados da Busca</div>';
+            filtered.forEach(doc => {
+                html += `<a href="#" class="nav-item" data-doc="${doc.id}">${doc.title}</a>`;
+            });
+            html += '</div>';
+            nav.innerHTML = html;
+
+            // Add click listeners
+            nav.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const docId = item.dataset.doc;
+                    loadDocument(CONFIG.currentLang, docId);
+                });
+            });
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
