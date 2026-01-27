@@ -2,6 +2,27 @@
 
 AI-powered code assistant with direct file system access, full CRUD operations, and comprehensive observability.
 
+## 📚 Documentação Completa
+
+**Documentação didática em português e inglês disponível em [`docs/`](docs/)**
+
+- [📖 Guia de Documentação](docs/README.md)
+- [🇧🇷 Documentação em Português](docs/pt/00-indice.md)
+- [🇺🇸 Documentation in English](docs/en/00-index.md)
+
+A documentação cobre:
+- ✅ Introdução e conceitos básicos
+- ✅ Instalação passo a passo
+- ✅ Arquitetura completa do sistema
+- ✅ Integrações (Ollama, Qwen, FastAPI)
+- ✅ Modos de Chat (Chat vs Agent)
+- ✅ Operações CRUD
+- ✅ Análise linguística
+- ✅ Banco de dados (SQLite)
+- ✅ Algoritmos complexos
+- ✅ Lista completa de 36+ serviços
+- ✅ E muito mais!
+
 ## 🚀 Features
 
 ### Core Features
