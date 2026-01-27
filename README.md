@@ -100,8 +100,44 @@ python3 -m uvicorn api.main:app --host 127.0.0.1 --port 8080 --reload
 
 ### 6. Access Interface
 - **Web UI**: http://127.0.0.1:8080
-- **API Docs**: http://127.0.0.1:8080/docs
+- **Documentation Viewer**: http://127.0.0.1:8080/docs (PT-BR and EN-US)
+- **API Docs (Swagger)**: http://127.0.0.1:8080/api-docs
 - **Health Check**: http://127.0.0.1:8080/health
+
+## 📚 Accessing Documentation
+
+### Web Documentation Viewer
+
+The documentation is available through a modern web interface:
+
+1. **Start the server** (if not already running):
+   ```bash
+   ./start.sh
+   ```
+
+2. **Open in your browser**:
+   ```
+   http://localhost:8080/docs
+   ```
+
+3. **Features**:
+   - 📖 Complete documentation in Portuguese (PT-BR) and English (EN-US)
+   - 🔍 Real-time search
+   - 🌐 Language switcher (PT/EN)
+   - 📱 Responsive design
+   - 🎨 Clean, modern interface
+
+### Documentation Structure
+
+- **Portuguese**: `docs/pt/` - 13 documents covering all topics
+- **English**: `docs/en/` - 13 documents covering all topics
+- **Topics**: Introduction, Installation, Architecture, Integrations, Chat Modes, CRUD, Database, Services, Algorithms, and more
+
+### Alternative Access
+
+- **Direct API**: `http://localhost:8080/api/docs/list?lang=pt` (list documents)
+- **Document Content**: `http://localhost:8080/api/docs/content?lang=pt&doc=00-indice` (get content)
+- **From UI**: Click the documentation button in the activity bar or chat header
 
 ## 🏗️ Architecture
 

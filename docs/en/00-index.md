@@ -19,7 +19,7 @@
 
 ### 💬 Chat System
 10. [Chat Mode vs Agent Mode](10-chat-modes.md)
-11. [How Chat Works](11-chat-functioning.md)
+11. [How Chat Works](11-chat-functionality.md)
 12. [Message Processing](12-processing.md)
 
 ### 📁 File Operations
@@ -47,7 +47,7 @@
 26. [Distributed Tracing](26-tracing.md)
 27. [Prometheus Integration](27-prometheus.md)
 
-### 🧪 Testing
+### 🧪 Tests
 28. [Test Structure](28-tests.md)
 29. [How to Write Tests](29-writing-tests.md)
 
