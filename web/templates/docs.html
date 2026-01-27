@@ -347,6 +347,64 @@
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script>
+        // Translations
+        const TRANSLATIONS = {
+            pt: {
+                title: 'Documentação - DuilioCode Studio',
+                sidebarTitle: '📚 DuilioCode',
+                sidebarSubtitle: 'Documentação Completa',
+                searchPlaceholder: '🔍 Buscar documentação...',
+                loading: 'Carregando documentação...',
+                error: 'Erro ao carregar documento:',
+                noResults: 'Nenhum resultado encontrado',
+                searchResults: 'Resultados da Busca',
+                backToIndex: '← Voltar ao índice',
+                categories: {
+                    index: '📚 Índice',
+                    quickStart: '🚀 Início Rápido',
+                    architecture: '🏗️ Arquitetura',
+                    integrations: '🔌 Integrações',
+                    chat: '💬 Sistema de Chat',
+                    files: '📁 Operações de Arquivos',
+                    intelligence: '🧠 Inteligência e Análise',
+                    database: '🗄️ Banco de Dados',
+                    security: '🔒 Segurança',
+                    observability: '📊 Observabilidade',
+                    tests: '🧪 Testes',
+                    services: '🔧 Serviços e Algoritmos',
+                    deploy: '🚀 Deploy e Produção',
+                    others: '📝 Outros'
+                }
+            },
+            en: {
+                title: 'Documentation - DuilioCode Studio',
+                sidebarTitle: '📚 DuilioCode',
+                sidebarSubtitle: 'Complete Documentation',
+                searchPlaceholder: '🔍 Search documentation...',
+                loading: 'Loading documentation...',
+                error: 'Error loading document:',
+                noResults: 'No results found',
+                searchResults: 'Search Results',
+                backToIndex: '← Back to index',
+                categories: {
+                    index: '📚 Index',
+                    quickStart: '🚀 Quick Start',
+                    architecture: '🏗️ Architecture',
+                    integrations: '🔌 Integrations',
+                    chat: '💬 Chat System',
+                    files: '📁 File Operations',
+                    intelligence: '🧠 Intelligence and Analysis',
+                    database: '🗄️ Database',
+                    security: '🔒 Security',
+                    observability: '📊 Observability',
+                    tests: '🧪 Tests',
+                    services: '🔧 Services and Algorithms',
+                    deploy: '🚀 Deploy and Production',
+                    others: '📝 Others'
+                }
+            }
+        };
+
         // Configuration
         const CONFIG = {
             currentLang: 'pt',
@@ -357,11 +415,41 @@
             }
         };
 
+        // Get current translation
+        function t(key) {
+            const keys = key.split('.');
+            let value = TRANSLATIONS[CONFIG.currentLang];
+            for (const k of keys) {
+                value = value?.[k];
+            }
+            return value || key;
+        }
+
+        // Update UI language
+        function updateUILanguage() {
+            document.title = t('title');
+            document.querySelector('.sidebar-header h1').textContent = t('sidebarTitle');
+            document.querySelector('.sidebar-header p').textContent = t('sidebarSubtitle');
+            document.getElementById('searchBox').placeholder = t('searchPlaceholder');
+        }
+
         // Initialize
         async function init() {
+            // Detect browser language
+            const browserLang = navigator.language || navigator.userLanguage;
+            if (browserLang.startsWith('en')) {
+                CONFIG.currentLang = 'en';
+                document.querySelector('.lang-btn[data-lang="en"]').classList.add('active');
+                document.querySelector('.lang-btn[data-lang="pt"]').classList.remove('active');
+            }
+            
+            updateUILanguage();
             await loadDocsIndex();
             renderNavigation();
-            loadDocument('pt', '00-indice');
+            
+            // Load initial document based on language
+            const initialDoc = CONFIG.currentLang === 'pt' ? '00-indice' : '00-index';
+            loadDocument(CONFIG.currentLang, initialDoc);
             
             // Setup event listeners
             document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -389,20 +477,38 @@
             }
         }
 
+        // Map category emoji to translation key
+        function getCategoryKey(category) {
+            if (category.includes('Índice') || category.includes('Index')) return 'categories.index';
+            if (category.includes('Início Rápido') || category.includes('Quick Start')) return 'categories.quickStart';
+            if (category.includes('Arquitetura') || category.includes('Architecture')) return 'categories.architecture';
+            if (category.includes('Integrações') || category.includes('Integrations')) return 'categories.integrations';
+            if (category.includes('Chat')) return 'categories.chat';
+            if (category.includes('Arquivos') || category.includes('File')) return 'categories.files';
+            if (category.includes('Inteligência') || category.includes('Intelligence')) return 'categories.intelligence';
+            if (category.includes('Banco de Dados') || category.includes('Database')) return 'categories.database';
+            if (category.includes('Segurança') || category.includes('Security')) return 'categories.security';
+            if (category.includes('Observabilidade') || category.includes('Observability')) return 'categories.observability';
+            if (category.includes('Testes') || category.includes('Tests')) return 'categories.tests';
+            if (category.includes('Serviços') || category.includes('Services')) return 'categories.services';
+            if (category.includes('Deploy') || category.includes('Production')) return 'categories.deploy';
+            return 'categories.others';
+        }
+
         // Render navigation
         function renderNavigation() {
             const nav = document.getElementById('navMenu');
             const docs = CONFIG.docs[CONFIG.currentLang] || [];
             
             if (docs.length === 0) {
-                nav.innerHTML = '<div class="nav-section"><div class="nav-section-title">Carregando...</div></nav>';
+                nav.innerHTML = `<div class="nav-section"><div class="nav-section-title">${t('loading')}</div></nav>`;
                 return;
             }
 
             // Group by category
             const categories = {};
             docs.forEach(doc => {
-                const category = doc.category || 'Outros';
+                const category = doc.category || t('categories.others');
                 if (!categories[category]) {
                     categories[category] = [];
                 }
@@ -410,9 +516,13 @@
             });
 
             let html = '';
-            Object.keys(categories).forEach(category => {
+            Object.keys(categories).sort().forEach(category => {
+                // Translate category name
+                const categoryKey = getCategoryKey(category);
+                const translatedCategory = t(categoryKey);
+                
                 html += `<div class="nav-section">`;
-                html += `<div class="nav-section-title">${category}</div>`;
+                html += `<div class="nav-section-title">${translatedCategory}</div>`;
                 categories[category].forEach(doc => {
                     const active = CONFIG.currentDoc === doc.id ? 'active' : '';
                     html += `<a href="#" class="nav-item ${active}" data-doc="${doc.id}">${doc.title}</a>`;
@@ -435,7 +545,7 @@
         // Load document
         async function loadDocument(lang, docId) {
             const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = '<div class="loading">Carregando...</div>';
+            mainContent.innerHTML = `<div class="loading">${t('loading')}</div>`;
 
             try {
                 const response = await fetch(`/api/docs/content?lang=${lang}&doc=${docId}`);
@@ -455,11 +565,15 @@
                 });
 
                 const html = marked.parse(data.content);
+                
+                // Translate category
+                const categoryKey = getCategoryKey(data.category || '');
+                const translatedCategory = t(categoryKey);
 
                 mainContent.innerHTML = `
                     <div class="doc-header">
                         <h1>${data.title}</h1>
-                        <div class="meta">${data.category || ''} • ${lang.toUpperCase()}</div>
+                        <div class="meta">${translatedCategory} • ${lang.toUpperCase()}</div>
                     </div>
                     <div class="doc-content">${html}</div>
                 `;
@@ -474,7 +588,7 @@
             } catch (error) {
                 mainContent.innerHTML = `
                     <div class="error">
-                        <strong>Erro ao carregar documento:</strong><br>
+                        <strong>${t('error')}</strong><br>
                         ${error.message}
                     </div>
                 `;
@@ -490,17 +604,37 @@
                 btn.classList.toggle('active', btn.dataset.lang === lang);
             });
 
+            // Update UI language
+            updateUILanguage();
+
             // Reload navigation and current doc
             renderNavigation();
-            if (CONFIG.currentDoc) {
-                loadDocument(lang, CONFIG.currentDoc);
+            
+            // Map document IDs between languages
+            const docMap = {
+                'pt': { '00-indice': '00-index' },
+                'en': { '00-index': '00-indice' }
+            };
+            
+            let docId = CONFIG.currentDoc;
+            if (!docId) {
+                docId = lang === 'pt' ? '00-indice' : '00-index';
             } else {
-                loadDocument(lang, '00-indice');
+                // Try to find equivalent document in other language
+                const mapped = docMap[lang]?.[docId];
+                if (mapped) {
+                    docId = mapped;
+                } else {
+                    // Keep same doc ID, might not exist in other language
+                    docId = CONFIG.currentDoc;
+                }
             }
+            
+            loadDocument(lang, docId);
         }
 
         // Handle search
-        function handleSearch(e) {
+        async function handleSearch(e) {
             const query = e.target.value.toLowerCase();
             if (query.length < 2) {
                 renderNavigation();
@@ -508,13 +642,37 @@
             }
 
             const docs = CONFIG.docs[CONFIG.currentLang] || [];
+            
+            // Load content for search (if not already loaded)
+            const searchPromises = docs.map(async doc => {
+                if (!doc.content) {
+                    try {
+                        const response = await fetch(`/api/docs/content?lang=${CONFIG.currentLang}&doc=${doc.id}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            doc.content = data.content;
+                        }
+                    } catch (error) {
+                        console.error(`Error loading doc ${doc.id}:`, error);
+                    }
+                }
+                return doc;
+            });
+            
+            await Promise.all(searchPromises);
+            
             const filtered = docs.filter(doc => 
                 doc.title.toLowerCase().includes(query) ||
                 (doc.content && doc.content.toLowerCase().includes(query))
             );
 
             const nav = document.getElementById('navMenu');
-            let html = '<div class="nav-section"><div class="nav-section-title">Resultados da Busca</div>';
+            if (filtered.length === 0) {
+                nav.innerHTML = `<div class="nav-section"><div class="nav-section-title">${t('noResults')}</div></nav>`;
+                return;
+            }
+
+            let html = `<div class="nav-section"><div class="nav-section-title">${t('searchResults')}</div>`;
             filtered.forEach(doc => {
                 html += `<a href="#" class="nav-item" data-doc="${doc.id}">${doc.title}</a>`;
             });
