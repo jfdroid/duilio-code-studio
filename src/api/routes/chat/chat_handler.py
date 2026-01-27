@@ -31,6 +31,8 @@ from core.validators import ModelNameValidator, TemperatureValidator
 from core.exceptions import ValidationError
 from core.error_handler import handle_error
 from core.metrics import track_performance
+from core.observability import trace_operation
+from core.security import InputSanitizer
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from typing import TYPE_CHECKING

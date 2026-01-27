@@ -35,6 +35,22 @@ async def full_status(
     """Full system status check."""
     ollama_status = await ollama.health_check()
     
+    # Get metrics
+    try:
+        from core.metrics import get_metrics_collector
+        metrics = get_metrics_collector()
+        metrics_stats = metrics.get_stats()
+    except Exception:
+        metrics_stats = {}
+    
+    # Get trace info
+    try:
+        from core.observability import get_tracer
+        tracer = get_tracer()
+        trace_info = tracer.get_trace()
+    except Exception:
+        trace_info = {}
+    
     return {
         "status": "ok",
         "service": "DuilioCode Studio",
@@ -44,5 +60,29 @@ async def full_status(
             "code_generation": ollama_status.get("status") == "running",
             "file_operations": True,
             "workspace_management": True
+        },
+        "metrics": {
+            "operations": len(metrics_stats),
+            "total_operations": sum(s.get("count", 0) for s in metrics_stats.values())
+        },
+        "tracing": {
+            "spans": trace_info.get("total_spans", 0),
+            "total_duration_ms": trace_info.get("total_duration_ms", 0)
         }
     }
+
+
+@router.get("/prometheus")
+async def prometheus_metrics() -> str:
+    """
+    Prometheus metrics endpoint.
+    
+    Returns metrics in Prometheus format for scraping.
+    """
+    from core.observability import get_prometheus_metrics
+    from fastapi.responses import Response
+    
+    prometheus = get_prometheus_metrics()
+    metrics_text = prometheus.get_metrics()
+    
+    return Response(content=metrics_text, media_type="text/plain")
