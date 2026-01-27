@@ -1287,6 +1287,14 @@ async def chat(
                 elif list_files_intent or seeing_created_intent:
                     operation = OperationType.LIST
                 
+                # Detect explanation request
+                explanation_keywords = [
+                    'por que', 'porque', 'pq', 'why', 'como', 'how',
+                    'explain', 'explique', 'motivo', 'razão', 'reason',
+                    'decisão', 'decision', 'por qual', 'qual o motivo'
+                ]
+                explanation_intent = any(kw in last_user_message.lower() for kw in explanation_keywords)
+                
                 # Add explanation instructions if user asked for reasoning
                 if explanation_intent:
                     system_prompt += "\n\nEXPLANATION REQUEST DETECTED:"
@@ -1294,6 +1302,7 @@ async def chat(
                     system_prompt += "\n- Explain your process: how you arrived at the answer"
                     system_prompt += "\n- Reference the FILE LISTING or context you used"
                     system_prompt += "\n- Be clear and specific about your reasoning"
+                    system_prompt += "\n- Example: 'I see X files because in the FILE LISTING section above, it shows Total Files: X'"
                 
                 # Detect project intention for CREATE operations
                 crud_context = {}
