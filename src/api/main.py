@@ -131,7 +131,7 @@ def create_app() -> FastAPI:
         description=settings.APP_DESCRIPTION,
         version=settings.APP_VERSION,
         lifespan=lifespan,
-        docs_url="/docs",
+        docs_url="/api-docs",  # Swagger UI moved to /api-docs
         redoc_url="/redoc",
     )
     
